@@ -51,6 +51,7 @@
 //        - Fixed swallowTouches on sprites and beziers
 //        - Added support to add CCNode objects (e.g CCSprite,CCParticleSystemQuad) to a LHParallaxNode
 //        - Fixed shape border with scale on circles
+//  v1.2  - Fixed issue caused by cocos2d-1.0.1-x-0.12.0 - expect a bigger update in the following days
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __LEVEL_HELPER_LOADER__
@@ -85,7 +86,7 @@ enum LH_ACTIONS_TAGS
     LH_ANIM_ACTION_TAG
 };
 
-typedef void (SelectorProtocol::*SEL_CallFuncFloat)(float);
+typedef void (CCObject::*SEL_CallFuncFloat)(float);
 #define callfuncFloat_selector(_SELECTOR) (SEL_CallFuncFloat)(&_SELECTOR)
 
 
@@ -95,7 +96,7 @@ float   floatFromString(const std::string& str);
 CCPoint LHPointFromString(const std::string& str);
 CCRect  LHRectFromString(const std::string& str);
 
-class LevelHelperLoader : public SelectorProtocol, public CCObject {
+class LevelHelperLoader : public CCObject {
 
 private:
     LHArray* lhSprites;
@@ -130,10 +131,10 @@ private:
     CCRect  gameWorldRect;
     CCPoint gravity;
 	
-    SelectorProtocol* pathNotifierId;
+    CCObject* pathNotifierId;
     SEL_CallFuncN pathNotifierSel;
     
-    SelectorProtocol* animNotifierId;
+    CCObject* animNotifierId;
     SEL_CallFuncND animNotifierSel;
     bool    notifOnLoopForeverAnim;
     
@@ -143,7 +144,7 @@ private:
     LHContactNode* contactNode;
         
         
-    SelectorProtocol* loadingProgressId;
+    CCObject* loadingProgressId;
     SEL_CallFuncFloat loadingProgressSel;
     
 public:
@@ -159,7 +160,7 @@ public:
     //the registered method needs to have this signature " void HelloWorld::loadingProgress(float percentage) "
     //registration should be done like this loader->registerLoadingProgressObserver(this, callfuncFloat_selector(HelloWorld::loadingProgress));
     //percentage will return a value from 0.0f to 1.0f
-    void registerLoadingProgressObserver(SelectorProtocol* loadingProgressObj, SEL_CallFuncFloat sel);
+    void registerLoadingProgressObserver(CCObject* loadingProgressObj, SEL_CallFuncFloat sel);
     
     //LOADING
     void addObjectsToWorld(b2World* world, CCLayer* cocosLayer);
@@ -184,7 +185,7 @@ public:
     
     void registerBeginOrEndCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
                                                         enum LevelHelper_TAG tagB,
-                                                        SelectorProtocol* obj,
+                                                        CCObject* obj,
                                                         SEL_CallFuncO selector);
     
     void cancelBeginOrEndCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
@@ -193,7 +194,7 @@ public:
     
     void registerPreCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
                                                 enum LevelHelper_TAG tagB,
-                                                SelectorProtocol* obj,
+                                                CCObject* obj,
                                                 SEL_CallFuncO selector);
     
     void cancelPreCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
@@ -201,7 +202,7 @@ public:
     
     void registerPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
                                                  enum LevelHelper_TAG tagB,
-                                                 SelectorProtocol* obj,
+                                                 CCObject* obj,
                                                  SEL_CallFuncO selector);
     
     void cancelPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
@@ -318,7 +319,7 @@ public:
     //ANIMATION
     void startAnimationWithUniqueName(const std::string& animationName, 
                                       LHSprite* sprite, 
-                                      SelectorProtocol* customAnimNotifierId = NULL,
+                                      CCObject* customAnimNotifierId = NULL,
                                       SEL_CallFuncND customAnimNotifierSel = NULL);
     
     void stopAnimationOnSprite(LHSprite* sprite);
@@ -330,7 +331,7 @@ public:
     //signature for registered method should be like this: void HelloWorld::spriteAnimHasEnded(CCSprite* spr, const std::string& animName);
     //registration is done like this:  lh->registerNotifierOnAnimationEnds(this, callfuncND_selector(HelloWorld::spriteAnimHasEnded));
     //this will trigger for all type of animations even for the ones controlled by you will next/prevFrameFor...
-    void registerNotifierOnAllAnimationEnds(SelectorProtocol* obj, SEL_CallFuncND sel);
+    void registerNotifierOnAllAnimationEnds(CCObject* obj, SEL_CallFuncND sel);
     
     /*
      by default the notification on animation end works only on non-"loop forever" animations
@@ -356,7 +357,7 @@ public:
     //DISCUSSION
     //signature for registered method should be like this: void HelloWorld::spriteMoveOnPathEnded(LHSprite* spr);
     //registration is done like this:  lh->registerNotifierOnPathEnd(this, callfuncN_selector(HelloWorld::spriteMoveOnPathEnded));
-    void registerNotifierOnAllPathEndPoints(SelectorProtocol* obj, SEL_CallFuncN sel);
+    void registerNotifierOnAllPathEndPoints(CCObject* obj, SEL_CallFuncN sel);
 
     
     /*More methods in LHPathExt.h - download from http://www.levelhelper.org*/
@@ -445,6 +446,7 @@ private:
 };
 
 #endif
+
 
 
 

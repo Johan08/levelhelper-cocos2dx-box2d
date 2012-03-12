@@ -80,7 +80,7 @@ public:
     //call setBatchNode then cumputeFrames first
     void runAnimationOnSprite(LHSprite* node,
                               int startFrame,
-                              SelectorProtocol* animNotifierId,
+                              CCObject* animNotifierId,
                               SEL_CallFuncND animNotifierSel,
                               const bool& notifOnLoop);
     

@@ -62,7 +62,7 @@ private:
 	double m_time;
 	bool isLine;
 	
-    SelectorProtocol* pathNotifierId;
+    CCObject* pathNotifierId;
     SEL_CallFuncN pathNotifierSel;
     
   //  static int numberOfPathNodes;
@@ -110,7 +110,7 @@ public:
     void setStartAtEndPoint(bool val);
     bool getStartAtEndPoint(void){return startAtEndPoint;}
     
-    void setPathNotifierObject(SelectorProtocol* notifierId){pathNotifierId = notifierId;}
+    void setPathNotifierObject(CCObject* notifierId){pathNotifierId = notifierId;}
     void setPathNotifierSelector(SEL_CallFuncN notifierSel){pathNotifierSel = notifierSel;}
     
     virtual void visit(void);

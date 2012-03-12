@@ -30,7 +30,7 @@
 class LHContactNodeInfo : public CCObject
 {
 	int tagB;
-    SelectorProtocol* listenerId;
+    CCObject* listenerId;
     SEL_CallFuncO listenerSel;  
 public:
     LHContactNodeInfo(){}
@@ -38,7 +38,7 @@ public:
     virtual ~LHContactNodeInfo(void){/*CCLog("ContactNodeInfo release");*/}
     
     bool initcontactInfoWithTag(int _tagB,
-                                SelectorProtocol* listId,
+                                CCObject* listId,
                                 SEL_CallFuncO  listSel){
         tagB = _tagB;
         listenerId = listId;
@@ -47,7 +47,7 @@ public:
     }
     
     static LHContactNodeInfo* contactInfoWithTag(int tagB,
-                                                SelectorProtocol* listId,
+                                                CCObject* listId,
                                                 SEL_CallFuncO  listSel){
        LHContactNodeInfo *pobInfo = new LHContactNodeInfo();
        if (pobInfo && pobInfo->initcontactInfoWithTag(tagB, listId, listSel))
@@ -142,7 +142,7 @@ LHContactNode* LHContactNode::contactNodeWithWorld(b2World* world){
 ////////////////////////////////////////////////////////////////////////////////
 void LHContactNode::registerBeginOrEndCollisionCallbackBetweenTagA(int tagA, 
                                                     int tagB,
-                                                    SelectorProtocol* obj, 
+                                                    CCObject* obj, 
                                                                    SEL_CallFuncO sel){
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)beginEndCollisionMap.objectForKey(tagA);
     
@@ -170,7 +170,7 @@ void LHContactNode::cancelBeginOrEndCollisionCallbackBetweenTagA(int tagA,
 //------------------------------------------------------------------------------
 void LHContactNode::registerPreCollisionCallbackBetweenTagA(int tagA, 
                                                            int tagB,
-                                                           SelectorProtocol* obj, 
+                                                           CCObject* obj, 
                                                            SEL_CallFuncO sel){
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)preCollisionMap.objectForKey(tagA);
     
@@ -198,7 +198,7 @@ void LHContactNode::cancelPreCollisionCallbackBetweenTagA(int tagA,
 ////////////////////////////////////////////////////////////////////////////////
 void LHContactNode::registerPostCollisionCallbackBetweenTagA(int tagA,
                                                             int tagB,
-                                                            SelectorProtocol* obj, 
+                                                            CCObject* obj, 
                                                             SEL_CallFuncO sel){
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)postCollisionMap.objectForKey(tagA);
     

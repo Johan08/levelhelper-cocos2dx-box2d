@@ -164,7 +164,7 @@ void LHParallaxNode::removeChild(LHSprite* sprite)
 	}
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHParallaxNode::registerSpriteHasMovedToEndListener(SelectorProtocol* object, SEL_CallFuncN method)
+void LHParallaxNode::registerSpriteHasMovedToEndListener(CCObject* object, SEL_CallFuncN method)
 {
     movedEndListenerObj = object; 
     movedEndListenerSEL = method;

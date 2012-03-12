@@ -612,19 +612,19 @@ bool LHBezierNode::isTouchedAtPoint(CCPoint point){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void LHBezierNode::registerTouchBeginObserver(SelectorProtocol* observer, 
+void LHBezierNode::registerTouchBeginObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
     touchBeginObserver.object = observer;
     touchBeginObserver.selector = selector;
 }
 //------------------------------------------------------------------------------
-void LHBezierNode::registerTouchMovedObserver(SelectorProtocol* observer, 
+void LHBezierNode::registerTouchMovedObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
     touchMovedObserver.object = observer;
     touchMovedObserver.selector = selector;
 }
 //------------------------------------------------------------------------------
-void LHBezierNode::registerTouchEndedObserver(SelectorProtocol* observer, 
+void LHBezierNode::registerTouchEndedObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
     touchEndedObserver.object = observer;
     touchEndedObserver.selector = selector;    

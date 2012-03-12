@@ -89,7 +89,7 @@ public:
     //--------------------------------------------------------------------------
     void startAnimationNamed(const std::string& animName,                         
                              int startFrame = 0,
-                             SelectorProtocol* customAnimNotifierId = NULL,
+                             CCObject* customAnimNotifierId = NULL,
                              SEL_CallFuncND customAnimNotifierSel = NULL,
                              bool observeLooping = false);
 
@@ -131,7 +131,7 @@ public:
                                    bool flipx,
                                    bool flipy,
                                    bool dMove,//describe path movement without setting the sprite position on the actual points on the path
-                                   SelectorProtocol* obj = NULL,
+                                   CCObject* obj = NULL,
                                    SEL_CallFuncN sel = NULL);
 
     
@@ -142,7 +142,7 @@ public:
     void setPathSpeed(float value);
     float getPathSpeed(void);
     
-    void registerNotifierOnPathEndPoints(SelectorProtocol* obj, 
+    void registerNotifierOnPathEndPoints(CCObject* obj, 
                                          SEL_CallFuncN sel);
 
     //PARALLAX
@@ -190,9 +190,9 @@ public:
     //in visual studio the method signature should be void HelloWorldLayer::touchXXX(CCObject* cinfo){LHTouchInfo* info = (LHTouchInfo*)info; ...} because compiler doesn't know how to cast
     //info will have all information regarding the touch (see API Documentation or top of this file)
     //for generic touch on sprites with tag use the observers from LevelHelperLoader
-    void registerTouchBeginObserver(SelectorProtocol* observer, SEL_CallFuncO selector);
-    void registerTouchMovedObserver(SelectorProtocol* observer, SEL_CallFuncO selector);
-    void registerTouchEndedObserver(SelectorProtocol* observer, SEL_CallFuncO selector);
+    void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
+    void registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector);
+    void registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector);
 
     virtual bool ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent);
