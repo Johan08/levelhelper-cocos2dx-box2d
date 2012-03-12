@@ -92,7 +92,7 @@ private:
 	CCPoint lastPosition;
     std::string uniqueName;
 	    
-    SelectorProtocol* movedEndListenerObj;
+    CCObject* movedEndListenerObj;
     SEL_CallFuncN movedEndListenerSEL;
     
 	CCSize winSize;
@@ -141,7 +141,7 @@ public:
     
     void removeChild(LHSprite* sprite);
     //method needs to be like this -(void)spriteMovedToEnd:(LHSprite*)spr;
-    void registerSpriteHasMovedToEndListener(SelectorProtocol* object, SEL_CallFuncN method);
+    void registerSpriteHasMovedToEndListener(CCObject* object, SEL_CallFuncN method);
     
     std::string getUniqueName(void){return uniqueName;}
     CCArray* spritesInNode(void);

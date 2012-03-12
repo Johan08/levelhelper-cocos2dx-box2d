@@ -141,7 +141,7 @@ void LHAnimationNode::setBatchNode(CCSpriteBatchNode* node){
 ////////////////////////////////////////////////////////////////////////////////
 void LHAnimationNode::runAnimationOnSprite(LHSprite* ccsprite,
                                            int startFrame,
-                                           SelectorProtocol* animNotifierId,
+                                           CCObject* animNotifierId,
                                            SEL_CallFuncND animNotifierSel,
                                            const bool& notifOnLoop)
 {

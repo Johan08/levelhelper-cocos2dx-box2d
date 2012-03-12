@@ -145,9 +145,9 @@ public:
     //because compiler doesn't know how to cast
     //info will have all information regarding the touch (see API Documentation or top of this file)
     //for generic touch on sprites with tag use the observers from LevelHelperLoader
-    void registerTouchBeginObserver(SelectorProtocol* observer, SEL_CallFuncO selector);
-    void registerTouchMovedObserver(SelectorProtocol* observer, SEL_CallFuncO selector);
-    void registerTouchEndedObserver(SelectorProtocol* observer, SEL_CallFuncO selector);
+    void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
+    void registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector);
+    void registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector);
 
     virtual bool ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent);

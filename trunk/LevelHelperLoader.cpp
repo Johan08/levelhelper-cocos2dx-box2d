@@ -200,7 +200,7 @@ void LevelHelperLoader::addObjectsToWorld(b2World* world, CCLayer* _cocosLayer)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void LevelHelperLoader::registerLoadingProgressObserver(SelectorProtocol* loadingProgressObj, SEL_CallFuncFloat sel){
+void LevelHelperLoader::registerLoadingProgressObserver(CCObject* loadingProgressObj, SEL_CallFuncFloat sel){
     loadingProgressId = loadingProgressObj;
     loadingProgressSel = sel;
 }
@@ -242,7 +242,7 @@ void LevelHelperLoader::useLevelHelperCollisionHandling(void)
 //------------------------------------------------------------------------------
 void LevelHelperLoader::registerBeginOrEndCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
                                                                        enum LevelHelper_TAG tagB,
-                                                                       SelectorProtocol* obj,
+                                                                       CCObject* obj,
                                                                        SEL_CallFuncO selector){
     if(NULL == contactNode){
         CCLog("LevelHelper WARNING: Please call registerBeginOrEndCollisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
@@ -264,7 +264,7 @@ void LevelHelperLoader::cancelBeginOrEndCollisionCallbackBetweenTagA(enum LevelH
 //------------------------------------------------------------------------------
 void LevelHelperLoader::registerPreCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
                                                                enum LevelHelper_TAG tagB,
-                                                               SelectorProtocol* obj,
+                                                               CCObject* obj,
                                                                SEL_CallFuncO selector)
 {
     if(NULL == contactNode){
@@ -286,7 +286,7 @@ void LevelHelperLoader::cancelPreCollisionCallbackBetweenTagA(enum LevelHelper_T
 //------------------------------------------------------------------------------
 void LevelHelperLoader::registerPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
                                                                 enum LevelHelper_TAG tagB,
-                                                                SelectorProtocol* obj,
+                                                                CCObject* obj,
                                                                 SEL_CallFuncO selector)
 {
     if(NULL == contactNode){
@@ -449,7 +449,7 @@ void LevelHelperLoader::createAnimationFromDictionary(LHDictionary* spriteProp,
 //------------------------------------------------------------------------------
 void LevelHelperLoader::startAnimationWithUniqueName(const std::string& animName,
                                                      LHSprite* ccsprite,
-                                                     SelectorProtocol* customAnimNotifierId,
+                                                     CCObject* customAnimNotifierId,
                                                      SEL_CallFuncND customAnimNotifierSel)
 {    
     
@@ -484,7 +484,7 @@ void LevelHelperLoader::prepareAnimationWithUniqueName(const std::string& animNa
 }
 
 //------------------------------------------------------------------------------
-void LevelHelperLoader::registerNotifierOnAllAnimationEnds(SelectorProtocol* obj, SEL_CallFuncND sel)
+void LevelHelperLoader::registerNotifierOnAllAnimationEnds(CCObject* obj, SEL_CallFuncND sel)
 {
     animNotifierId = obj;
     animNotifierSel = sel;
@@ -960,7 +960,7 @@ void LevelHelperLoader::moveSpriteOnPathWithUniqueName(LHSprite * ccsprite,
 //	}
 }
 //------------------------------------------------------------------------------
-void LevelHelperLoader::registerNotifierOnAllPathEndPoints(SelectorProtocol* obj, SEL_CallFuncN sel)
+void LevelHelperLoader::registerNotifierOnAllPathEndPoints(CCObject* obj, SEL_CallFuncN sel)
 {
     pathNotifierId = obj;
     pathNotifierSel = sel;

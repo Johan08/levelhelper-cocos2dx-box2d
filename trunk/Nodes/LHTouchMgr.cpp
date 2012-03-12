@@ -102,7 +102,7 @@ void LHTouchMgr::swallowTouchesForTag(int tag){
     swallowTouchesOnTag[tag] = true;
 }
 //------------------------------------------------------------------------------
-void LHTouchMgr::registerTouchBeginObserverForTag(SelectorProtocol* observer, 
+void LHTouchMgr::registerTouchBeginObserverForTag(CCObject* observer, 
                                                   SEL_CallFuncO selector, 
                                                   int tag){
 
@@ -112,7 +112,7 @@ void LHTouchMgr::registerTouchBeginObserverForTag(SelectorProtocol* observer,
     onTouchBeginOnSpriteOfTag.setObject(pair, tag);
 }
 //------------------------------------------------------------------------------
-void LHTouchMgr::registerTouchMovedObserverForTag(SelectorProtocol* observer, 
+void LHTouchMgr::registerTouchMovedObserverForTag(CCObject* observer, 
                                                   SEL_CallFuncO selector, 
                                                   int tag){
     
@@ -122,7 +122,7 @@ void LHTouchMgr::registerTouchMovedObserverForTag(SelectorProtocol* observer,
     onTouchMovedOnSpriteOfTag.setObject(pair, tag);
 }
 //------------------------------------------------------------------------------
-void LHTouchMgr::registerTouchEndedObserverForTag(SelectorProtocol* observer, 
+void LHTouchMgr::registerTouchEndedObserverForTag(CCObject* observer, 
                                                   SEL_CallFuncO selector, 
                                                   int tag){
     

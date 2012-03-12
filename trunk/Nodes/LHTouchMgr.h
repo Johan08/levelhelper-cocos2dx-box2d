@@ -66,7 +66,7 @@ private:
 class LHObserverPair : public CCObject{
     
 public:
-    SelectorProtocol* object;
+    CCObject* object;
     SEL_CallFuncO selector;     
     
     virtual ~LHObserverPair(void);
@@ -88,13 +88,14 @@ public:
     void setPriorityForTouchesOfTag(int priority, int tag); //call this only if you want other priority then 0
     void swallowTouchesForTag(int tag); //call this only if you want to swallow the touches
     
-    //selector needs to have this signature -(void) touchXXX:(LHTouchInfo*)info
+    //selector needs to have this signature void  YourLayer::touchXXX(LHTouchInfo* info)
     //sprite will be the LHSprite* instance on which the touch was performed that has the registered tag
     //for specific touch on a certain sprite use the observer from LHSprite
-    void registerTouchBeginObserverForTag(SelectorProtocol* observer, SEL_CallFuncO selector, int tag);
-    void registerTouchMovedObserverForTag(SelectorProtocol* observer, SEL_CallFuncO selector, int tag);
-    void registerTouchEndedObserverForTag(SelectorProtocol* observer, SEL_CallFuncO selector, int tag);
     
+    void registerTouchBeginObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
+    void registerTouchMovedObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
+    void registerTouchEndedObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
+        
     
     //get back the observer that was registered for a specific tag
     LHObserverPair* onTouchBeginObserverForTag(int tag);

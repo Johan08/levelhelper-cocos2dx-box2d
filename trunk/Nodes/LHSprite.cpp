@@ -279,7 +279,7 @@ int LHSprite::getCurrentFrame(void){
 //------------------------------------------------------------------------------
 void LHSprite::startAnimationNamed(const std::string& animName,                         
                                    int startFrame,
-                                   SelectorProtocol* customAnimNotifierId,
+                                   CCObject* customAnimNotifierId,
                                    SEL_CallFuncND customAnimNotifierSel,
                                    bool observeLooping){
     
@@ -362,7 +362,7 @@ void  LHSprite::moveOnPathWithUniqueName(const std::string& pathUniqueName,
                                          bool flipx,
                                          bool flipy,
                                          bool dMove,
-                                         SelectorProtocol* obj,
+                                         CCObject* obj,
                                          SEL_CallFuncN sel){
     
     if(NULL == parentLoader)
@@ -424,7 +424,7 @@ float LHSprite::getPathSpeed(void){
     return 0;
 }
 //------------------------------------------------------------------------------
-void LHSprite::registerNotifierOnPathEndPoints(SelectorProtocol* obj, 
+void LHSprite::registerNotifierOnPathEndPoints(CCObject* obj, 
                                                SEL_CallFuncN sel)
 {    
     if(NULL == pathNode)
@@ -642,18 +642,18 @@ bool LHSprite::isTouchedAtPoint(CCPoint point){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void LHSprite::registerTouchBeginObserver(SelectorProtocol* observer, SEL_CallFuncO selector){
+void LHSprite::registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector){
         
         touchBeginObserver.object = observer;
         touchBeginObserver.selector = selector;
 }
 //------------------------------------------------------------------------------
-void LHSprite::registerTouchMovedObserver(SelectorProtocol* observer, SEL_CallFuncO selector){
+void LHSprite::registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector){
     touchMovedObserver.object = observer;
     touchMovedObserver.selector = selector;
 }
 //------------------------------------------------------------------------------
-void LHSprite::registerTouchEndedObserver(SelectorProtocol* observer, SEL_CallFuncO selector){
+void LHSprite::registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector){
     touchEndedObserver.object = observer;
     touchEndedObserver.selector = selector;    
 }

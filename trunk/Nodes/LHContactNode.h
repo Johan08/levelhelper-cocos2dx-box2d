@@ -56,7 +56,7 @@ public:
 
     void registerBeginOrEndCollisionCallbackBetweenTagA(int tagA, 
                                                         int tagB,
-                                                        SelectorProtocol* obj, 
+                                                        CCObject* obj, 
                                                         SEL_CallFuncO sel);
 
     void cancelBeginOrEndCollisionCallbackBetweenTagA(int tagA,
@@ -64,7 +64,7 @@ public:
     
     void registerPreCollisionCallbackBetweenTagA(int tagA, 
                                                 int tagB,
-                                                SelectorProtocol* obj, 
+                                                CCObject* obj, 
                                                 SEL_CallFuncO sel);
     
     void cancelPreCollisionCallbackBetweenTagA(int tagA,
@@ -72,7 +72,7 @@ public:
     
     void registerPostCollisionCallbackBetweenTagA(int tagA,
                                                  int tagB,
-                                                 SelectorProtocol* obj, 
+                                                 CCObject* obj, 
                                                  SEL_CallFuncO sel);
     
     void cancelPostCollisionCallbackBetweenTagA(int tagA,
