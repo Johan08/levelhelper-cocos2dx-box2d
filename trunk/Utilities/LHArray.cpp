@@ -9,7 +9,7 @@
 #include "LHArray.h"
 #include "LHDictionary.h"
 #include "LHObject.h"
-
+#include <stdlib.h>
 int LHArray::numberOfArrays = 0;
 //------------------------------------------------------------------------------
 LHArray::LHArray()

@@ -16,6 +16,7 @@
 #include "fstream"
 #include <string>
 #include <map>
+#include <stdlib.h>
 
 int LHDictionary::numberOfDicts = 0;
 //------------------------------------------------------------------------------
