@@ -52,6 +52,8 @@
 //        - Added support to add CCNode objects (e.g CCSprite,CCParticleSystemQuad) to a LHParallaxNode
 //        - Fixed shape border with scale on circles
 //  v1.2  - Fixed issue caused by cocos2d-1.0.1-x-0.12.0 - expect a bigger update in the following days
+//  v1.3  - Fixed a path pause issue when path is line 
+//        - Fixed a touch issue
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __LEVEL_HELPER_LOADER__
@@ -446,6 +448,7 @@ private:
 };
 
 #endif
+
 
 
 

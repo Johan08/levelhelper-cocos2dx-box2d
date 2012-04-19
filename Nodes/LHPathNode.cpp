@@ -197,7 +197,7 @@ void LHPathNode::visit(void)
         struct timeval now;    
         gettimeofday(&now, NULL);
         double convertedTime = (double)now.tv_sec + ((double)(now.tv_usec))/1000000.0;
-        elapsed += convertedTime - m_time;
+       // elapsed += convertedTime - m_time;
         m_time = convertedTime;
 
         return;
@@ -333,23 +333,9 @@ void LHPathNode::visit(void)
 				float angle = ccsprite->getRotation();
 				CCPoint pos = ccsprite->getPosition();
                 
-               // body->SetType(b2_staticBody);
-
-//              
-               // body->SetAwake(false);
-               // body->SetActive(false);
-                
-               // body->SetFixedRotation(true);
-                
                 body->SetTransform(b2Vec2(pos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
                                           pos.y/LHSettings::sharedInstance()->lhPtmRatio()),
                                    CC_DEGREES_TO_RADIANS(-angle));
-
-               // body->SetType(b2_dynamicBody);
-             //   body->SetGravityScale(0);
-               // body->SetSleepingAllowed(false);
-               // body->SetAwake(true);
-               // body->SetActive(true);
                 
 			}
 		}
