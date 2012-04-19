@@ -684,7 +684,7 @@ bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
         }
         return swallowTouches;
     }
-    return false;
+    return true;
 }
 //------------------------------------------------------------------------------
 void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
