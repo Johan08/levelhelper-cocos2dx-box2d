@@ -661,7 +661,7 @@ void LHSprite::registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO sele
 //------------------------------------------------------------------------------
 bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
 {    
-    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+    CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
     if(isTouchedAtPoint(touchPoint))
@@ -689,10 +689,10 @@ bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 //------------------------------------------------------------------------------
 void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
         
-    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+    CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
-    CCPoint prevLocation = pTouch->previousLocationInView(pTouch->view());
+    CCPoint prevLocation = pTouch->previousLocationInView();
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
@@ -717,10 +717,10 @@ void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
 //------------------------------------------------------------------------------
 void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     
-    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+    CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
-    CCPoint prevLocation = pTouch->previousLocationInView(pTouch->view());
+    CCPoint prevLocation = pTouch->previousLocationInView();
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
