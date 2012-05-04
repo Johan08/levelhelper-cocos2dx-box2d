@@ -633,7 +633,7 @@ void LHBezierNode::registerTouchEndedObserver(CCObject* observer,
 //------------------------------------------------------------------------------
 bool LHBezierNode::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
 {    
-    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+    CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
     if(isTouchedAtPoint(touchPoint))
@@ -661,10 +661,10 @@ bool LHBezierNode::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 //------------------------------------------------------------------------------
 void LHBezierNode::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
     
-    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+    CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
-    CCPoint prevLocation = pTouch->previousLocationInView(pTouch->view());
+    CCPoint prevLocation = pTouch->previousLocationInView();
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
@@ -689,10 +689,10 @@ void LHBezierNode::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
 //------------------------------------------------------------------------------
 void LHBezierNode::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     
-    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+    CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
-    CCPoint prevLocation = pTouch->previousLocationInView(pTouch->view());
+    CCPoint prevLocation = pTouch->previousLocationInView();
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
