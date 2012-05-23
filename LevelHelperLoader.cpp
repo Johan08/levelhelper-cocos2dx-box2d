@@ -293,7 +293,7 @@ void LevelHelperLoader::registerPostCollisionCallbackBetweenTagA(enum LevelHelpe
         CCLog("LevelHelper WARNING: Please call registerPostColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
         return;
     }
-    contactNode->registerPreCollisionCallbackBetweenTagA(tagA, tagB, obj, selector);    
+    contactNode->registerPostCollisionCallbackBetweenTagA(tagA, tagB, obj, selector);    
 }
 //------------------------------------------------------------------------------
 void LevelHelperLoader::cancelPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
