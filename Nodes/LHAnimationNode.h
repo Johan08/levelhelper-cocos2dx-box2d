@@ -41,6 +41,7 @@ private:
     std::string uniqueName;
     std::string imageName;
     
+    //CCArray frames; //object is CCSpriteFrame*
     CCMutableArray<CCSpriteFrame*> frames;
     std::vector<CCRect> framesInfo;
     
@@ -74,7 +75,9 @@ public:
 
     void computeFrames(void);//needs a valid batchNode and framesInfo
     
+    //CCArray* getFrames(void); //object of ccarray is CCSpriteFrame*
     CCMutableArray<CCSpriteFrame*>* getFrames(void);
+    
     void setBatchNode(CCSpriteBatchNode* node);
 
     //call setBatchNode then cumputeFrames first

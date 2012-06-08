@@ -102,6 +102,7 @@ private:
 	int screenNumberOnTheTop;
 	int screenNumberOnTheBottom;
 	
+    //CCArray sprites;
     CCMutableArray<LHParallaxPointObject*> sprites;
     
     LHSprite* followedSprite;

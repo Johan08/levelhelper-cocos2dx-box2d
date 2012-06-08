@@ -389,10 +389,10 @@ void LHBezierNode::createBodyFromDictionary(LHDictionary* bezierDict, b2World* w
 	
 	float ptm = LHSettings::sharedInstance()->lhPtmRatio();
     
-    if(b2_version.major <= 2)
-        if(b2_version.minor <=2)
-            if(b2_version.revision <2)
-                CCLog("Please update to Box2d 2.2.2 or above or else you may experience asserts");
+//    if(b2_version.major <= 2)
+//        if(b2_version.minor <=2)
+//            if(b2_version.revision <2)
+//                CCLog("Please update to Box2d 2.2.2 or above or else you may experience asserts");
     
     for(int k =0; k< (int)trianglesHolder.size();++k)
     {
@@ -401,7 +401,8 @@ void LHBezierNode::createBodyFromDictionary(LHDictionary* bezierDict, b2World* w
         int size = fix.size();
         b2Vec2 *verts = new b2Vec2[size];
         int i = 0;
-        for(int j = 0; j < size; ++j)
+        for(int j = size -1; j >=0; --j)
+//        for(int j = 0; j < size; ++j)
         {
             CCPoint pt = fix[j];
             

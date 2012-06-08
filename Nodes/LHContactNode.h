@@ -40,6 +40,12 @@ class LHContactNodeInfo;
 class LHContactNode : public CCNode
 {
 private:
+
+//    CCDictionary preCollisionMap;
+//    CCDictionary postCollisionMap;
+//    CCDictionary beginEndCollisionMap;
+    
+    
         CCMutableDictionary<int> preCollisionMap;
         CCMutableDictionary<int> postCollisionMap;
         CCMutableDictionary<int> beginEndCollisionMap;
