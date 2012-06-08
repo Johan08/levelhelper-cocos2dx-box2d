@@ -28,32 +28,9 @@
 //  Version history
 //  ...............
 //  v0.1 First version for LevelHelper 1.4
-//  v0.2 added setFollowSprite in the LHParallaxNode class
-//  v0.3 Added new methods, extended LHSprite, added support for custom LHSprite classes (see api documentation) - new files added - import the new files in your project. Fixed bugs
-//  v0.4 fixed all issues caused by a bad update
-//  v1.0 -Added LHTouchMgr class - see API Documenation - Touch Handling chapter
-//       -Added allSprites, allBeziers, allParallaxes, allJoints
-//       -Added markJointForRemoval, removeMarkedJoints, markBezierForRemoval, removeMarkedBeziers
-//       -Added jointsList in LHSprite that will return an array with all the LHJoint* objects 
-//		 from where you can take the box2d joint
-//       -Fixed collision handling not calling observer on certain object shapes
-//       -Added postInit() to LHSprite in case you want to handle logic post initialization in your custom sprite class
-//  v1.01 - Added getSpriteA and getSpriteB in LHJoint class
-//        - Added   LHJoint* jointWithUniqueName(const std::string& name); 
-//                  bool removeAllAttachedJoints(void); 
-//                  bool removeJoint(LHJoint* jt); inside LHSprite.h
-//        - reverted back LHContactNode to CCNode subclass because of a Visual Studio only issue
-//        - fixed - unreleased memory in loadLevelHelperSceneFile;
-//  v1.02 - Fixed touch delegate not released on bezier nodes
-//        - Fixed collision handling being released twice (so caused crash) sometimes.
-//  v1.03 - Fixed an issue on visual studio compiler
-//  v1.1  - Fixed dontStretchArtOnIpad with bezier nodes
-//        - Fixed swallowTouches on sprites and beziers
-//        - Added support to add CCNode objects (e.g CCSprite,CCParticleSystemQuad) to a LHParallaxNode
-//        - Fixed shape border with scale on circles
-//  v1.2  - Fixed issue caused by cocos2d-1.0.1-x-0.12.0 - expect a bigger update in the following days
 //  v1.3  - Fixed a path pause issue when path is line 
 //        - Fixed a touch issue
+//  v1.4  - Fixed issue with bezier tile shape making a crash, fix issue when using -1 scaled sprites making a crash
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __LEVEL_HELPER_LOADER__
@@ -107,7 +84,7 @@ private:
     LHArray* lhBeziers;
     LHArray* lhAnims;
     LHDictionary* lhBatchInfo;       //key - imageName - value LHDictionary
-
+    
     CCMutableDictionary<std::string>  animationsInLevel;    //key name - value LHAnimationNode*;
     CCMutableDictionary<std::string>  spritesInLevel;       //key name - value LHSprite*
     CCMutableDictionary<std::string>  jointsInLevel;        //key name - value LHJoint*
@@ -448,6 +425,7 @@ private:
 };
 
 #endif
+
 
 
 

@@ -1227,15 +1227,22 @@ b2Body* LevelHelperLoader::b2BodyFromDictionary(LHDictionary* spritePhysic,
                 b2PolygonShape shape;
                 int i = 0;
                 
-                for(int j = 0; j < curFixture->count(); ++j)
+                
+                const int count = curFixture->count();
+                for(int j = 0; j< count; ++j)
                 {
                     std::string pointStr = curFixture->objectAtIndex(j)->stringValue();
-
+                    
+                    const int idx = (scale.x < 0 && scale.y >= 0) || (scale.x >= 0 && scale.y < 0) ? count - i - 1 : i;
+                    
                     CCPoint point = LHPointFromString(pointStr);
-                    verts[i] = b2Vec2((point.x*(scale.x)+offset.x/2.0f)/ptm, 
-                                      (point.y*(scale.y)-offset.y/2.0f)/ptm);
+                    verts[idx] = b2Vec2((point.x*(scale.x)+offset.x/2.0f)/ptm, 
+                                        (point.y*(scale.y)-offset.y/2.0f)/ptm);
                     ++i;
-                }
+
+                }                
+                
+                
                 shape.Set(verts, size);		
                 b2FixtureDef fixture;
                 setFixtureDefPropertiesFromDictionary(spritePhysic, &fixture);

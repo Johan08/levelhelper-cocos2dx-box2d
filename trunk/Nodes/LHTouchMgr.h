@@ -28,8 +28,8 @@
 
 #ifndef __LH_TOUCH_MGR_SINGLETON
 #define __LH_TOUCH_MGR_SINGLETON
-
 #include "cocos2d.h"
+//#include "include/CCMutableDictionary.h"
 //#include "LHSprite.h"
 //#include "LHBezierNode.h"
 //#include "LevelHelperLoader.h"
@@ -76,8 +76,6 @@ public:
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-
-
 class LHTouchMgr
 {
 public:
@@ -106,9 +104,15 @@ public:
     int priorityForTag(int tag);
 
 private:
+//    CCDictionary onTouchBeginOnSpriteOfTag;
+//    CCDictionary onTouchMovedOnSpriteOfTag;
+//    CCDictionary onTouchEndedOnSpriteOfTag;
+    
+    
     CCMutableDictionary<int> onTouchBeginOnSpriteOfTag;
     CCMutableDictionary<int> onTouchMovedOnSpriteOfTag;
     CCMutableDictionary<int> onTouchEndedOnSpriteOfTag;
+    
     std::map<int, bool> swallowTouchesOnTag;
     std::map<int, int> priorityForTouchesOfTag;
     
