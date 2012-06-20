@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHAnimationNode.h"
 #include "LHSprite.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHSettings.h"
 
 //int LHAnimationNode::numberOfAnimNodes;

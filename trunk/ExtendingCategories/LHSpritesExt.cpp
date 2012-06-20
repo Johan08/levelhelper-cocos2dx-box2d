@@ -25,9 +25,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "LHSpritesExt.h"
-#include "LHSettings.h"
-#include "LHSprite.h"
-#include "LHBezierNode.h"
+#include "../Nodes/LHSettings.h"
+#include "../Nodes/LHSprite.h"
+#include "../Nodes/LHBezierNode.h"
 
 std::string LHSpritesExt::uniqueNameForSprite(LHSprite* sprite){
     

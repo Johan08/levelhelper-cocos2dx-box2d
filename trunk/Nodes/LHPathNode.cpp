@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHPathNode.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHSettings.h"
 #include "LHSprite.h"
 #include "platform.h"

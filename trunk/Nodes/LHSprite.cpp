@@ -26,7 +26,7 @@
 #include "LHSprite.h"
 
 #include "LHAnimationNode.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHPathNode.h"
 #include "LHParallaxNode.h"
 #include "LHSettings.h"

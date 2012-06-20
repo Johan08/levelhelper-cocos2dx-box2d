@@ -29,7 +29,7 @@
 #ifndef __LH_PATH_EXT__
 #define __LH_PATH_EXT__
 
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 
 class LHPathExt 
 {

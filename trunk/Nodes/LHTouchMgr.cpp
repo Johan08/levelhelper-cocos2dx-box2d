@@ -27,7 +27,7 @@
 #include "LHTouchMgr.h"
 #include "LHSprite.h"
 #include "LHBezierNode.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 
 
 LHTouchInfo::LHTouchInfo(void){
