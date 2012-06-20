@@ -25,8 +25,8 @@
 
 #include "LevelHelperLoader.h"
 
-#include "LHSettings.h"
-#include "LHTouchMgr.h"
+#include "Nodes/LHSettings.h"
+#include "Nodes/LHTouchMgr.h"
 
 int intFromString(const std::string& str)
 {

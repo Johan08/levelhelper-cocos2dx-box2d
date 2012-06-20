@@ -37,23 +37,23 @@
 #define __LEVEL_HELPER_LOADER__
 
 #include "cocos2d.h"
-#include "CCNS.h"
-#include "Box2D.h"
+#include "cocoa/CCNS.h"
+#include "Box2D/Box2D.h"
 
-#include "LHDictionary.h"
-#include "LHArray.h"
-#include "LHObject.h"
+#include "Utilities/LHDictionary.h"
+#include "Utilities/LHArray.h"
+#include "Utilities/LHObject.h"
 
-#include "LHCustomSpriteMgr.h"
-#include "LHSprite.h"
-#include "LHContactNode.h"
-#include "LHAnimationNode.h"
-#include "LHParallaxNode.h"
-#include "LHJoint.h"
-#include "LHBatch.h"
-#include "LHPathNode.h"
-#include "LHBezierNode.h"
-#include "LHContactInfo.h"
+#include "Nodes/LHCustomSpriteMgr.h"
+#include "Nodes/LHSprite.h"
+#include "Nodes/LHContactNode.h"
+#include "Nodes/LHAnimationNode.h"
+#include "Nodes/LHParallaxNode.h"
+#include "Nodes/LHJoint.h"
+#include "Nodes/LHBatch.h"
+#include "Nodes/LHPathNode.h"
+#include "Nodes/LHBezierNode.h"
+#include "Nodes/LHContactInfo.h"
 
 using namespace cocos2d;
 
@@ -425,6 +425,7 @@ private:
 };
 
 #endif
+
 
 
 

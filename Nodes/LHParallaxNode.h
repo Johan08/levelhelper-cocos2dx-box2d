@@ -28,10 +28,10 @@
 #ifndef __LH_PARALLAX_NODE__
 #define __LH_PARALLAX_NODE__
 #include "cocos2d.h"
-#include "LHDictionary.h"
-#include "LHObject.h"
-#include "LHArray.h"
-#include "Box2D.h"
+#include "../Utilities/LHDictionary.h"
+#include "../Utilities/LHObject.h"
+#include "../Utilities/LHArray.h"
+#include "Box2d/Box2D.h"
 
 using namespace cocos2d;
 class LHSprite;

@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHContactInfo.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHSettings.h"
 #include "LHBezierNode.h"
 #include "LHSprite.h"

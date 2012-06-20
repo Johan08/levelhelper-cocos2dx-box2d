@@ -3,7 +3,7 @@
 
 #ifndef __LH_CONTACT_LISTERE__
 #define __LH_CONTACT_LISTERE__
-#include "Box2D.h"
+#include "Box2d/Box2D.h"
 #include <vector>
 #include <algorithm>
 

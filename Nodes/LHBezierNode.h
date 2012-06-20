@@ -29,8 +29,8 @@
 #define __LH_BEZIER_NODE__
 
 #include "cocos2d.h"
-#include "Box2D.h"
-#include "LHDictionary.h"
+#include "Box2d/Box2D.h"
+#include "../Utilities/LHDictionary.h"
 #include "LHTouchMgr.h"
 
 using namespace cocos2d;

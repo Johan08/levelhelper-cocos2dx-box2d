@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHBezierNode.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHPathNode.h"
 #include "LHSettings.h"
 #include "LHSprite.h"

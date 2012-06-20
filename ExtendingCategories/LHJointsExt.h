@@ -28,7 +28,7 @@
 #ifndef __LH_JOINTS_EXT__
 #define __LH_JOINTS_EXT__
 
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 
 class LHJointsExt 
 {

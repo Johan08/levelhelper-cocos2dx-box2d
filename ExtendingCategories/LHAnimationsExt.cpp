@@ -25,8 +25,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "LHAnimationsExt.h"
-#include "LHAnimationNode.h"
-#include "LHBatch.h"
+#include "../Nodes/LHAnimationNode.h"
+#include "../Nodes/LHBatch.h"
 
 
 void LHAnimationsExt::startAnimationWithUniqueNameOnSpriteWithName(const std::string& animName, 
