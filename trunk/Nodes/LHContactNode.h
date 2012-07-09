@@ -30,8 +30,8 @@
 
 #include "cocos2d.h"
 #include "Box2d/Box2D.h"
-#include "LHContactListener.h"
-#include "LHContactInfo.h"
+#include "../Nodes/LHContactListener.h"
+#include "../Nodes/LHContactInfo.h"
 
 using namespace cocos2d;
 
