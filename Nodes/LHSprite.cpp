@@ -51,7 +51,7 @@ LHSprite::~LHSprite(void){
     stopAnimation();
     stopPathMovement();
     removeBodyFromWorld();
-    
+        
     if(NULL != parallaxFollowingThisSprite)
         parallaxFollowingThisSprite->setFollowSprite(NULL);
 
@@ -82,6 +82,10 @@ void LHSprite::removeSelf(){
     }
     removeFromParentAndCleanup(true);
 }
+void LHSprite::onExit(){
+    CCLog("LH SPrite %s onExit", uniqueName.c_str()); 
+    removeTouchObserver();
+}
 //------------------------------------------------------------------------------
 LHSprite::LHSprite(){
 
@@ -93,11 +97,15 @@ LHSprite::LHSprite(){
     spriteIsInParallax = NULL;
     parallaxFollowingThisSprite = NULL;
     
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
     
     tagTouchBeginObserver = NULL;
     tagTouchMovedObserver = NULL;
     tagTouchEndedObserver = NULL;
     swallowTouches = false;
+    touchIsDisabled = false;
 
    // ++numberOfSprites;
    // CCLog("LHSprite Constructor %d", numberOfSprites);
@@ -1167,23 +1175,68 @@ bool LHSprite::isTouchedAtPoint(CCPoint point){
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void LHSprite::registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector){
-    touchBeginObserver.object = observer;
-    touchBeginObserver.selector = selector;
+    
+    removeTouchObserver();
+    LevelHelperLoader::setTouchDispatcherForSpriteWithTag(this, getTag());
+    
+    if(NULL == touchBeginObserver)
+        touchBeginObserver = new LHObserverPair();
+    
+    if(touchBeginObserver){
+        touchBeginObserver->object = observer;
+        touchBeginObserver->selector = selector;
+    }
 }
 //------------------------------------------------------------------------------
 void LHSprite::registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector){
-    touchMovedObserver.object = observer;
-    touchMovedObserver.selector = selector;
+   
+    if(NULL == touchBeginObserver)
+        touchMovedObserver = new LHObserverPair();
+    
+    if(touchMovedObserver){
+        touchMovedObserver->object = observer;
+        touchMovedObserver->selector = selector;
+    }
 }
 //------------------------------------------------------------------------------
 void LHSprite::registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector){
-    touchEndedObserver.object = observer;
-    touchEndedObserver.selector = selector;    
+    if(NULL == touchEndedObserver)
+        touchEndedObserver = new LHObserverPair();
+
+    if(touchEndedObserver){
+        touchEndedObserver->object = observer;
+        touchEndedObserver->selector = selector;    
+    }
+}
+
+void LHSprite::removeTouchObserver()
+{
+    if(touchBeginObserver)
+        delete touchBeginObserver;
+
+    if(touchMovedObserver)
+        delete touchMovedObserver;
+
+    if(touchEndedObserver)
+        delete touchEndedObserver;
+    
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
+    
+    LevelHelperLoader::removeTouchDispatcherFromSprite(this);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
 {    
+    if(touchIsDisabled)
+        return false;
+
+    if(NULL == touchBeginObserver && NULL == tagTouchBeginObserver)
+        return false;
+    
+    
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
@@ -1198,20 +1251,30 @@ bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
         info->sprite = this;
         info->delta = CCPointZero;
         
-        if(touchBeginObserver.object){
-            (touchBeginObserver.object->*touchBeginObserver.selector)(info);
-        }        
-        
-        if(tagTouchBeginObserver && tagTouchBeginObserver->object){
-            (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
+        if(touchBeginObserver){
+            if(touchBeginObserver->object){
+                (touchBeginObserver->object->*touchBeginObserver->selector)(info);
+            }        
         }
-        return swallowTouches;
+        
+        if(tagTouchBeginObserver){
+            if(tagTouchBeginObserver && tagTouchBeginObserver->object){
+                (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
+            }
+        }
+        return true;
     }
     return true;
 }
 //------------------------------------------------------------------------------
 void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
         
+    if(touchIsDisabled)
+        return;
+    
+    if(NULL == touchMovedObserver && NULL == tagTouchMovedObserver)
+        return;
+    
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
@@ -1228,17 +1291,26 @@ void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
     info->delta = CCPointMake(touchPoint.x - prevLocation.x,
                               touchPoint.y - prevLocation.y);
     
+    if(touchMovedObserver){
+        if(touchMovedObserver->object){
+            (touchMovedObserver->object->*touchMovedObserver->selector)(info);
+        }  
+    }
     
-    if(touchMovedObserver.object){
-        (touchMovedObserver.object->*touchMovedObserver.selector)(info);
-    }  
-    
-    if(tagTouchMovedObserver && tagTouchMovedObserver->object){
-        (tagTouchMovedObserver->object->*tagTouchMovedObserver->selector)(info);
+    if(tagTouchMovedObserver){
+        if(tagTouchMovedObserver && tagTouchMovedObserver->object){
+            (tagTouchMovedObserver->object->*tagTouchMovedObserver->selector)(info);
+        }
     }
 }
 //------------------------------------------------------------------------------
 void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
+    
+    if(touchIsDisabled)
+        return;
+    
+    if(NULL == touchEndedObserver && NULL == tagTouchEndedObserver)
+        return;
     
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -1256,11 +1328,16 @@ void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     info->delta = CCPointMake(touchPoint.x - prevLocation.x,
                               touchPoint.y - prevLocation.y);
     
-    if(touchEndedObserver.object){
-        (touchEndedObserver.object->*touchEndedObserver.selector)(info);
+    if(touchEndedObserver){
+        if(touchEndedObserver->object){
+            (touchEndedObserver->object->*touchEndedObserver->selector)(info);
+        }
     }
-    if(tagTouchEndedObserver && tagTouchEndedObserver->object){
-        (tagTouchEndedObserver->object->*tagTouchEndedObserver->selector)(info);
+    if(tagTouchEndedObserver)
+    {
+        if(tagTouchEndedObserver && tagTouchEndedObserver->object){
+            (tagTouchEndedObserver->object->*tagTouchEndedObserver->selector)(info);
+        }
     }
 }
 //------------------------------------------------------------------------------

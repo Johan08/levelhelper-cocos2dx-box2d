@@ -95,14 +95,14 @@ protected:
     LHParallaxNode* spriteIsInParallax;
     
         
-    LHObserverPair touchBeginObserver;
-    LHObserverPair touchMovedObserver;
-    LHObserverPair touchEndedObserver;
+    LHObserverPair* touchBeginObserver;
+    LHObserverPair* touchMovedObserver;
+    LHObserverPair* touchEndedObserver;
     
     LHObserverPair* tagTouchBeginObserver;
     LHObserverPair* tagTouchMovedObserver;
     LHObserverPair* tagTouchEndedObserver;
-
+    bool touchIsDisabled;
     bool swallowTouches;
     
     
@@ -111,6 +111,7 @@ protected:
     
     LHAbstractClass* userCustomInfo;
     
+
 public:
     //USEFUL INFO
     //--------------------------------------------------------------------------    
@@ -267,10 +268,19 @@ public:
     void setUsePhysicsForTouches(bool val){usePhysicsForTouches = val;}
     bool getUsePhysicsForTouches(){return usePhysicsForTouches;}
         
+    //you must set swallow touches before you register for a touch event
+    //touch begin observer should always be registered
+    //touch moved and touch ended dont work without touch begin
     void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector);
+    void removeTouchObserver(); //once removed it cannot be added back - (error in Cocos2d) - use -(void)setTouchedDisabled:(bool)val;
     
+    void setTouchedDisabled(bool val){touchIsDisabled = val;}
+    bool getTouchedDisabled(){return touchIsDisabled;}
+    
+    void setSwallowTouches(bool val){swallowTouches = val;}
+    bool getSwallowTouches(){return swallowTouches;}
     
     //Box2d helpful methods
     //--------------------------------------------------------------------------            
@@ -303,6 +313,7 @@ public:
     virtual void touchDelegateRelease() {}//compatibility with old cocos2d-x version
 
     virtual void update(float dt);
+    virtual void onExit();
 private:
     
     friend class LHBatch;

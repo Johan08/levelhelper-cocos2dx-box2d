@@ -1773,39 +1773,88 @@ CCPoint LevelHelperLoader::metersToPixels(b2Vec2 vec){
 //    ccsprite->parentLoader = this;
 //}
 ////------------------------------------------------------------------------------
-//void LevelHelperLoader::setTouchDispatcherForBezierWithTag(LHBezierNode* object, int tag){
-//
-//    object->setTagTouchBeginObserver(LHTouchMgr::sharedInstance()->onTouchBeginObserverForTag(tag));
-//    object->setTagTouchMovedObserver(LHTouchMgr::sharedInstance()->onTouchMovedObserverForTag(tag));
-//    object->setTagTouchEndedObserver(LHTouchMgr::sharedInstance()->onTouchEndedObserverForTag(tag));
-//    
-//    bool swallow = LHTouchMgr::sharedInstance()->shouldTouchesBeSwallowedForTag(tag);
-//    int priority = LHTouchMgr::sharedInstance()->priorityForTag(tag);
-//
-//    object->swallowTouches = swallow;
-//    CCTouchDispatcher::sharedDispatcher()->addTargetedDelegate(object, priority, swallow);       
-//}
+void LevelHelperLoader::setTouchDispatcherForBezierWithTag(LHBezier* object, int tag){
+
+    object->setTagTouchBeginObserver(LHTouchMgr::sharedInstance()->onTouchBeginObserverForTag(tag));
+    object->setTagTouchMovedObserver(LHTouchMgr::sharedInstance()->onTouchMovedObserverForTag(tag));
+    object->setTagTouchEndedObserver(LHTouchMgr::sharedInstance()->onTouchEndedObserverForTag(tag));
+    
+    bool swallowTag = LHTouchMgr::sharedInstance()->shouldTouchesBeSwallowedForTag(tag);
+    int priority = LHTouchMgr::sharedInstance()->priorityForTag(tag);
+
+    bool swallow = object->getSwallowTouches();
+    if(swallowTag ==true && swallow == false)
+        swallow = true;
+    
+    object->swallowTouches = swallow;
+
+    
+    object->swallowTouches = swallow;
+    
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+    if(touchDispatcher){
+        touchDispatcher->addTargetedDelegate(object, priority, swallow);       
+    }
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::setTouchDispatcherForSpriteWithTag(LHSprite* object, int tag)
+{
+    object->setTagTouchBeginObserver(LHTouchMgr::sharedInstance()->onTouchBeginObserverForTag(tag));
+    object->setTagTouchMovedObserver(LHTouchMgr::sharedInstance()->onTouchMovedObserverForTag(tag));
+    object->setTagTouchEndedObserver(LHTouchMgr::sharedInstance()->onTouchEndedObserverForTag(tag));
+    
+    bool swallowTag = LHTouchMgr::sharedInstance()->shouldTouchesBeSwallowedForTag(tag);
+    int priority = LHTouchMgr::sharedInstance()->priorityForTag(tag);
+
+    bool swallow = object->getSwallowTouches();
+    if(swallowTag ==true && swallow == false)
+        swallow = true;
+    
+    object->swallowTouches = swallow;
+    
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+    if(touchDispatcher){
+        touchDispatcher->addTargetedDelegate(object, priority, swallow);        
+    }
+}
 ////------------------------------------------------------------------------------
-//void LevelHelperLoader::setTouchDispatcherForSpriteWithTag(LHSprite* object, int tag)
-//{
-//    object->setTagTouchBeginObserver(LHTouchMgr::sharedInstance()->onTouchBeginObserverForTag(tag));
-//    object->setTagTouchMovedObserver(LHTouchMgr::sharedInstance()->onTouchMovedObserverForTag(tag));
-//    object->setTagTouchEndedObserver(LHTouchMgr::sharedInstance()->onTouchEndedObserverForTag(tag));
-//    
-//    bool swallow = LHTouchMgr::sharedInstance()->shouldTouchesBeSwallowedForTag(tag);
-//    int priority = LHTouchMgr::sharedInstance()->priorityForTag(tag);
-//
-//    object->swallowTouches = swallow;
-//    CCTouchDispatcher::sharedDispatcher()->addTargetedDelegate(object, priority, swallow);        
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::removeTouchDispatcherFromSprite(LHSprite* object){
-//    CCTouchDispatcher::sharedDispatcher()->removeDelegate(object);    
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::removeTouchDispatcherFromBezier(LHBezierNode* object){
-//    CCTouchDispatcher::sharedDispatcher()->removeDelegate(object);
-//}
+void LevelHelperLoader::removeTouchDispatcherFromSprite(LHSprite* object){
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+    if(touchDispatcher){
+        touchDispatcher->removeDelegate(object);    
+    }
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::removeTouchDispatcherFromBezier(LHBezier* object){
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+    if(touchDispatcher){
+        touchDispatcher->removeDelegate(object);
+    }
+}
 ////------------------------------------------------------------------------------
 ////------------------------------------------------------------------------------
 ////------------------------------------------------------------------------------

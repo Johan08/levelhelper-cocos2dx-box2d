@@ -46,6 +46,8 @@ LHBezier::~LHBezier(void){
 //	}
 //	pathNodes.removeAllObjects();
 	
+    removeTouchObserver();
+    
 	if(0 != body)
 	{
 		b2World* _world = body->GetWorld();
@@ -614,8 +616,7 @@ bool LHBezier::isLHBezier(CCNode* obj){
     
     return false;    
 }
-
-
+//------------------------------------------------------------------------------
 bool LHBezier::isTouchedAtPoint(CCPoint point){
     
     if(body != NULL){
@@ -634,25 +635,67 @@ bool LHBezier::isTouchedAtPoint(CCPoint point){
 //------------------------------------------------------------------------------
 void LHBezier::registerTouchBeginObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
-    touchBeginObserver.object = observer;
-    touchBeginObserver.selector = selector;
+    removeTouchObserver();
+    LevelHelperLoader::setTouchDispatcherForBezierWithTag(this, getTag());
+    
+    if(NULL == touchBeginObserver)
+        touchBeginObserver = new LHObserverPair();
+    
+    if(touchBeginObserver){
+        touchBeginObserver->object = observer;
+        touchBeginObserver->selector = selector;
+    }
 }
 //------------------------------------------------------------------------------
 void LHBezier::registerTouchMovedObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
-    touchMovedObserver.object = observer;
-    touchMovedObserver.selector = selector;
+    if(NULL == touchMovedObserver)
+        touchMovedObserver = new LHObserverPair();
+    
+    if(touchMovedObserver){
+        touchMovedObserver->object = observer;
+        touchMovedObserver->selector = selector;
+    }
 }
 //------------------------------------------------------------------------------
 void LHBezier::registerTouchEndedObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
-    touchEndedObserver.object = observer;
-    touchEndedObserver.selector = selector;    
+    if(NULL == touchEndedObserver)
+        touchEndedObserver = new LHObserverPair();
+    
+    if(touchEndedObserver){
+        touchEndedObserver->object = observer;
+        touchEndedObserver->selector = selector;    
+    }
 }
+void LHBezier::removeTouchObserver()
+{
+    if(touchBeginObserver)
+        delete touchBeginObserver;
+    
+    if(touchMovedObserver)
+        delete touchMovedObserver;
+    
+    if(touchEndedObserver)
+        delete touchEndedObserver;
+    
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
+    
+    LevelHelperLoader::removeTouchDispatcherFromBezier(this);
+}
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 bool LHBezier::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
 {    
+    if(touchIsDisabled)
+        return false;
+    
+    if(NULL == touchBeginObserver && NULL == tagTouchBeginObserver)
+        return false;
+    
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
@@ -667,20 +710,31 @@ bool LHBezier::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
         info->bezier = this;
         info->delta = CCPointZero;
         
-        if(touchBeginObserver.object){
-            (touchBeginObserver.object->*touchBeginObserver.selector)(info);
-        }        
-        
-        if(tagTouchBeginObserver && tagTouchBeginObserver->object){
-            (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
+        if(touchBeginObserver){
+            if(touchBeginObserver->object){
+                (touchBeginObserver->object->*touchBeginObserver->selector)(info);
+            }        
         }
-        return swallowTouches;
+        
+        if(tagTouchBeginObserver){
+            if(tagTouchBeginObserver && tagTouchBeginObserver->object){
+                (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
+            }
+        }
+        return true;
     }
     return false;
 }
 //------------------------------------------------------------------------------
 void LHBezier::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
     
+    
+    if(touchIsDisabled)
+        return;
+    
+    if(NULL == touchMovedObserver && NULL == tagTouchMovedObserver)
+        return;
+    
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
@@ -698,17 +752,28 @@ void LHBezier::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
                               touchPoint.y - prevLocation.y);
     
     
-    if(touchMovedObserver.object){
-        (touchMovedObserver.object->*touchMovedObserver.selector)(info);
-    }  
+    if(touchMovedObserver){
+        if(touchMovedObserver->object){
+            (touchMovedObserver->object->*touchMovedObserver->selector)(info);
+        }  
+    }
     
-    if(tagTouchMovedObserver && tagTouchMovedObserver->object){
-        (tagTouchMovedObserver->object->*tagTouchMovedObserver->selector)(info);
+    if(tagTouchMovedObserver){
+        if(tagTouchMovedObserver && tagTouchMovedObserver->object){
+            (tagTouchMovedObserver->object->*tagTouchMovedObserver->selector)(info);
+        }
     }
 }
 //------------------------------------------------------------------------------
 void LHBezier::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     
+    if(touchIsDisabled)
+        return;
+    
+    if(NULL == touchEndedObserver && NULL == tagTouchEndedObserver)
+        return;
+
+    
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
@@ -725,11 +790,15 @@ void LHBezier::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     info->delta = CCPointMake(touchPoint.x - prevLocation.x,
                               touchPoint.y - prevLocation.y);
     
-    if(touchEndedObserver.object){
-        (touchEndedObserver.object->*touchEndedObserver.selector)(info);
+    if(touchEndedObserver){
+        if(touchEndedObserver->object){
+            (touchEndedObserver->object->*touchEndedObserver->selector)(info);
+        }
     }
-    if(tagTouchEndedObserver && tagTouchEndedObserver->object){
-        (tagTouchEndedObserver->object->*tagTouchEndedObserver->selector)(info);
+    if(tagTouchEndedObserver){
+        if(tagTouchEndedObserver && tagTouchEndedObserver->object){
+            (tagTouchEndedObserver->object->*tagTouchEndedObserver->selector)(info);
+        }
     }
 }
 //------------------------------------------------------------------------------

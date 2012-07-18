@@ -377,9 +377,12 @@ public:
 //    ////////////////////////////////////////////////////////////////////////////
     
 private:
+    
     void initObjects(void);
     
     friend class LHJoint;
+    friend class LHSprite;
+    friend class LHBezier;
     
     void createAllNodes();
     void createAllJoints();
@@ -440,16 +443,17 @@ private:
 //                                      const CCPoint& wbConv,
 //                                      const CCPoint& pos_offset);
 //
-//    void setTouchDispatcherForBezierWithTag(LHBezierNode* object, int tag);
-//    void setTouchDispatcherForSpriteWithTag(LHSprite* object, int tag);
-//    void removeTouchDispatcherFromSprite(LHSprite* object);
-//    void removeTouchDispatcherFromBezier(LHBezierNode* object);
+    static void setTouchDispatcherForBezierWithTag(LHBezier* object, int tag);
+    static void setTouchDispatcherForSpriteWithTag(LHSprite* object, int tag);
+    static void removeTouchDispatcherFromSprite(LHSprite* object);
+    static void removeTouchDispatcherFromBezier(LHBezier* object);
 //    
 //    LHSprite* spriteFromDictionary(LHDictionary* spriteProp);
 //    LHSprite* spriteWithBatchFromDictionary(LHDictionary* spriteProp, LHBatch* lhBatch);
 };
 
 #endif
+
 
 
 
