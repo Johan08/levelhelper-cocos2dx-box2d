@@ -240,14 +240,15 @@ void LHSprite::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
 
     std::string className = dictionary->stringForKey("ClassName");
     
-    LHAbstractClass* customClass = LHCustomClassesMgr::customClassInstanceWithName(className);
+    userCustomInfo = LHCustomClassesMgr::customClassInstanceWithName(className);
     
-    if(!customClass) return;
+    if(!userCustomInfo) return;
     
     LHDictionary* dict = dictionary->dictForKey("ClassRepresentation");
     
     if(dict){
-        customClass->setPropertiesFromDictionary(dict);
+        CCLog("SETTING PROPERTIES FROM DICT");
+        ((LHAbstractClass*)userCustomInfo)->setPropertiesFromDictionary(dict);
     }
 }
 //------------------------------------------------------------------------------
