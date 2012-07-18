@@ -42,6 +42,7 @@ class LHBatch;
 class LHBezier;
 class LHDictionary;
 class LHArray;
+class LHAbstractClass;
 
 class LHSprite : public CCSprite, public CCStandardTouchDelegate
 {
@@ -108,7 +109,7 @@ protected:
     bool usesOverloadedTransformations;
     bool usePhysicsForTouches;
     
-    void* userCustomInfo;
+    LHAbstractClass* userCustomInfo;
     
 public:
     //USEFUL INFO

@@ -58,7 +58,10 @@ LHSprite::~LHSprite(void){
     //CCLog("LHSPRITE Destructor %d", --numberOfSprites);
     stopAllActions();
            
-//    cancelPathMovement();
+    if(userCustomInfo){
+        delete userCustomInfo;
+        userCustomInfo = NULL;
+    }
     
     if(NULL != spriteIsInParallax){
         spriteIsInParallax->removeChild(this);
