@@ -37,6 +37,7 @@
 #include "LHDictionary.h"
 #include "LHFixture.h"
 
+#include "LHCustomClasses.h"
 #include "SHDocumentLoader.h"
 //int LHSprite::numberOfSprites = 0;
 static int untitledSpritesCount = 0;
@@ -232,6 +233,29 @@ void LHSprite::loadPathMovementFromDictionary(LHDictionary* dictionary){
     pathDefaults.startPoint         = dictionary->intForKey("PathStartPoint");
 }
 //------------------------------------------------------------------------------
+void LHSprite::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
+    userCustomInfo = NULL;
+    
+    if(!dictionary)return;
+
+//    LHCustomClassesMgr{
+//        
+//    public:
+//        static void* customClassInstanceWithName(const std::string& className){
+
+    std::string className = dictionary->stringForKey("ClassName");
+    
+    LH_Abstract_User_Class* customClass = LHCustomClassesMgr::customClassInstanceWithName(className);
+    
+    if(!customClass) return;
+    
+    LHDictionary* dict = dictionary->dictForKey("ClassRepresentation");
+    
+    if(dict){
+        customClass->setPropertiesFromDictionary(dict);
+    }
+}
+//------------------------------------------------------------------------------
 void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
         
     if(dictionary->objectForKey("UniqueName")){
@@ -359,8 +383,8 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     
     
     loadAnimationsInformationFromDictionary(dictionary->dictForKey("AnimationsProperties"));
-//    
-//    loadUserCustomInfoFromDictionary(dictionary->dictForKey("CustomClassInfo"));
+    
+    loadUserCustomInfoFromDictionary(dictionary->dictForKey("CustomClassInfo"));
     loadPathMovementFromDictionary(dictionary->dictForKey("PathProperties"));
     
     pathNode = NULL;

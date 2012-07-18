@@ -349,3 +349,40 @@ LHArray* LHArray::arrayAtIndex(const int& idx){
     }    
     return NULL;    
 }
+//------------------------------------------------------------------------------
+void LHArray::insertObjectsInVector(std::vector<std::string>* vec){
+    for(int i = 0; i< count(); ++i)
+    {
+        LHObject* obj = objectAtIndex(i);
+        if(obj){
+            if(obj->type() == LHObject::STRING_TYPE){
+                vec->push_back(obj->stringValue());
+            }
+        }    
+    }
+}
+//------------------------------------------------------------------------------
+void LHArray::insertObjectsInVector(std::vector<float>* vec){
+    for(int i = 0; i< count(); ++i)
+    {
+        LHObject* obj = objectAtIndex(i);
+        if(obj){
+            if(obj->type() == LHObject::FLOAT_TYPE){
+                vec->push_back(obj->floatValue());
+            }
+        }    
+    }
+}
+//------------------------------------------------------------------------------
+void LHArray::insertObjectsInVector(std::vector<bool>* vec){
+    for(int i = 0; i< count(); ++i)
+    {
+        LHObject* obj = objectAtIndex(i);
+        if(obj){
+            if(obj->type() == LHObject::BOOL_TYPE){
+                vec->push_back(obj->boolValue());
+            }
+        }    
+    }
+}
+//------------------------------------------------------------------------------
