@@ -80,10 +80,11 @@ protected:
     LevelHelperLoader* parentLoader;
     friend class LevelHelperLoader;    
     
-    LHObserverPair touchBeginObserver;
-    LHObserverPair touchMovedObserver;
-    LHObserverPair touchEndedObserver;
+    LHObserverPair* touchBeginObserver;
+    LHObserverPair* touchMovedObserver;
+    LHObserverPair* touchEndedObserver;
     bool swallowTouches;
+    bool touchIsDisabled;
     LHObserverPair* tagTouchBeginObserver;
     LHObserverPair* tagTouchMovedObserver;
     LHObserverPair* tagTouchEndedObserver;
@@ -123,21 +124,7 @@ public:
     bool initWithDictionary(LHDictionary* properties);
     
     static LHBezier* bezierWithDictionary(LHDictionary* properties);
-    
-//    static LHBezier* nodeWithDictionary(LHDictionary* properties, 
-//                                            CCLayer* ccLayer, 
-//                                            b2World* world);
-    
-//    LHPathNode* addSpriteOnPath(LHSprite* spr, 
-//                                float   pathSpeed, 
-//                                bool    startAtEndPoint,
-//                                bool    isCyclic,
-//                                bool    restartOtherEnd,
-//                                int     axis,
-//                                bool    flipx,
-//                                bool    flipy,
-//                                bool    deltaMove);
-    
+        
     virtual void draw(void);
     
     void setParentLoader(LevelHelperLoader* p){ parentLoader = p;}
@@ -159,11 +146,20 @@ public:
     void registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector);
 
+    void removeTouchObserver(); //once removed it cannot be added back - (error in Cocos2d) - use -(void)setTouchedDisabled:(bool)val;
+    
     virtual bool ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent);
 	virtual void ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent);
 	virtual void ccTouchCancelled(CCTouch *pTouch, CCEvent *pEvent);
 
+    void setTouchedDisabled(bool val){touchIsDisabled = val;}
+    bool getTouchedDisabled(){return touchIsDisabled;}
+    
+    void setSwallowTouches(bool val){swallowTouches = val;}
+    bool getSwallowTouches(){return swallowTouches;}
+
+    
     virtual void touchDelegateRetain() {} //compatibility with old cocos2d-x version
     virtual void touchDelegateRelease() {}//compatibility with old cocos2d-x version
 private:
