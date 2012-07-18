@@ -238,14 +238,9 @@ void LHSprite::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
     
     if(!dictionary)return;
 
-//    LHCustomClassesMgr{
-//        
-//    public:
-//        static void* customClassInstanceWithName(const std::string& className){
-
     std::string className = dictionary->stringForKey("ClassName");
     
-    LH_Abstract_User_Class* customClass = LHCustomClassesMgr::customClassInstanceWithName(className);
+    LHAbstractClass* customClass = LHCustomClassesMgr::customClassInstanceWithName(className);
     
     if(!customClass) return;
     
@@ -720,8 +715,18 @@ void LHSprite::prevFrameAndRepeat(){ if(animation)animation->prevFrameAndRepeat(
 bool LHSprite::isAtLastFrame(){ if(animation)return animation->isAtLastFrame();
     return false;
 }
-
-
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+std::string LHSprite::userInfoClassName(){
+    if(userCustomInfo)
+        return ((LHAbstractClass*)userCustomInfo)->className();
+    return "No Class";
+}
+//------------------------------------------------------------------------------
+void* LHSprite::userInfo(){
+    return userCustomInfo;
+}
+//------------------------------------------------------------------------------
 
 
 
