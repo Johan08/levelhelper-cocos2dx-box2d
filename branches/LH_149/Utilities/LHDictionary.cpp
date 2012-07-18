@@ -10,6 +10,8 @@
 #include "LHObject.h"
 #include "LHArray.h"
 
+#include "cocoa/CCNS.h"
+
 #include <iostream>
 #include "assert.h"
 #include "sstream"
@@ -17,6 +19,8 @@
 #include <string>
 #include <map>
 #include <stdlib.h>
+
+#include "LevelHelperLoader.h"
 
 int LHDictionary::numberOfDicts = 0;
 //------------------------------------------------------------------------------
@@ -238,6 +242,31 @@ void LHDictionary::setObjectForKey(LHObject* obj, const std::string& key){
     //printf("D set object for KEY %s - objType %d \n", key.c_str(), (int)obj->type());
 }
 //------------------------------------------------------------------------------    
+void LHDictionary::setDictForKey(LHDictionary* dic, const std::string& key){
+    
+    LHObject* old_obj = objects[key];
+    
+    if(0 != old_obj){
+        delete old_obj;
+    }
+    
+    if(0 != dic){
+        objects[key] = new LHObject(new LHDictionary(dic));
+    }
+}
+//------------------------------------------------------------------------------    
+void LHDictionary::setArrayForKey(LHArray* array, const std::string& key){
+    LHObject* old_obj = objects[key];
+    
+    if(0 != old_obj){
+        delete old_obj;
+    }
+    
+    if(0 != array){
+        objects[key] = new LHObject(new LHArray(array));
+    }    
+}
+//------------------------------------------------------------------------------    
 LHObject* LHDictionary::objectForKey(const std::string& str){
     return objects[str];
 }
@@ -282,11 +311,146 @@ void LHDictionary::removeObjectForKey(const std::string& key){
 //------------------------------------------------------------------------------
 void LHDictionary::removeAllObjects(void){
     
-    for(LHDictionaryIterator it = objects.begin(); it != objects.end(); ++it)
-    {
+    for(LHDictionaryIterator it = objects.begin(); it != objects.end(); ++it){
         LHObject* obj = it->second;
         delete obj;
     }
     objects.clear();
 }
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+cocos2d::CCRect LHDictionary::rectForKey(const std::string& key){
+    
+    LHObject* obj = objectForKey(key);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("rectForKey %s is not a string\n", key.c_str());
+        }
+        else {
+            return cocos2d::CCRectFromString(obj->stringValue().c_str());
+        }
+    }
+    return CCRectMake(0, 0, 0, 0);
+}
+//------------------------------------------------------------------------------
+float LHDictionary::floatForKey(const std::string& key){
+    
+    LHObject* obj = objectForKey(key);
+    
+    if(obj){
+        if(obj->type() != LHObject::FLOAT_TYPE){
+            printf("floatForKey %s is not a float\n", key.c_str());
+        }
+        else {
+            return obj->floatValue();
+        }
+    }
+    return 0.0f;
+}
+//------------------------------------------------------------------------------
+int LHDictionary::intForKey(const std::string& key){
+    
+    LHObject* obj = objectForKey(key);
+    
+    if(obj){
+        if(obj->type() != LHObject::INT_TYPE){
+            printf("intForKey %s is not a int\n", key.c_str());
+        }
+        else {
+            return obj->intValue();
+        }
+    }    
+    return 0;
+}
+//------------------------------------------------------------------------------
+bool LHDictionary::boolForKey(const std::string& key){
+    LHObject* obj = objectForKey(key);
+    if(obj){
+        if(obj->type() != LHObject::BOOL_TYPE){
+            printf("boolForKey %s is not a bool\n", key.c_str());
+        }
+        else {
+            return obj->boolValue();
+        }
+    }    
+    return false;
+}
+//------------------------------------------------------------------------------
+cocos2d::CCPoint LHDictionary::pointForKey(const std::string& key){
+    LHObject* obj = objectForKey(key);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("pointForKey %s is not a string\n", key.c_str());
+        }
+        else {
+            return cocos2d::CCPointFromString(obj->stringValue().c_str());
+        }
+    }    
+    return CCPointMake(0, 0);    
+}
+//------------------------------------------------------------------------------
+cocos2d::CCSize LHDictionary::sizeForKey(const std::string& key){
+    LHObject* obj = objectForKey(key);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("sizeForKey %s is not a string\n", key.c_str());
+        }
+        else {
+            return cocos2d::CCSizeFromString(obj->stringValue().c_str());
+        }
+    }    
+    return CCSizeMake(0, 0);
+}
+//------------------------------------------------------------------------------
+cocos2d::ccColor3B LHDictionary::colorForKey(const std::string& key){
+    LHObject* obj = objectForKey(key);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("colorForKey %s is not a string\n", key.c_str());
+        }
+        else {
+            cocos2d::CCRect rect = cocos2d::CCRectFromString(obj->stringValue().c_str());
+            return cocos2d::ccc3(rect.origin.x*255.0f, rect.origin.y*255.0f, rect.size.width*255.0f);
+        }
+    }    
+    return cocos2d::ccc3(255.0f, 255.0f, 255.0f);
+}
+//------------------------------------------------------------------------------
+std::string LHDictionary::stringForKey(const std::string& key){
+    LHObject* obj = objectForKey(key);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("stringForKey %s is not a string\n", key.c_str());
+        }
+        else {
+            return obj->stringValue();
+        }
+    }    
+    return std::string();
+}
+//------------------------------------------------------------------------------
+LHDictionary* LHDictionary::dictForKey(const std::string& key){
+    LHObject* obj = objectForKey(key);
+    if(obj){
+        if(obj->type() != LHObject::LH_DICT_TYPE){
+            printf("dictForKey %s is not a dictionary\n", key.c_str());
+        }
+        else {
+            return obj->dictValue();
+        }
+    }    
+    return NULL;    
+}
+//------------------------------------------------------------------------------
+LHArray* LHDictionary::arrayForKey(const std::string& key){
+    LHObject* obj = objectForKey(key);
+    if(obj){
+        if(obj->type() != LHObject::LH_ARRAY_TYPE){
+            printf("arrayForKey %s is not a array\n", key.c_str());
+        }
+        else {
+            return obj->arrayValue();
+        }
+    }    
+    return NULL;
+}

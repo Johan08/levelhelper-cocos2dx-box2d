@@ -28,6 +28,11 @@
 #include <iostream>
 #include <fstream>
 
+#include "LHBatch.h"
+#include "LHDictionary.h"
+#include "LHSprite.h"
+
+
 LHCustomSpriteMgr *LHCustomSpriteMgr::m_sharedInstance = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +67,7 @@ lh_spriteCreationMethods LHCustomSpriteMgr::customSpriteClassForTag(int tag){
     
     if(it == classesDictionary.end())
     {
-        return lh_spriteCreationMethods(&LHSprite::spriteWithFile, &LHSprite::spriteWithBatchNode);
+        return lh_spriteCreationMethods(&LHSprite::spriteWithDictionary, &LHSprite::batchSpriteWithDictionary);
     }
     return it->second;
 }

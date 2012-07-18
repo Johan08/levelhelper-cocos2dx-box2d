@@ -28,11 +28,11 @@
 #define __LH_CONTACT_INFO__
 
 #include "cocos2d.h"
-#include "Box2D.h"
+#include "Box2d/Box2D.h"
 
 
 class LHSprite;
-class LHBezierNode;
+class LHBezier;
 
 enum LH_CONTACT_TYPE
 {
@@ -58,8 +58,8 @@ public:
     LHSprite* spriteA();//may return nil;
     LHSprite* spriteB();//may return nil;
 
-    LHBezierNode* bezierA(void); //may return nil
-    LHBezierNode* bezierB(void); //may return nil
+    LHBezier* bezierA(void); //may return nil
+    LHBezier* bezierB(void); //may return nil
     
     LHContactInfo(void);
     virtual ~LHContactInfo(void);

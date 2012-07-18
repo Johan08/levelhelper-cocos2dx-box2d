@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHParallaxNode.h"
 #include "LHSettings.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHSprite.h"
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -42,25 +42,41 @@ LHParallaxNode::~LHParallaxNode(void){
     
     if(removeSpritesOnDelete)
     {
-        CCMutableArray<LHParallaxPointObject*> tempSprites;
-        tempSprites.addObjectsFromArray(&sprites);
+#if COCOS2D_VERSION >= 0x00020000
+        CCArray* tempSprites = CCArray::create();
+#else
+        CCArray* tempSprites = CCArray::array();
+#endif
+        
+        tempSprites->addObjectsFromArray(sprites);
     
-        for(int i = 0; i< tempSprites.count(); ++i)
+        for(int i = 0; i< tempSprites->count(); ++i)
         {        
-            LHParallaxPointObject* pt = tempSprites.getObjectAtIndex(i);
-            if(NULL != parentLoader)
-                parentLoader->removeSprite((LHSprite*)pt->ccsprite);
+            LHParallaxPointObject* pt = (LHParallaxPointObject*)tempSprites->objectAtIndex(i);
+            if(pt->ccsprite){
+                ((LHSprite*)pt->ccsprite)->removeSelf();
+            }
         }
-        tempSprites.removeAllObjects();
+        tempSprites->removeAllObjects();
     }
     
-    sprites.removeAllObjects();
+    sprites->removeAllObjects();
+    
+    delete sprites;
 }
 ////////////////////////////////////////////////////////////////////////////////
-bool LHParallaxNode::initWithDictionary(LHDictionary* parallaxDict){
+bool LHParallaxNode::initWithDictionary(LHDictionary* parallaxDict, LevelHelperLoader* loader){
 
     if(NULL == parallaxDict)
         return false;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    sprites = CCArray::create();
+#else
+    sprites = CCArray::array();
+#endif
+    sprites->retain();
+    
     
     followedSprite = NULL;
     isContinuous = parallaxDict->objectForKey("ContinuousScrolling")->boolValue();
@@ -74,7 +90,7 @@ bool LHParallaxNode::initWithDictionary(LHDictionary* parallaxDict){
     screenNumberOnTheTop = 0;
     
     removeSpritesOnDelete = false;
-    parentLoader = NULL;
+    parentLoader = loader;
     
     movedEndListenerObj = NULL;
     movedEndListenerSEL = NULL;
@@ -86,10 +102,10 @@ bool LHParallaxNode::initWithDictionary(LHDictionary* parallaxDict){
     return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
-LHParallaxNode* LHParallaxNode::nodeWithDictionary(LHDictionary* properties){
+LHParallaxNode* LHParallaxNode::nodeWithDictionary(LHDictionary* properties, LevelHelperLoader* loader){
     
     LHParallaxNode *pobNode = new LHParallaxNode();
-	if (pobNode && pobNode->initWithDictionary(properties))
+	if (pobNode && pobNode->initWithDictionary(properties, loader))
     {
 	    pobNode->autorelease();
         return pobNode;
@@ -121,7 +137,7 @@ LHParallaxPointObject* LHParallaxNode::createParallaxPointObject(CCNode* node, C
 	obj->position = node->getPosition();
 	obj->offset = node->getPosition();
 	obj->initialPosition = node->getPosition();
-    sprites.addObject(obj);
+    sprites->addObject(obj);
     
 	int scrRight = (int)(obj->initialPosition.x/winSize.width);
 	
@@ -152,16 +168,28 @@ void LHParallaxNode::removeChild(LHSprite* sprite)
     if(NULL == sprite) 
         return;
     
-    for(int i = 0; i< sprites.count(); ++i)
-    {        
-        LHParallaxPointObject* pt = sprites.getObjectAtIndex(i);
+//#if COCOS2D_VERSION >= 0x00020000
+//
+//    for(int i = 0; i< sprites->count(); ++i){        
+//        LHParallaxPointObject* pt = (LHParallaxPointObject*)sprites->objectAtIndex(i);
+//        if(pt->ccsprite == sprite){
+//            sprites->removeObjectAtIndex(i);
+//            return;
+//        }
+//	}
+//
+//#else
+    
+    for(int i = 0; i< sprites->count(); ++i){        
+        LHParallaxPointObject* pt = (LHParallaxPointObject*)sprites->objectAtIndex(i);
 	
-        if(pt->ccsprite == sprite)
-        {
-            sprites.removeObjectAtIndex(i);
+        if(pt->ccsprite == sprite){
+            sprites->removeObjectAtIndex(i);
             return;
         }
 	}
+    
+//#endif
 }
 ////////////////////////////////////////////////////////////////////////////////
 void LHParallaxNode::registerSpriteHasMovedToEndListener(CCObject* object, SEL_CallFuncN method)
@@ -172,15 +200,15 @@ void LHParallaxNode::registerSpriteHasMovedToEndListener(CCObject* object, SEL_C
 ////////////////////////////////////////////////////////////////////////////////
 CCArray* LHParallaxNode::spritesInNode(void)
 {
-
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* sprs = CCArray::create();
+#else
     CCArray* sprs = CCArray::array();
+#endif
     
-    std::vector<LHParallaxPointObject*>::iterator it;
-    
-    for(it = sprites.begin(); it < sprites.end(); ++it)
-    {        
-        LHParallaxPointObject* pt = *it;
-        
+    for(int i = 0; i < sprites->count(); ++i)
+    {
+        LHParallaxPointObject* pt = (LHParallaxPointObject*)sprites->objectAtIndex(i);
         if(NULL != pt->ccsprite)
             sprs->addObject((LHSprite*)pt->ccsprite);
     }
@@ -191,12 +219,8 @@ std::vector<b2Body*> LHParallaxNode::bodiesInNode(void){
     
     std::vector<b2Body*> sprs;
     
-    std::vector<LHParallaxPointObject*>::iterator it;
-    
-    for(it = sprites.begin(); it < sprites.end(); ++it)
-    {        
-        LHParallaxPointObject* pt = *it;
-        
+    for(int i = 0; i < sprites->count(); ++i){
+        LHParallaxPointObject* pt = (LHParallaxPointObject*)sprites->objectAtIndex(i);
         if(NULL != pt->body)
             sprs.push_back(pt->body);
     }
@@ -475,10 +499,14 @@ void LHParallaxNode::visit(void)
 	CCPoint pos = getPosition();
 	if( ! CCPoint::CCPointEqualToPoint(pos, lastPosition) || isContinuous) 
 	{
-        for(int k = 0; k < sprites.count(); ++k)
+        for(int k = 0; k < sprites->count(); ++k)
         {
-            LHParallaxPointObject* point = sprites.getObjectAtIndex(k);
-			
+//#if COCOS2D_VERSION >= 0x00020000
+            LHParallaxPointObject* point = (LHParallaxPointObject*)sprites->objectAtIndex(k);
+//#else
+//            LHParallaxPointObject* point = (LHParallaxPointObject*)sprites->getObjectAtIndex(k);
+//#endif
+            
 			if(NULL != point && point->ccsprite != NULL)
             {
                 

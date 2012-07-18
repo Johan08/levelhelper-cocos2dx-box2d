@@ -24,9 +24,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHContactInfo.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHSettings.h"
-#include "LHBezierNode.h"
+#include "LHBezier.h"
 #include "LHSprite.h"
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -92,23 +92,23 @@ LHSprite* LHContactInfo::spriteB(void){
     return 0;    
 }
 ////////////////////////////////////////////////////////////////////////////////
-LHBezierNode* LHContactInfo::bezierA(void){
+LHBezier* LHContactInfo::bezierA(void){
     
     CCNode* node = (CCNode*)bodyA->GetUserData();
     if(0 != node){
-        if(LHBezierNode::isLHBezierNode(node)){
-            return (LHBezierNode*)node;
+        if(LHBezier::isLHBezier(node)){
+            return (LHBezier*)node;
         }
     }
     return 0;
 }
 //------------------------------------------------------------------------------
-LHBezierNode* LHContactInfo::bezierB(void){
+LHBezier* LHContactInfo::bezierB(void){
     
     CCNode* node = (CCNode*)bodyB->GetUserData();
     if(0 != node){
-        if(LHBezierNode::isLHBezierNode(node)){
-            return (LHBezierNode*)node;
+        if(LHBezier::isLHBezier(node)){
+            return (LHBezier*)node;
         }
     }
     return 0;

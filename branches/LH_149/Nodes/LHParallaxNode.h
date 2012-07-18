@@ -28,10 +28,10 @@
 #ifndef __LH_PARALLAX_NODE__
 #define __LH_PARALLAX_NODE__
 #include "cocos2d.h"
-#include "LHDictionary.h"
-#include "LHObject.h"
-#include "LHArray.h"
-#include "Box2D.h"
+#include "../Utilities/LHDictionary.h"
+#include "../Utilities/LHObject.h"
+#include "../Utilities/LHArray.h"
+#include "Box2d/Box2D.h"
 
 using namespace cocos2d;
 class LHSprite;
@@ -102,7 +102,13 @@ private:
 	int screenNumberOnTheTop;
 	int screenNumberOnTheBottom;
 	
-    CCMutableArray<LHParallaxPointObject*> sprites;
+    //CCArray sprites;
+//#if COCOS2D_VERSION >= 0x00020000
+    CCArray* sprites; //contains LHParallaxPointObject*
+//#else
+//    CCArray
+//    CCMutableArray<LHParallaxPointObject*>* sprites;
+//#endif
     
     LHSprite* followedSprite;
     CCPoint lastFollowedSpritePosition;
@@ -124,8 +130,8 @@ public:
     //pass NULL to this function to unfollow the sprite
     void setFollowSprite(LHSprite* sprite, bool changeXPosition = true, bool changeYPosition = false);
     
-    bool initWithDictionary(LHDictionary* properties);
-    static LHParallaxNode* nodeWithDictionary(LHDictionary* properties);
+    bool initWithDictionary(LHDictionary* properties, LevelHelperLoader* loader);
+    static LHParallaxNode* nodeWithDictionary(LHDictionary* properties, LevelHelperLoader* loader);
 
     bool getIsContinuous(void){return  isContinuous;}
     int getDirection(void){return direction;}

@@ -9,7 +9,7 @@
 #include "LHObject.h"
 #include "LHDictionary.h"
 #include "LHArray.h"
-#include "LHBatch.h"
+#include "../Nodes/LHBatch.h"
 
 #include <iostream>
 #include "assert.h"

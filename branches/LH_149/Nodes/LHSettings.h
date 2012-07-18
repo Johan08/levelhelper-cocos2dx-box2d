@@ -29,8 +29,15 @@
 #define __LH_SETTINGS_SINGLETON
 
 #include "cocos2d.h"
-
+#include "cocoa/CCNS.h"
 using namespace cocos2d;
+
+class LHLayer;
+class LHSprite;
+class LHJoint;
+class LHBezier;
+class b2World;
+
 
 class LHSettings : CCObject
 {
@@ -51,8 +58,74 @@ private:
     
     bool m_preloadBatchNodes;
     
+    CCArray* allLHMainLayers;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary markedSprites;
+    CCDictionary markedJoints;
+    CCDictionary markedBeziers;
+#else
+    CCMutableDictionary<std::string> markedSprites;
+    CCMutableDictionary<std::string> markedJoints;
+    CCMutableDictionary<std::string> markedBeziers;    
+#endif
+    
+ 
+    b2World* activeBox2dWorld;
 public:
     
+    void addLHMainLayer(LHLayer* layer);
+    void removeLHMainLayer(LHLayer* layer);
+    
+    CCArray* getAllLHMainLayers();
+    
+    b2World* getActiveBox2dWorld();
+    void setActiveBox2dWorld(b2World* world);
+    
+    void markSpriteForRemoval(LHSprite* sprite);
+    void markBezierForRemoval(LHBezier* node); 
+    void markJointForRemoval(LHJoint* jt);
+    
+    void removeMarkedSprites();
+    void removeMarkedBeziers();
+    void removeMarkedJoints();
+    
+    
+    CCPoint transformedScalePointToCocos2d(CCPoint point);
+    CCPoint transformedPointToCocos2d(CCPoint point);
+    CCPoint transformedPoint(CCPoint point, const std::string& image);
+    CCRect transformedTextureRect(CCRect rect, const std::string& image);
+    CCSize transformedSize(CCSize size, const std::string& image);
+    
+    const std::string imagePath(const std::string& file);//will return -hd image when appropriate
+    bool isHDImage(const std::string& image);
+
+    
+    int newBodyId();
+    void setImageFolder(const char* img);
+    const std::string& imageFolder(void);
+    
+    
+//    bool shouldScaleImageOnRetina(const std::string& image);
+    bool isIpad(void);
+    
+    void setStretchArt(const bool& value);
+    bool getStretchArt(void);
+    
+    CCPoint possitionOffset(void);
+    void setConvertRatio(CCPoint val);
+    CCPoint convertRatio(void);
+    CCPoint realConvertRatio(void);
+    
+    int getDevice(){return device;}
+    void setDevice(int d){device = d;}
+    
+    void setHDSuffix(const std::string& str){hdSuffix = str;}
+    void setHD2xSuffix(const std::string& str){hd2xSuffix = str;}
+
+    const std::string& getHDSuffix(){return hdSuffix;}
+    const std::string& getHD2xSuffix(){return hd2xSuffix;}
+
 
     bool useRetinaOnIpad(){return m_useRetinaOnIpad;}
     void setUseRetinaOnIpad(const bool& r){ m_useRetinaOnIpad = r;}
@@ -80,25 +153,14 @@ public:
     virtual ~LHSettings(void);
     
 private:
+    
+    int device;//0 iphone only; 1 ipad only; 2 universal; 3 mac - dont do any transformations
+    std::string hdSuffix;
+    std::string hd2xSuffix;
+
+    
     LHSettings();
     static LHSettings *m_sharedInstance;
-
-public:
-
-    int newBodyId();
-    void setImageFolder(const char* img);
-    const std::string& imageFolder(void);
-    
-    const std::string imagePath(const std::string& file);
-    bool shouldScaleImageOnRetina(const std::string& image);
-    bool isIpad(void);
-    
-    void setStretchArt(const bool& value);
-    
-    CCPoint possitionOffset(void);
-    void setConvertRatio(CCPoint val);
-    CCPoint convertRatio(void);
-    CCPoint realConvertRatio(void);
 };
 
 #endif

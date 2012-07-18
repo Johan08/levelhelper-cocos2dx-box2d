@@ -26,17 +26,29 @@
 #include "LHSprite.h"
 
 #include "LHAnimationNode.h"
-#include "LevelHelperLoader.h"
+
+#include "../LevelHelperLoader.h"
 #include "LHPathNode.h"
 #include "LHParallaxNode.h"
 #include "LHSettings.h"
-#include "LHJoint.h"
-//int LHSprite::numberOfSprites = 0;
 
+#include "LHBatch.h"
+#include "LHJoint.h"
+#include "LHDictionary.h"
+#include "LHFixture.h"
+
+#include "SHDocumentLoader.h"
+//int LHSprite::numberOfSprites = 0;
+static int untitledSpritesCount = 0;
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 LHSprite::~LHSprite(void){
 
+    CCLog("LH SPRITE %s dealloc", uniqueName.c_str());
+    
+    unscheduleAllSelectors();
+    stopAnimation();
+    stopPathMovement();
     removeBodyFromWorld();
     
     if(NULL != parallaxFollowingThisSprite)
@@ -45,27 +57,38 @@ LHSprite::~LHSprite(void){
     //CCLog("LHSPRITE Destructor %d", --numberOfSprites);
     stopAllActions();
            
-    cancelPathMovement();
+//    cancelPathMovement();
     
-    if(NULL != parallaxNode){
-        parallaxNode->removeChild(this);
+    if(NULL != spriteIsInParallax){
+        spriteIsInParallax->removeChild(this);
     }
-    parallaxNode = NULL;
+    spriteIsInParallax = NULL;
+    
+    if(fixturesObj)
+        delete fixturesObj;
 }
-////////////////////////////////////////////////////////////////////////////////
-bool LHSprite::init(void){
-    return CCSprite::init();
+//------------------------------------------------------------------------------
+void LHSprite::removeSelf(){
+    
+    if(body){
+        if(body->GetWorld()->IsLocked()){
+            LHSettings::sharedInstance()->markSpriteForRemoval(this);
+            return;
+        }
+    }
+    removeFromParentAndCleanup(true);
 }
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
 LHSprite::LHSprite(){
 
     //CCLog("LHSprite init");
     body = NULL;
     parentLoader = NULL;
-    currentFrame = 0;
+    animation = NULL;
     pathNode = NULL;
-    parallaxNode = NULL;
+    spriteIsInParallax = NULL;
     parallaxFollowingThisSprite = NULL;
+    
     
     tagTouchBeginObserver = NULL;
     tagTouchMovedObserver = NULL;
@@ -75,23 +98,695 @@ LHSprite::LHSprite(){
    // ++numberOfSprites;
    // CCLog("LHSprite Constructor %d", numberOfSprites);
 }
-////////////////////////////////////////////////////////////////////////////////
-void LHSprite::setUniqueName(const char* name){
-    uniqueName = std::string(name);
+//------------------------------------------------------------------------------
+void LHSprite::createFixturesFromInfoOnBody(){
+    
+    if(fixturesInfo && fixturesObj)
+    {
+        fixturesObj->removeAllObjects();
+        
+        if(body->GetWorld()->IsLocked())
+        {
+            CCLog("ERROR: Cannot create fixture for body, because Box2d is Locked. Try changing the location on where you want to change the body. e.g Try doing it at the end of tick function");
+            return;
+        }
+        
+        b2Fixture* curFixture = body->GetFixtureList();
+        
+        while(curFixture)
+        {
+            b2Fixture* tempNextFix = curFixture->GetNext();
+            body->DestroyFixture(curFixture);
+            curFixture = tempNextFix;
+        }
+
+        for(int i = 0; i< fixturesInfo->count(); ++i)
+        {
+            
+            LHDictionary* fixInfo = fixturesInfo->dictAtIndex(i);
+
+            LHFixture* lhFixture = LHFixture::fixtureWithDictionary(fixInfo, body, this);
+            fixturesObj->addObject(lhFixture);
+        }
+    }
 }
 //------------------------------------------------------------------------------
-const std::string& LHSprite::getUniqueName(void){
-    return uniqueName;
-}
-////////////////////////////////////////////////////////////////////////////////
-void  LHSprite::setBody(b2Body* bd){
-    CCAssert(bd!=0, "b2Body must not be nil");
-    body = bd;
+void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
+    
+    body = NULL;
+    
+    if(NULL == dictionary)
+        return;
+    
+    b2World* world = LHSettings::sharedInstance()->getActiveBox2dWorld();
+    
+    if(world == NULL)
+        return;
+    
+    b2BodyDef bodyDef;	
+	
+    int pType = dictionary->intForKey("Type");//LH
+    
+	if(pType == 3) //"NO_PHYSIC"
+        return;
+    
+	bodyDef.type = (b2BodyType)pType;
+	
+	CCPoint pos = getPosition();	
+	bodyDef.position.Set(pos.x/LHSettings::sharedInstance()->lhPtmRatio(),
+                         pos.y/LHSettings::sharedInstance()->lhPtmRatio());
+    
+	bodyDef.angle = CC_DEGREES_TO_RADIANS(-1*getRotation());
+    
+    bodyDef.userData = this;
+    
+    body = world->CreateBody(&bodyDef);    
+	body->SetFixedRotation(dictionary->boolForKey("FixedRot"));
+    
+    body->SetGravityScale(dictionary->floatForKey("GravityScale"));
+	body->SetSleepingAllowed(dictionary->boolForKey("CanSleep"));    
+    body->SetBullet(dictionary->boolForKey("IsBullet"));
+    
+    CCPoint linearVelocity = dictionary->pointForKey("LinearVelocity");
+    body->SetLinearVelocity(b2Vec2(linearVelocity.x, linearVelocity.y));
+    
+    body->SetAngularVelocity(dictionary->floatForKey("AngularVelocity"));
+    body->SetLinearDamping(dictionary->floatForKey("LinearDamping"));
+    body->SetAngularDamping(dictionary->floatForKey("AngularDamping"));
+    
+    
+    LHArray* fixInfo = dictionary->arrayForKey("SH_ComplexShapes");
+    fixturesInfo = new LHArray(fixInfo);
+    
+#if COCOS2D_VERSION >= 0x00020000
+    fixturesObj = CCArray::create();
+#else
+    fixturesObj = CCArray::array();
+#endif
+    fixturesObj->retain();
+    
+    createFixturesFromInfoOnBody();    
 }
 //------------------------------------------------------------------------------
-b2Body*  LHSprite::getBody(void){
-    return body;
+void LHSprite::loadAnimationsInformationFromDictionary(LHDictionary* dictionary){
+    
+    if(dictionary ==NULL) return; //When sprite is loaded from SH dictionary this info is not available;
+    
+    //if sprite has no animation dictionary will be empty in order to make the level size smaller
+    //so we test here to see if we should load anything
+    if(!dictionary->objectForKey("AnimName")) return;
+    
+    prepareAnimationNamed(dictionary->stringForKey("AnimName"), dictionary->stringForKey("SHScene"));
+    
+    if(!animation) return;//something has gone wrong with animation loading
+    
+    if(dictionary->boolForKey("AnimAtStart"))//we should pause the animation
+        animation->play();
+    
+    //dictionary->print();
+    
+    animation->setLoop(dictionary->boolForKey("AnimLoop"));
+    animation->setRepetitions((int)dictionary->intForKey("AnimRepetitions"));
+    animation->setRestoreOriginalFrame(dictionary->boolForKey("AnimRestoreOriginalFrame"));
+    animation->setDelayPerUnit(dictionary->floatForKey("AnimSpeed"));
 }
+//------------------------------------------------------------------------------
+void LHSprite::loadPathMovementFromDictionary(LHDictionary* dictionary){
+    if(!dictionary)return;
+    
+    //at this point we may not have a LHBezier in the level 
+    //so we create the path after the level is fully loaded
+    //but we save the path properties here
+    if(!dictionary->objectForKey("PathName")) return;
+    
+    
+    pathDefaults.flipX              = dictionary->boolForKey("PathFlipX");
+    pathDefaults.flipY              = dictionary->boolForKey("PathFlipY");
+    pathDefaults.isCyclic           = dictionary->boolForKey("PathIsCyclic");
+    pathDefaults.relativeMovement   = dictionary->boolForKey("PathMoveDelta");
+    pathDefaults.name               = std::string(dictionary->stringForKey("PathName"));
+    pathDefaults.orientation        = dictionary->intForKey("PathOrientation");
+    pathDefaults.restartOtherEnd    = dictionary->boolForKey("PathOtherEnd");
+    pathDefaults.speed              = dictionary->floatForKey("PathSpeed");
+    pathDefaults.startAtLaunch      = dictionary->boolForKey("PathStartAtLaunch");
+    pathDefaults.startPoint         = dictionary->intForKey("PathStartPoint");
+}
+//------------------------------------------------------------------------------
+void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
+        
+    if(dictionary->objectForKey("UniqueName")){
+        uniqueName = std::string(dictionary->stringForKey("UniqueName"));
+    }else {
+        uniqueName = "UntitledSprite_" + stringFromInt(untitledSpritesCount);
+        ++untitledSpritesCount;
+    }
+    
+    if(dictionary->objectForKey("SHSceneName"))
+        shSceneName = std::string(dictionary->stringForKey("SHSceneName"));
+        
+    if(dictionary->objectForKey("SHSheetName"))
+        shSheetName = std::string(dictionary->stringForKey("SHSheetName"));
+        
+    if(dictionary->objectForKey("SHSpriteName"))
+        shSpriteName= std::string(dictionary->stringForKey("SHSpriteName"));
+                
+    LHDictionary* texDict = dictionary->dictForKey("TextureProperties");
+                
+    LHDictionary* shTexDict = texDict;
+                
+    if(!dictionary->objectForKey("IsSHSprite"))//we may be loading directly from a sh dictionary
+    {
+        LHDictionary* shDict = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(dictionary->stringForKey("SHSpriteName"),
+                                                                                            dictionary->stringForKey("SHSheetName"),
+                                                                                            dictionary->stringForKey("SHSceneName"));
+                    
+        if(shDict)
+            shTexDict = shDict->dictForKey("TextureProperties");
+    }
+    
+    CCRect rectInPixels = shTexDict->rectForKey("Frame");
+    
+    // [[LHSettings sharedInstance] transformedTextureRect:self.textureRect forImage:[self imageFile]];
+    
+    rectInPixels = CC_RECT_POINTS_TO_PIXELS(getTextureRect());    
+    
+    CCSize contentSize = shTexDict->sizeForKey("SpriteSize");
+    
+    contentSize = LHSettings::sharedInstance()->transformedSize(contentSize,getImageFile());
+    contentSize.width *= CC_CONTENT_SCALE_FACTOR();
+    contentSize.height*= CC_CONTENT_SCALE_FACTOR();
+    
+    CCPoint originalTextureOffset = shTexDict->pointForKey("TextureOffset");
+    CCSize texOffsetSize = LHSettings::sharedInstance()->transformedSize(CCSizeMake(originalTextureOffset.x, 
+                                                                                    originalTextureOffset.y), 
+                                                                         getImageFile());        
+    originalTextureOffset.x = texOffsetSize.width;
+    originalTextureOffset.y = texOffsetSize.height;
+    originalTextureOffset.x *= CC_CONTENT_SCALE_FACTOR();
+    originalTextureOffset.y *= CC_CONTENT_SCALE_FACTOR();
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCSpriteFrame* sprFrame = CCSpriteFrame::create(getTexture(),
+                                                    rectInPixels,
+                                                    shTexDict->boolForKey("IsRotated"),
+                                                    originalTextureOffset,
+                                                    contentSize);
+#else
+    CCSpriteFrame* sprFrame = CCSpriteFrame::frameWithTexture(getTexture(),
+                                                              rectInPixels,
+                                                              shTexDict->boolForKey("IsRotated"),
+                                                              originalTextureOffset,
+                                                              contentSize);    
+#endif
+    
+    setDisplayFrame(sprFrame);
+    
+    bool flipX = texDict->boolForKey("FlipX");
+    bool flipY = texDict->boolForKey("FlipY");
+    
+    setFlipX(flipX);
+    setFlipY(flipY);
+    
+    CCPoint scale = LHSettings::sharedInstance()->transformedScalePointToCocos2d(texDict->pointForKey("Scale"));
+    
+    setScaleX(scale.x);
+    setScaleY(scale.y);
+    
+    //    realScale = CGSizeMake(scale.x, scale.y);
+    realScale = CCSizeMake(scale.x*LHSettings::sharedInstance()->convertRatio().x,
+                           scale.y*LHSettings::sharedInstance()->convertRatio().y);
+    
+    CCPoint position = LHSettings::sharedInstance()->transformedPointToCocos2d(texDict->pointForKey("Position"));
+    
+    setPosition(ccp((int)position.x, (int)position.y));
+    
+    
+    setRotation(texDict->intForKey("Angle"));
+    setColor(texDict->colorForKey("Color"));
+    
+#if COCOS2D_VERSION >= 0x00020000
+    setVisible(texDict->boolForKey("IsDrawable"));
+#else
+    setIsVisible(texDict->boolForKey("IsDrawable"));
+#endif
+    
+    setOpacity(texDict->floatForKey("Opacity")*255.0f);
+    setTag(texDict->intForKey("Tag"));
+    m_nZOrder = texDict->intForKey("ZOrder");
+
+    LHDictionary* phyDict = dictionary->dictForKey("PhysicProperties");
+    if(phyDict->boolForKey("HandledBySH") && !dictionary->objectForKey("IsSHSprite"))
+    {        
+        LHDictionary* sprDict = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(shSpriteName,shSheetName,shSceneName);
+        phyDict = sprDict->dictForKey("PhysicProperties");
+    }
+    
+    //we do this because we need the batch to contain the sprite before loading any animation
+#if COCOS2D_VERSION >= 0x00020000
+    if(getBatchNode()){
+        getBatchNode()->addChild(this, m_nZOrder);
+    }
+#else
+    if(getSpriteBatchNode()){
+        getSpriteBatchNode()->addChild(this, m_nZOrder);
+    }
+#endif
+    
+    originalRect = getTextureRect();
+    
+    fixturesObj = NULL;
+    loadPhysicalInformationFromDictionary(phyDict);    
+    
+    
+    loadAnimationsInformationFromDictionary(dictionary->dictForKey("AnimationsProperties"));
+//    
+//    loadUserCustomInfoFromDictionary(dictionary->dictForKey("CustomClassInfo"));
+    loadPathMovementFromDictionary(dictionary->dictForKey("PathProperties"));
+    
+    pathNode = NULL;
+    spriteIsInParallax = NULL;
+    
+//    touchBeginObserver = NULL;
+//    touchMovedObserver = NULL;
+//    touchEndedObserver = NULL;
+    
+    tagTouchBeginObserver = NULL;
+    tagTouchMovedObserver = NULL;
+    tagTouchEndedObserver = NULL;
+    
+    usesOverloadedTransformations = false;
+    usePhysicsForTouches = true;
+    
+//    LevelHelperLoader::setTouchDispatcherForObject(this, getTag());
+    
+    scheduleUpdate();
+}
+//------------------------------------------------------------------------------
+bool LHSprite::initBatchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch){
+    
+    LHDictionary* texDict = dictionary->dictForKey("TextureProperties");
+    CCRect rect = texDict->rectForKey("Frame");    
+    
+    rect = LHSettings::sharedInstance()->transformedTextureRect(rect, batch->getImagePath());
+    
+    if(initWithTexture(batch->getTexture(), rect))
+    {    
+        setImageFile(batch->getImagePath());        
+        loadInformationFromDictionary(dictionary);
+        return true;
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+bool LHSprite::initWithDictionary(LHDictionary* dictionary){
+    
+    std::string imgPath = LHSettings::sharedInstance()->imagePath(dictionary->stringForKey("SheetImage"));
+    
+    if(imgPath == "")
+        return false;
+    
+    
+    LHDictionary* texDict = dictionary->dictForKey("TextureProperties");
+    CCRect rect = texDict->rectForKey("Frame");
+    
+    rect = LHSettings::sharedInstance()->transformedTextureRect(rect,imgPath);
+    
+    if(initWithFile(imgPath.c_str(), rect))
+    {
+        setImageFile(imgPath);
+        loadInformationFromDictionary(dictionary);
+        
+        return true;
+    }
+
+    return false;
+}
+//------------------------------------------------------------------------------
+LHSprite* LHSprite::batchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch){
+    LHSprite *pobNode = new LHSprite();
+	if (pobNode && pobNode->initBatchSpriteWithDictionary(dictionary, batch))
+    {
+	    pobNode->autorelease();
+        return pobNode;
+    }
+    CC_SAFE_DELETE(pobNode);
+	return NULL;
+}
+//------------------------------------------------------------------------------
+LHSprite* LHSprite::spriteWithDictionary(LHDictionary* dictionary){
+    LHSprite *pobNode = new LHSprite();
+	if (pobNode && pobNode->initWithDictionary(dictionary))
+    {
+	    pobNode->autorelease();
+        return pobNode;
+    }
+    CC_SAFE_DELETE(pobNode);
+	return NULL;
+}
+//------------------------------------------------------------------------------
+LHSprite* LHSprite::spriteWithName(const std::string& spriteName, const std::string& sheetName, const std::string& spriteHelperFile){
+    
+    LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(spriteName,sheetName, spriteHelperFile);
+
+    LHSprite* sprite = LHSprite::spriteWithDictionary(dictionary);
+
+    if(sprite){      
+        sprite->setShSceneName(spriteHelperFile);
+    }
+    return sprite;
+}
+//------------------------------------------------------------------------------
+LHSprite* LHSprite::batchSpriteWithName(const std::string& spriteName, LHBatch* batch){
+    
+    CCAssert(batch!=NULL, "Batch must not be nil");
+    
+    LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(spriteName,batch->getUniqueName(),batch->getSHFile());
+    LHSprite* sprite = LHSprite::batchSpriteWithDictionary(dictionary,batch);
+
+    if(sprite){
+        sprite->setShSceneName(batch->getSHFile());
+    }
+    return sprite;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LHSprite::update(float dt){    
+    
+    if(animation){
+        animation->update(dt);
+    }
+    
+    if(pathNode)
+        pathNode->update(dt);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LHSprite::prepareAnimationNamed(const std::string& animName, const std::string& shScene){
+    
+    LHDictionary* animDict = SHDocumentLoader::sharedInstance()->dictionaryForAnimationNamed(animName,shScene);
+    if(animation){
+        delete animation;
+        animation = NULL;
+    }
+    
+    if(!animDict) {
+        CCLog("ERROR: SpriteHelper document %s for animation %s needs to be updated. Animation is canceled.", shScene.c_str(), animName.c_str());
+        return;
+    }
+    
+    std::string textureFile = animDict->stringForKey("SheetImage");
+    std::string animSheet   = animDict->stringForKey("SheetName");
+    
+    animation = new LHAnimationNode(animDict, this);
+    
+    if(shSheetName != animSheet)
+    {
+        if(textureFile != "")
+        {
+#if COCOS2D_VERSION >= 0x00020000
+            const char* filePath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(textureFile.c_str());
+#else
+            const char* filePath = CCFileUtils::fullPathFromRelativePath(textureFile.c_str());
+#endif
+    
+            
+            if(filePath){
+                CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath);
+                
+                if(newTexture){
+                    //if sprite is render by a batch node we need to remove if from the batch and 
+                    //move it on the layer that contains the batch
+#if COCOS2D_VERSION >= 0x00020000
+                    LHBatch* parentBatch = (LHBatch*)getBatchNode();
+#else
+                    LHBatch* parentBatch = (LHBatch*)getSpriteBatchNode();
+#endif
+                    
+                    if(parentBatch){                       
+                        removeFromParentAndCleanup(false);
+                        
+                        animation->setOldBatch(parentBatch);
+                        //we need to keep the z order so its batch z + sprite z 
+                        if(parentBatch->getParent()){                        
+                            parentBatch->getParent()->addChild(this, parentBatch->getZOrder() + getZOrder());
+                        }
+                        else {
+                            CCLog("ERROR: Sprite is render by batch node, but batch node has no parent.");
+                        }
+                    }   
+                    else {
+                        animation->setOldTexture(getTexture());
+                    }
+                    
+                    setTexture(newTexture);
+                    shSheetName = animSheet;
+                }
+            }
+        }
+        else{
+            if(animation)
+                delete animation;
+
+            CCLog("ERROR: Image file %s could not be found. Please add it in the resource folder.", textureFile.c_str());
+        }
+    }
+    
+    if(animation){
+        animation->setOldRect(originalRect);
+        animation->prepare();
+    }
+}
+//------------------------------------------------------------------------------
+void LHSprite::playAnimation(){ if(animation)animation->play();}
+//------------------------------------------------------------------------------
+void LHSprite::pauseAnimation(){ if(animation)animation->setPaused(true);}
+//------------------------------------------------------------------------------
+void LHSprite::restartAnimation(){ if(animation)animation->restart();}
+//------------------------------------------------------------------------------
+bool LHSprite::isAnimationPaused(){ if(!animation)return false;
+    return animation->getPaused();
+}
+//------------------------------------------------------------------------------
+void LHSprite::stopAnimation(){
+    
+    if(!animation)return;
+    
+    animation->setPaused(true);
+    animation->restoreFrame();
+
+    delete animation;
+    animation = NULL;
+}
+//------------------------------------------------------------------------------
+std::string LHSprite::animationName(){ if(animation) return animation->getUniqueName();
+    return std::string("");
+}
+//------------------------------------------------------------------------------
+int LHSprite::numberOfFrames(){ if(animation)return animation->getNumberOfFrames();    
+    return -1;
+}
+//------------------------------------------------------------------------------
+float LHSprite::animationDelayPerUnit(){
+    if(animation){return animation->getDelayPerUnit();}
+    return 0.0f;
+}
+void LHSprite::setAnimationDelayPerUnit(float d){
+    if(animation){ if(d < 0.0f) d = 0.0f; animation->setDelayPerUnit(d);}
+}
+//------------------------------------------------------------------------------
+std::vector<std::string> LHSprite::getCurrentFrameDataKeys(){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->allKeys();
+        }
+    }
+    return std::vector<std::string>();
+}
+//------------------------------------------------------------------------------
+float LHSprite::getCurrentFrameFloatDataForKey(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->floatForKey(key);
+        }
+    }
+    return -1;    
+}
+//------------------------------------------------------------------------------
+std::string LHSprite::getCurrentFrameStringDataForKey(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->stringForKey(key);
+        }
+    }
+    return std::string();        
+}
+//------------------------------------------------------------------------------
+bool LHSprite::getCurrentFrameBoolDataForKey(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->boolForKey(key);
+        }
+    }
+    return false;     
+}
+//------------------------------------------------------------------------------
+bool LHSprite::isCurrentFrameValueForKeyFloat(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            LHObject* obj = dict->objectForKey(key);
+            if(obj){
+                return obj->type() == LHObject::FLOAT_TYPE;
+            }
+        }
+    }
+    return false;    
+}
+//------------------------------------------------------------------------------
+bool LHSprite::isCurrentFrameValueForKeyString(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            LHObject* obj = dict->objectForKey(key);
+            if(obj){
+                return obj->type() == LHObject::STRING_TYPE;
+            }
+        }
+    }
+    return false;        
+}
+//------------------------------------------------------------------------------
+bool LHSprite::isCurrentFrameValueForKeyBool(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            LHObject* obj = dict->objectForKey(key);
+            if(obj){
+                return obj->type() == LHObject::BOOL_TYPE;
+            }
+        }
+    }
+    return false;    
+}
+//------------------------------------------------------------------------------
+float LHSprite::animationDuration(){
+    if(animation)return animation->totalTime();
+    return 0.0f;
+}
+//------------------------------------------------------------------------------
+void LHSprite::setFrame(int frmNo){ if(animation)animation->setFrame(frmNo);}
+//------------------------------------------------------------------------------
+int LHSprite::currentFrame(){     
+    if(animation) return animation->getCurrentFrame();    
+    return -1;
+}
+//------------------------------------------------------------------------------
+void LHSprite::nextFrame(){ if(animation)animation->nextFrame();}
+//------------------------------------------------------------------------------
+void LHSprite::prevFrame(){ if(animation)animation->prevFrame();}
+//------------------------------------------------------------------------------
+void LHSprite::nextFrameAndRepeat(){ if(animation)animation->nextFrameAndRepeat();}
+//------------------------------------------------------------------------------
+void LHSprite::prevFrameAndRepeat(){ if(animation)animation->prevFrameAndRepeat();}
+//------------------------------------------------------------------------------
+bool LHSprite::isAtLastFrame(){ if(animation)return animation->isAtLastFrame();
+    return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //------------------------------------------------------------------------------
 bool  LHSprite::removeBodyFromWorld(void){
     
@@ -121,329 +816,453 @@ bool  LHSprite::removeBodyFromWorld(void){
     return false;    
 }
 //------------------------------------------------------------------------------
-bool LHSprite::removeAllAttachedJoints(void){
 
-    CCArray* list = jointList();
-    if(list && parentLoader){
-        for(int i = 0; i < (int)list->count(); ++i){
-            LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
-            if(jt){
-                if(jt->getJoint()->GetBodyA()->GetContactList() ||
-                   jt->getJoint()->GetBodyB()->GetContactList())
-                    parentLoader->markJointForRemoval(jt);
-                else
-                    parentLoader->removeJoint(jt);
-            }
-        }
-        list->removeAllObjects();
-        return true;
-    }
-    return false;
-}
-//------------------------------------------------------------------------------
-bool LHSprite::removeJoint(LHJoint* jt){
- 
-    if(jt == NULL)
-        return false;
+CCArray* LHSprite::jointList(){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* array = CCArray::create();
+#else
+    CCArray* array = CCArray::array();
+#endif
     
     if(body != NULL){
         b2JointEdge* jtList = body->GetJointList();
         while (jtList) {
             LHJoint* lhJt = LHJoint::jointFromBox2dJoint(jtList->joint);
-            if(lhJt == jt){
-                if(parentLoader){
-                    if(jt->getJoint()->GetBodyA()->GetContactList() ||
-                       jt->getJoint()->GetBodyB()->GetContactList())
-                        parentLoader->markJointForRemoval(jt);
-                    else
-                        parentLoader->removeJoint(jt);
-                    
-                    return true;
-                }
-            }
+            if(lhJt != NULL)
+                array->addObject(lhJt);
             jtList = jtList->next;
         }
     }
-    CCLog("WARNING: Trying to remove joint %s from the sprite %s but the joint does not belong to that sprite. Removal of joint was not performed.", jt->getUniqueName().c_str(), uniqueName.c_str());
+    return array;
+}
+//------------------------------------------------------------------------------
+LHJoint* LHSprite::jointWithUniqueName(const std::string& name){
+    
+    CCArray* list = jointList();
+    for(int i = 0; i< list->count(); ++i){
+        LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
+        
+        if(jt->getUniqueName() == name){
+            return jt;
+        }
+    }
+    return NULL;
+}
+//------------------------------------------------------------------------------
+bool LHSprite::removeAllAttachedJoints(){
+    CCArray* list = jointList();
+    if(list){
+        for(int i = 0; i< list->count(); ++i){
+            LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
+            jt->removeSelf();
+            return true;
+        }        
+    }
     return false;
 }
-////////////////////////////////////////////////////////////////////////////////
-void LHSprite::setAnimation(LHAnimationNode* anim){
-    animation = anim;
-
-    if(0 != anim){
-        anim->setAnimationTexturePropertiesOnSprite(this);
-        setFrame(0);
-    }
-}
 //------------------------------------------------------------------------------
-LHAnimationNode* LHSprite::getAnimation(void){
-    return animation;
-}
 //------------------------------------------------------------------------------
-std::string LHSprite::getAnimationName(void){
-
-    if(0 != animation)
-        return animation->getUniqueName();
+//------------------------------------------------------------------------------
+void LHSprite::prepareMovementOnPathWithUniqueName(const std::string& pathName){
     
-    return std::string("");
-}
-//------------------------------------------------------------------------------
-int LHSprite::getNumberOfFrames(void){
-
-    if(0 != animation)
-        return animation->getNumberOfFrames();
-    return -1;
-}
-//------------------------------------------------------------------------------
-void LHSprite::setFrame(int frmNo){
-
-    if(animation == 0)
+    if(pathName == "" || pathName == "No Path")
         return;
-    
-    animation->setFrame(frmNo, this);
-    currentFrame = frmNo;
-}
-//------------------------------------------------------------------------------
-void LHSprite::nextFrame(){
-    
-    int curFrame = getCurrentFrame();
-    curFrame +=1;
-    
-    if(curFrame >= 0 && curFrame < getNumberOfFrames()){
-        setFrame(curFrame);
-    }   
-    
-}
-//------------------------------------------------------------------------------
-void LHSprite::prevFrame(){
-    
-    int curFrame = getCurrentFrame();
-    curFrame -=1;
-    
-    if(curFrame >= 0 && curFrame < (int)getNumberOfFrames()){
-         setFrame(curFrame);
-    }    
-}
-//------------------------------------------------------------------------------
-void LHSprite::nextFrameAndRepeat(){
-    
-    int curFrame = getCurrentFrame();
 
-    curFrame +=1;
     
-    if(curFrame >= getNumberOfFrames()){
-        curFrame = 0;
-    }
+    stopPathMovement();
+
+    CCArray* allLayers = LHSettings::sharedInstance()->getAllLHMainLayers();
     
-    if(curFrame >= 0 && curFrame < getNumberOfFrames()){
-        setFrame(curFrame);
-    }    
-}
-//------------------------------------------------------------------------------
-void LHSprite::prevFrameAndRepeat(){
-    
-    int curFrame =  getCurrentFrame();
-    curFrame -=1;
-    
-    if(curFrame < 0){
-        curFrame = getNumberOfFrames() - 1;        
-    }
-    
-    if(curFrame >= 0 && curFrame < (int)getNumberOfFrames()){
-        setFrame(curFrame);
-    }    
-}
-//------------------------------------------------------------------------------
-bool LHSprite::isAtLastFrame(){
-    return (getNumberOfFrames()-1 == getCurrentFrame());
-}
-//------------------------------------------------------------------------------
-int LHSprite::getCurrentFrame(void){
-   
-    if(0 != animation){
-        CCMutableArray<CCSpriteFrame*> *frames = animation->getFrames();
-        if(0 != frames)
-        {
-            for(int i = 0; i < (int)frames->count(); ++i){
-                CCSpriteFrame* frame = (CCSpriteFrame*)frames->getObjectAtIndex(i);
-                
-                if(CCRect::CCRectEqualToRect(frame->getRect(), getTextureRect())){
-                    return i;
-                }
-            }
-        }
-    }
-    return 0;
-}
-//------------------------------------------------------------------------------
-void LHSprite::startAnimationNamed(const std::string& animName,                         
-                                   int startFrame,
-                                   CCObject* customAnimNotifierId,
-                                   SEL_CallFuncND customAnimNotifierSel,
-                                   bool observeLooping){
-    
-    if(parentLoader == NULL)
-        return;
-    
-    
-    LHAnimationNode* animNode = (LHAnimationNode*)parentLoader->animationsInLevel.objectForKey(animName);
-    if(NULL != animNode){
-        
-        LHBatch* batch = parentLoader->batchNodeForFile(animNode->getImageName());
-        
-        if(batch)
-        {
-            animNode->setBatchNode(batch->getSpriteBatchNode());
-            animNode->computeFrames();
-            
-            if(customAnimNotifierId == NULL){
-                animNode->runAnimationOnSprite(this, 
-                                               startFrame,
-                                               parentLoader->animNotifierId,
-                                               parentLoader->animNotifierSel, 
-                                               parentLoader->notifOnLoopForeverAnim); 
-            }
-            else
-            {
-                animNode->runAnimationOnSprite(this, 
-                                               startFrame,
-                                               customAnimNotifierId,
-                                               customAnimNotifierSel, 
-                                               observeLooping);    
-            }
-        }
-    }
-}
-//------------------------------------------------------------------------------
-void LHSprite::setAnimationSequence(CCObject* seqObj)
-{        
-	CCAction* seq = (CCAction*)seqObj;//visual studio compatibility
-    stopActionByTag(LH_ANIM_ACTION_TAG);
-    runAction(seq);
-}
-//------------------------------------------------------------------------------
-//does not start the animation - just changed the texture. 
-//use this when you want to use nextFrame / prevFrame methods
-void LHSprite::prepareAnimationNamed(const std::string& animName){
- 
-    if(parentLoader == NULL)
-        return;
-    
-    LHAnimationNode* animNode = (LHAnimationNode*)parentLoader->animationsInLevel.objectForKey(animName);
-    if(animNode == NULL)
-        return;
-    
-    LHBatch* batch = parentLoader->batchNodeForFile(animNode->getImageName());
-    
-    if(batch)
+    LHBezier* bezier = NULL;
+    for(int i = 0; i< allLayers->count(); ++i)
     {
-        animNode->setBatchNode(batch->getSpriteBatchNode());
-        animNode->computeFrames();
-        setAnimation(animNode);
-    }    
-}
-//------------------------------------------------------------------------------
-void LHSprite::stopAnimation(){
-    stopActionByTag(LH_ANIM_ACTION_TAG);
-    setAnimation(NULL);
-}
-////////////////////////////////////////////////////////////////////////////////
-void LHSprite::setPathNode(LHPathNode* node){
-    CCAssert(node != NULL, "Argument must not be null");
-    pathNode = node;
-}
-void  LHSprite::moveOnPathWithUniqueName(const std::string& pathUniqueName,
-                                         float time,
-                                         bool startAtEndPoint,
-                                         bool isCyclic,
-                                         bool restartOtherEnd,
-                                         int axisOrientation,
-                                         bool flipx,
-                                         bool flipy,
-                                         bool dMove,
-                                         CCObject* obj,
-                                         SEL_CallFuncN sel){
+        LHLayer* layer = (LHLayer*)allLayers->objectAtIndex(i);
     
-    if(NULL == parentLoader)
-        return;
-
-	cancelPathMovement();
-    
-	LHBezierNode* node = parentLoader->bezierNodeWithUniqueName(pathUniqueName);
-	
-	if(NULL != node)
-	{
-		LHPathNode* pNode = node->addSpriteOnPath(this,
-                                                     time,
-                                                     startAtEndPoint,
-                                                     isCyclic,
-                                                     restartOtherEnd,
-                                                     axisOrientation,
-                                                     flipx,
-                                                     flipy,
-                                                     dMove);
+        bezier = layer->bezierWithUniqueName(pathName);
+        if(bezier)
+            break;
+    }
+    if(bezier){
         
-        if(NULL != pNode)
-        {
-            pNode->setPathNotifierObject(obj);
-            pNode->setPathNotifierSelector(sel);
-        }
+        pathNode = new LHPathNode(bezier->getPathPoints(), this);
+        pathNode->setPaused(true);
         
-        pathNode = pNode;
-	}
+        pathDefaults.name= std::string(pathName);
+        pathNode->setFlipX(pathDefaults.flipX);
+        pathNode->setFlipY(pathDefaults.flipY);
+        pathNode->setIsCyclic(pathDefaults.isCyclic);
+        pathNode->setRelativeMovement(pathDefaults.relativeMovement);
+        pathNode->setAxisOrientation(pathDefaults.orientation);
+        pathNode->setRestartOtherEnd(pathDefaults.restartOtherEnd);
+        pathNode->setSpeed(pathDefaults.speed);
+        pathNode->setStartAtEndPoint(pathDefaults.startPoint);
+    }
 }
 //------------------------------------------------------------------------------
-LHPathNode* LHSprite::getPathNode(void){
-    return pathNode;
+const std::string& LHSprite::pathUniqueName(){
+    return pathDefaults.name;
 }
 //------------------------------------------------------------------------------
-void LHSprite::cancelPathMovement(void){
-    if(NULL != pathNode){
-        pathNode->removeFromParentAndCleanup(true);
+void LHSprite::startPathMovement(){
+    if(pathNode)pathNode->setPaused(false);
+}
+//------------------------------------------------------------------------------
+void LHSprite::pausePathMovement(){
+    if(pathNode)pathNode->setPaused(true);
+}
+//------------------------------------------------------------------------------
+void LHSprite::restartPathMovement(){
+    if(pathNode)pathNode->restart();
+}
+//------------------------------------------------------------------------------
+void LHSprite::stopPathMovement(){
+    if(pathNode){
+        delete pathNode;
         pathNode = NULL;
     }
 }
 //------------------------------------------------------------------------------
-void LHSprite::pausePathMovement(const bool& pauseStatus){
-    if(NULL != pathNode){
-        pathNode->setPaused(pauseStatus);
-    }
+void LHSprite::setPathMovementSpeed(float value){
+    if(pathNode)pathNode->setSpeed(value);
 }
 //------------------------------------------------------------------------------
-void LHSprite::setPathSpeed(float value){
-    
-    if(pathNode != NULL){
-        pathNode->setSpeed(value);
-    }
+float LHSprite::pathMovementSpeed(){
+    if(pathNode)return pathNode->getSpeed();
+    return 0.0f;
 }
 //------------------------------------------------------------------------------
-float LHSprite::getPathSpeed(void){
-    if(pathNode != NULL)
-        return pathNode->getSpeed();
-    return 0;
+void LHSprite::setPathMovementStartPoint(enum LH_PATH_MOVEMENT_START_POINT point){
+    if(!pathNode)return;
+    pathNode->setStartAtEndPoint((bool)point);
 }
 //------------------------------------------------------------------------------
-void LHSprite::registerNotifierOnPathEndPoints(CCObject* obj, 
-                                               SEL_CallFuncN sel)
-{    
-    if(NULL == pathNode)
-        return;
-    
-    pathNode->setPathNotifierObject(obj);
-    pathNode->setPathNotifierSelector(sel);   
+enum LH_PATH_MOVEMENT_START_POINT LHSprite::pathMovementStartPoint(){
+    if(!pathNode)return  LH_PATH_INVALID_POINT;
+    return (enum LH_PATH_MOVEMENT_START_POINT)pathNode->getStartAtEndPoint();
 }
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementIsCyclic(bool cyclic){
+    if(pathNode)pathNode->setIsCyclic(cyclic);
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementIsCyclic(){
+    if(!pathNode)return false;
+    return pathNode->getIsCyclic();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementRestartsAtOtherEnd(bool otherEnd){
+    if(pathNode)pathNode->setRestartOtherEnd(otherEnd);
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementRestartsAtOtherEnd(){
+    if(!pathNode)return false;
+    return pathNode->getRestartOtherEnd();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementOrientation(enum LH_PATH_MOVEMENT_ORIENTATION point){
+    if(pathNode)pathNode->setAxisOrientation((int)point);
+}
+//------------------------------------------------------------------------------
+enum LH_PATH_MOVEMENT_ORIENTATION LHSprite::pathMovementOrientation(){
+    if(!pathNode)return LH_INVALID_ORIENTATION;
+    return (enum LH_PATH_MOVEMENT_ORIENTATION)pathNode->getAxisOrientation();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementFlipXAtEnd(bool flip){
+    if(pathNode)pathNode->setFlipX(flip);
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementFlipXAtEnd(){
+    if(!pathNode)return false;
+    return pathNode->getFlipX();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementFlipYAtEnd(bool flip){
+    if(pathNode)pathNode->setFlipY(flip);    
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementFlipYAtEnd(){
+    if(!pathNode)return false;
+    return pathNode->getFlipY();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementRelative(bool rel){
+    if(pathNode)pathNode->setRelativeMovement(rel);
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementRelative(){
+    if(!pathNode)return false;
+    return pathNode->getRelativeMovement();
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
-void LHSprite::setCustomValue(void* value, const char* key){
-    CCAssert(value!=0, "Custom value object must not be nil");    
-    CCAssert(key!=0, "Custom value key must not be nil");    
-    
-    customUserValues[std::string(key)] = value;
-}
-void* LHSprite::getCustomValueWithKey(const char* key){
-    CCAssert(key!=0, "Custom value key must not be nil");    
-    return customUserValues[std::string(key)];
-}
+//void LHSprite::setAnimation(LHAnimationNode* anim){
+//    animation = anim;
+//
+//    if(0 != anim){
+//        anim->setAnimationTexturePropertiesOnSprite(this);
+//        setFrame(0);
+//    }
+//}
+////------------------------------------------------------------------------------
+//LHAnimationNode* LHSprite::getAnimation(void){
+//    return animation;
+//}
+////------------------------------------------------------------------------------
+//std::string LHSprite::getAnimationName(void){
+//
+//    if(0 != animation)
+//        return animation->getUniqueName();
+//    
+//    return std::string("");
+//}
+////------------------------------------------------------------------------------
+//int LHSprite::getNumberOfFrames(void){
+//
+//    if(0 != animation)
+//        return animation->getNumberOfFrames();
+//    return -1;
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::setFrame(int frmNo){
+//
+//    if(animation == 0)
+//        return;
+//    
+//    animation->setFrame(frmNo, this);
+//    currentFrame = frmNo;
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::nextFrame(){
+//    
+//    int curFrame = getCurrentFrame();
+//    curFrame +=1;
+//    
+//    if(curFrame >= 0 && curFrame < getNumberOfFrames()){
+//        setFrame(curFrame);
+//    }   
+//    
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::prevFrame(){
+//    
+//    int curFrame = getCurrentFrame();
+//    curFrame -=1;
+//    
+//    if(curFrame >= 0 && curFrame < (int)getNumberOfFrames()){
+//         setFrame(curFrame);
+//    }    
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::nextFrameAndRepeat(){
+//    
+//    int curFrame = getCurrentFrame();
+//
+//    curFrame +=1;
+//    
+//    if(curFrame >= getNumberOfFrames()){
+//        curFrame = 0;
+//    }
+//    
+//    if(curFrame >= 0 && curFrame < getNumberOfFrames()){
+//        setFrame(curFrame);
+//    }    
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::prevFrameAndRepeat(){
+//    
+//    int curFrame =  getCurrentFrame();
+//    curFrame -=1;
+//    
+//    if(curFrame < 0){
+//        curFrame = getNumberOfFrames() - 1;        
+//    }
+//    
+//    if(curFrame >= 0 && curFrame < (int)getNumberOfFrames()){
+//        setFrame(curFrame);
+//    }    
+//}
+////------------------------------------------------------------------------------
+//bool LHSprite::isAtLastFrame(){
+//    return (getNumberOfFrames()-1 == getCurrentFrame());
+//}
+////------------------------------------------------------------------------------
+//int LHSprite::getCurrentFrame(void){
+//   
+//    if(0 != animation){
+//        CCMutableArray<CCSpriteFrame*> *frames = animation->getFrames();
+//        if(0 != frames)
+//        {
+//            for(int i = 0; i < (int)frames->count(); ++i){
+//                CCSpriteFrame* frame = (CCSpriteFrame*)frames->getObjectAtIndex(i);
+//                
+//                if(CCRect::CCRectEqualToRect(frame->getRect(), getTextureRect())){
+//                    return i;
+//                }
+//            }
+//        }
+//    }
+//    return 0;
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::startAnimationNamed(const std::string& animName,                         
+//                                   int startFrame,
+//                                   CCObject* customAnimNotifierId,
+//                                   SEL_CallFuncND customAnimNotifierSel,
+//                                   bool observeLooping){
+//    
+//    if(parentLoader == NULL)
+//        return;
+//    
+//    
+//    LHAnimationNode* animNode = (LHAnimationNode*)parentLoader->animationsInLevel.objectForKey(animName);
+//    if(NULL != animNode){
+//        
+//        LHBatch* batch = parentLoader->batchNodeForFile(animNode->getImageName());
+//        
+//        if(batch)
+//        {
+//            animNode->setBatchNode(batch->getSpriteBatchNode());
+//            animNode->computeFrames();
+//            
+//            if(customAnimNotifierId == NULL){
+//                animNode->runAnimationOnSprite(this, 
+//                                               startFrame,
+//                                               parentLoader->animNotifierId,
+//                                               parentLoader->animNotifierSel, 
+//                                               parentLoader->notifOnLoopForeverAnim); 
+//            }
+//            else
+//            {
+//                animNode->runAnimationOnSprite(this, 
+//                                               startFrame,
+//                                               customAnimNotifierId,
+//                                               customAnimNotifierSel, 
+//                                               observeLooping);    
+//            }
+//        }
+//    }
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::setAnimationSequence(CCObject* seqObj)
+//{        
+//	CCAction* seq = (CCAction*)seqObj;//visual studio compatibility
+//    stopActionByTag(LH_ANIM_ACTION_TAG);
+//    runAction(seq);
+//}
+////------------------------------------------------------------------------------
+////does not start the animation - just changed the texture. 
+////use this when you want to use nextFrame / prevFrame methods
+//void LHSprite::prepareAnimationNamed(const std::string& animName){
+// 
+//    if(parentLoader == NULL)
+//        return;
+//    
+//    LHAnimationNode* animNode = (LHAnimationNode*)parentLoader->animationsInLevel.objectForKey(animName);
+//    if(animNode == NULL)
+//        return;
+//    
+//    LHBatch* batch = parentLoader->batchNodeForFile(animNode->getImageName());
+//    
+//    if(batch)
+//    {
+//        animNode->setBatchNode(batch->getSpriteBatchNode());
+//        animNode->computeFrames();
+//        setAnimation(animNode);
+//    }    
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::stopAnimation(){
+//    stopActionByTag(LH_ANIM_ACTION_TAG);
+//    setAnimation(NULL);
+//}
+////////////////////////////////////////////////////////////////////////////////
+//void LHSprite::setPathNode(LHPathNode* node){
+//    CCAssert(node != NULL, "Argument must not be null");
+//    pathNode = node;
+//}
+//void  LHSprite::moveOnPathWithUniqueName(const std::string& pathUniqueName,
+//                                         float time,
+//                                         bool startAtEndPoint,
+//                                         bool isCyclic,
+//                                         bool restartOtherEnd,
+//                                         int axisOrientation,
+//                                         bool flipx,
+//                                         bool flipy,
+//                                         bool dMove,
+//                                         CCObject* obj,
+//                                         SEL_CallFuncN sel){
+//    
+//    if(NULL == parentLoader)
+//        return;
+//
+//	cancelPathMovement();
+//    
+//	LHBezier* node = parentLoader->bezierNodeWithUniqueName(pathUniqueName);
+//	
+//	if(NULL != node)
+//	{
+//		LHPathNode* pNode = node->addSpriteOnPath(this,
+//                                                     time,
+//                                                     startAtEndPoint,
+//                                                     isCyclic,
+//                                                     restartOtherEnd,
+//                                                     axisOrientation,
+//                                                     flipx,
+//                                                     flipy,
+//                                                     dMove);
+//        
+//        if(NULL != pNode)
+//        {
+//            pNode->setPathNotifierObject(obj);
+//            pNode->setPathNotifierSelector(sel);
+//        }
+//        
+//        pathNode = pNode;
+//	}
+//}
+////------------------------------------------------------------------------------
+//LHPathNode* LHSprite::getPathNode(void){
+//    return pathNode;
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::cancelPathMovement(void){
+//    if(NULL != pathNode){
+//        pathNode->removeFromParentAndCleanup(true);
+//        pathNode = NULL;
+//    }
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::pausePathMovement(const bool& pauseStatus){
+//    if(NULL != pathNode){
+//        pathNode->setPaused(pauseStatus);
+//    }
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::setPathSpeed(float value){
+//    
+//    if(pathNode != NULL){
+//        pathNode->setSpeed(value);
+//    }
+//}
+////------------------------------------------------------------------------------
+//float LHSprite::getPathSpeed(void){
+//    if(pathNode != NULL)
+//        return pathNode->getSpeed();
+//    return 0;
+//}
+////------------------------------------------------------------------------------
+//void LHSprite::registerNotifierOnPathEndPoints(CCObject* obj, 
+//                                               SEL_CallFuncN sel)
+//{    
+//    if(NULL == pathNode)
+//        return;
+//    
+//    pathNode->setPathNotifierObject(obj);
+//    pathNode->setPathNotifierSelector(sel);   
+//}
 ////////////////////////////////////////////////////////////////////////////////
 void LHSprite::transformPosition(CCPoint pos){
     setPosition(pos);
@@ -465,138 +1284,138 @@ void LHSprite::transformRotation(float rot){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-CCArray* LHSprite::jointList(void){
-    CCArray* array = CCArray::array();
-    if(body != NULL){
-        b2JointEdge* jtList = body->GetJointList();
-        while (jtList) {
-            LHJoint* lhJt = LHJoint::jointFromBox2dJoint(jtList->joint);
-            if(lhJt != NULL)
-                array->addObject(lhJt);
-            jtList = jtList->next;
-        }
-    }
-    return array;
-}
-LHJoint* LHSprite::jointWithUniqueName(const std::string& name){
-    
-    if(body != NULL){
-        b2JointEdge* jtList = body->GetJointList();
-        while (jtList) {
-            LHJoint* lhJt = LHJoint::jointFromBox2dJoint(jtList->joint);
-            if(lhJt != NULL)
-                if(lhJt->getUniqueName() == name)
-                    return lhJt;
-            jtList = jtList->next;
-        }
-    }
-    return NULL;
-}
+//CCArray* LHSprite::jointList(void){
+//    CCArray* array = CCArray::array();
+//    if(body != NULL){
+//        b2JointEdge* jtList = body->GetJointList();
+//        while (jtList) {
+//            LHJoint* lhJt = LHJoint::jointFromBox2dJoint(jtList->joint);
+//            if(lhJt != NULL)
+//                array->addObject(lhJt);
+//            jtList = jtList->next;
+//        }
+//    }
+//    return array;
+//}
+//LHJoint* LHSprite::jointWithUniqueName(const std::string& name){
+//    
+//    if(body != NULL){
+//        b2JointEdge* jtList = body->GetJointList();
+//        while (jtList) {
+//            LHJoint* lhJt = LHJoint::jointFromBox2dJoint(jtList->joint);
+//            if(lhJt != NULL)
+//                if(lhJt->getUniqueName() == name)
+//                    return lhJt;
+//            jtList = jtList->next;
+//        }
+//    }
+//    return NULL;
+//}
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-LHSprite* LHSprite::sprite(void){
-    LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->init())
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture)
-{
-	LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->initWithTexture(pTexture))
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture, const CCRect& rect)
-{
-    LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->initWithTexture(pTexture, rect))
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture, const CCRect& rect, const CCPoint& offset)
-{
-    CC_UNUSED_PARAM(pTexture);
-    CC_UNUSED_PARAM(rect);
-    CC_UNUSED_PARAM(offset);
-	// not implement
-	CCAssert(0, "");
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithFile(const char *pszFileName)
-{
-    LHSprite *pobSprite = new LHSprite();
-    if (pobSprite && pobSprite->initWithFile(pszFileName))
-    {
-        pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithFile(const char *pszFileName, const CCRect& rect)
-{
-    LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->initWithFile(pszFileName, rect))
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithSpriteFrame(CCSpriteFrame *pSpriteFrame)
-{
-    LHSprite *pobSprite = new LHSprite();
-    if (pobSprite && pobSprite->initWithSpriteFrame(pSpriteFrame))
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithSpriteFrameName(const char *pszSpriteFrameName)
-{
-	CCSpriteFrame *pFrame = CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(pszSpriteFrameName);
-    
-    char msg[256] = {0};
-    sprintf(msg, "Invalid spriteFrameName: %s", pszSpriteFrameName);
-    CCAssert(pFrame != NULL, msg);
-	return spriteWithSpriteFrame(pFrame);
-}
-
-LHSprite* LHSprite::spriteWithBatchNode(CCSpriteBatchNode *batchNode, const CCRect& rect)
-{
-	LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->initWithBatchNode(batchNode, rect))
-	{
-        pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
+//LHSprite* LHSprite::sprite(void){
+//    LHSprite *pobSprite = new LHSprite();
+//	if (pobSprite && pobSprite->init())
+//    {
+//	    pobSprite->autorelease();
+//        return pobSprite;
+//    }
+//    CC_SAFE_DELETE(pobSprite);
+//	return NULL;
+//}
+//LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture)
+//{
+//	LHSprite *pobSprite = new LHSprite();
+//	if (pobSprite && pobSprite->initWithTexture(pTexture))
+//    {
+//	    pobSprite->autorelease();
+//        return pobSprite;
+//    }
+//    CC_SAFE_DELETE(pobSprite);
+//	return NULL;
+//}
+//
+//LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture, const CCRect& rect)
+//{
+//    LHSprite *pobSprite = new LHSprite();
+//	if (pobSprite && pobSprite->initWithTexture(pTexture, rect))
+//    {
+//	    pobSprite->autorelease();
+//        return pobSprite;
+//    }
+//    CC_SAFE_DELETE(pobSprite);
+//	return NULL;
+//}
+//
+//LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture, const CCRect& rect, const CCPoint& offset)
+//{
+//    CC_UNUSED_PARAM(pTexture);
+//    CC_UNUSED_PARAM(rect);
+//    CC_UNUSED_PARAM(offset);
+//	// not implement
+//	CCAssert(0, "");
+//	return NULL;
+//}
+//
+//LHSprite* LHSprite::spriteWithFile(const char *pszFileName)
+//{
+//    LHSprite *pobSprite = new LHSprite();
+//    if (pobSprite && pobSprite->initWithFile(pszFileName))
+//    {
+//        pobSprite->autorelease();
+//        return pobSprite;
+//    }
+//    CC_SAFE_DELETE(pobSprite);
+//	return NULL;
+//}
+//
+//LHSprite* LHSprite::spriteWithFile(const char *pszFileName, const CCRect& rect)
+//{
+//    LHSprite *pobSprite = new LHSprite();
+//	if (pobSprite && pobSprite->initWithFile(pszFileName, rect))
+//    {
+//	    pobSprite->autorelease();
+//        return pobSprite;
+//    }
+//    CC_SAFE_DELETE(pobSprite);
+//	return NULL;
+//}
+//
+//LHSprite* LHSprite::spriteWithSpriteFrame(CCSpriteFrame *pSpriteFrame)
+//{
+//    LHSprite *pobSprite = new LHSprite();
+//    if (pobSprite && pobSprite->initWithSpriteFrame(pSpriteFrame))
+//    {
+//	    pobSprite->autorelease();
+//        return pobSprite;
+//    }
+//    CC_SAFE_DELETE(pobSprite);
+//	return NULL;
+//}
+//
+//LHSprite* LHSprite::spriteWithSpriteFrameName(const char *pszSpriteFrameName)
+//{
+//	CCSpriteFrame *pFrame = CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(pszSpriteFrameName);
+//    
+//    char msg[256] = {0};
+//    sprintf(msg, "Invalid spriteFrameName: %s", pszSpriteFrameName);
+//    CCAssert(pFrame != NULL, msg);
+//	return spriteWithSpriteFrame(pFrame);
+//}
+//
+//LHSprite* LHSprite::spriteWithBatchNode(CCSpriteBatchNode *batchNode, const CCRect& rect)
+//{
+//	LHSprite *pobSprite = new LHSprite();
+//	if (pobSprite && pobSprite->initWithBatchNode(batchNode, rect))
+//	{
+//        pobSprite->autorelease();
+//        return pobSprite;
+//    }
+//    CC_SAFE_DELETE(pobSprite);
+//	return NULL;
+//}
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 bool LHSprite::isTouchedAtPoint(CCPoint point){
@@ -764,8 +1583,8 @@ std::string LHSprite::uniqueNameForBody(b2Body* body){
     if(LHSprite::isLHSprite(spr))
         return ((LHSprite*)spr)->getUniqueName();
     
-    if(LHBezierNode::isLHBezierNode(spr))
-        return ((LHBezierNode*)spr)->getUniqueName();
+    if(LHBezier::isLHBezier(spr))
+        return ((LHBezier*)spr)->getUniqueName();
     
     return NULL;
 }

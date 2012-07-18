@@ -17,9 +17,11 @@
 #include <vector>
 #include <map>
 
+#include "cocos2d.h"
 using namespace std;
 
 class LHObject;
+class LHDictionary;
 
 class LHArray
 {
@@ -31,10 +33,23 @@ public:
     virtual ~LHArray();
 //------------------------------------------------------------------------------
     LHObject* objectAtIndex(const int& idx);
+    
     void addObject(LHObject* obj);
     int count(void);
     
     void print(void);
+    
+    cocos2d::CCRect     rectAtIndex(const int& idx);
+    float               floatAtIndex(const int& idx);
+    int                 intAtIndex(const int& idx);
+    bool                boolAtIndex(const int& idx);
+    cocos2d::CCPoint    pointAtIndex(const int& idx);
+    cocos2d::CCSize     sizeAtIndex(const int& idx);
+    cocos2d::ccColor3B  colorAtIndex(const int& idx);
+    std::string         stringAtIndex(const int& idx);
+    
+    LHDictionary*       dictAtIndex(const int& idx);
+    LHArray*            arrayAtIndex(const int& idx);
 private:
 //------------------------------------------------------------------------------    
     std::vector<LHObject*> objects;

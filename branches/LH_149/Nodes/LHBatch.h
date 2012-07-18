@@ -24,42 +24,58 @@
 //  that was used to generate this file.
 //
 ////////////////////////////////////////////////////////////////////////////////
-#ifndef __LH_BATCH_NODE__
-#define __LH_BATCH_NODE__
+
+#ifndef __LHBATCH_NODE__
+#define __LHBATCH_NODE__
 
 #include "cocos2d.h"
+#include "Box2D.h"
 
 using namespace cocos2d;
 
-class LHBatch : public CCObject
+class LHLayer;
+class LHSprite;
+class LevelHelperLoader;
+class LHDictionary;
+
+class LHBatch : public CCSpriteBatchNode
 {
+public:
+    void removeSelf();
+
+    virtual bool initWithDictionary(LHDictionary* dictionary,  LHLayer* layer);
+    
+    virtual ~LHBatch(void);
+    LHBatch();
+    
+    
+    static LHBatch* batchWithDictionary(LHDictionary* dictionary,  LHLayer* layer);
+    static LHBatch* batchWithSheetName(const std::string& sheetName, const std::string& spriteHelperFile);
+
+    
+    static bool isLHBatch(CCNode* node);
+    
+    //if sprite is child of this batch node you can retrieve it
+    LHSprite* spriteWithUniqueName(const std::string& name);
+    
+    CCArray* allSprites();
+    CCArray* spritesWithTag(int tag);
+    
+    std::string getUniqueName();
+    std::string getImagePath();
+
+    std::string getSHFile();
+    void        setSHFile(const std::string& file);
 private:
     std::string uniqueName;
-    int z;
-    CCSpriteBatchNode* batchNode; //week ptr
+    std::string imagePath;
+    std::string shFile;
+    LevelHelperLoader* parentLoader;
     
-    //static int numberOfBatch;
-
-public:
+    friend class LHLayer;
     
-    int getZ(void){return z;}
-    void setZ(const int& newZ){ z = newZ;}
-    
-    void setUniqueName(const std::string& name){uniqueName = name;}
-    std::string& getUniqueName(void){return uniqueName;}
-
-    void setSpriteBatchNode(CCSpriteBatchNode* node){batchNode = node;}
-    CCSpriteBatchNode* getSpriteBatchNode(void){return batchNode;}
-
-    //CONSTRUCTORS
-    virtual bool init(void);
-    virtual ~LHBatch(void);
-	LHBatch(void);    
-    
-    bool initWithUniqueName(const std::string& name);
-    static LHBatch* batchWithUniqueName(const std::string& name);
-
-
+    void setParentLoader(LevelHelperLoader* p);
+    void addChildFromDictionary(LHDictionary* childDict);
 };
-////////////////////////////////////////////////////////////////////////////////
+
 #endif

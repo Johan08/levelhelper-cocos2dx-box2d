@@ -22,8 +22,8 @@
 //  that was used to generate this file.
 //
 ////////////////////////////////////////////////////////////////////////////////
-#include "LHBezierNode.h"
-#include "LevelHelperLoader.h"
+#include "LHBezier.h"
+#include "../LevelHelperLoader.h"
 #include "LHPathNode.h"
 #include "LHSettings.h"
 #include "LHSprite.h"
@@ -31,13 +31,13 @@
 //int LHBezierNode::numberOfBezierNodes = 0;
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-void LHBezierNode::init(void){
+void LHBezier::init(void){
     
 }
 ////////////////////////////////////////////////////////////////////////////////
-LHBezierNode::~LHBezierNode(void){
+LHBezier::~LHBezier(void){
     
-   // CCLog("LHBezierNode destructor %d", --numberOfBezierNodes);
+    CCLog("LHBezierNode destructor %s", uniqueName.c_str());
     
 //    for(int i = 0; i < pathNodes.count(); ++i)
 //    {
@@ -60,38 +60,50 @@ LHBezierNode::~LHBezierNode(void){
 	linesHolder.clear();
     trianglesHolder.clear();
 }
+
+void LHBezier::removeSelf()
+{
+    if(body){
+        if(body->GetWorld()->IsLocked()){            
+            LHSettings::sharedInstance()->markBezierForRemoval(this);
+            return;
+        }
+    }
+    removeFromParentAndCleanup(true);
+}
 ////////////////////////////////////////////////////////////////////////////////
-LHBezierNode::LHBezierNode(void){
+LHBezier::LHBezier(void){
  
     texture = NULL;
     body = NULL;
 //    numberOfBezierNodes++;
 }
 ////////////////////////////////////////////////////////////////////////////////
-bool LHBezierNode::initWithDictionary(LHDictionary* bezierDict,
-                                      CCLayer* ccLayer, 
-                                      b2World* world){
+bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     
     tagTouchBeginObserver = NULL;
     tagTouchMovedObserver = NULL;
     tagTouchEndedObserver = NULL;
     swallowTouches = false;
 
+    LHDictionary* textureDict = bezierDict->dictForKey("TextureProperties");
     
-    isClosed	= bezierDict->objectForKey("IsClosed")->boolValue();
-    isTile		= bezierDict->objectForKey("IsTile")->boolValue();
-    isVisible	= bezierDict->objectForKey("IsDrawable")->boolValue();
-    isLine		= bezierDict->objectForKey("IsSimpleLine")->boolValue();
-    isPath		= bezierDict->objectForKey("IsPath")->boolValue();
+    isClosed	= textureDict->boolForKey("IsClosed");
+    isTile		= textureDict->boolForKey("IsTile");
+    isVisible	= textureDict->boolForKey("IsDrawable");
+    isLine		= textureDict->boolForKey("IsSimpleLine");
+    isPath		= textureDict->boolForKey("IsPath");
     
-    uniqueName  = bezierDict->objectForKey("UniqueName")->stringValue();
+    uniqueName  = std::string(textureDict->stringForKey("UniqueName"));
     
-    setTag(bezierDict->objectForKey("Tag")->intValue());
-    setVertexZ(bezierDict->objectForKey("ZOrder")->intValue());
+    setTag(textureDict->intForKey("Tag"));
+    setVertexZ(textureDict->intForKey("ZOrder"));
     
-    std::string img = bezierDict->objectForKey("Image")->stringValue();
+    std::string img = textureDict->stringForKey("ImageFile");
     imageSize = CCSizeZero;
-    if(img != "")
+    texture = NULL;
+    
+    if(img != "" && img != "No Image")
     {
         std::string path = LHSettings::sharedInstance()->imagePath(img.c_str());
         texture = CCTextureCache::sharedTextureCache()->addImage(path.c_str());
@@ -104,23 +116,26 @@ bool LHBezierNode::initWithDictionary(LHDictionary* bezierDict,
     float scale = CCDirector::sharedDirector()->getContentScaleFactor();
 
     
-    color = CCRectFromString(bezierDict->objectForKey("Color")->stringValue().c_str());
-    lineColor = CCRectFromString(bezierDict->objectForKey("LineColor")->stringValue().c_str());
-    lineWidth = bezierDict->objectForKey("LineWidth")->floatValue()*scale;
+    color       = textureDict->rectForKey("Color");
+    lineColor   = textureDict->rectForKey("LineColor");
+    lineWidth   = textureDict->floatForKey("LineWidth")*scale;
     
-    initTileVerticesFromDictionary(bezierDict);
-    initPathPointsFromDictionary(bezierDict);	
-    createBodyFromDictionary(bezierDict,world);
+    LHDictionary* physicsDict = bezierDict->dictForKey("PhysicsProperties");
+    
+    initTileVerticesFromDictionary(textureDict, physicsDict->arrayForKey("TileVertices"));
+    initPathPointsFromDictionary(textureDict);	
+    
+    b2World* world = LHSettings::sharedInstance()->getActiveBox2dWorld();
+    if(NULL != world)
+        createBodyFromDictionary(physicsDict,world);
     
     return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
-LHBezierNode* LHBezierNode::nodeWithDictionary(LHDictionary* properties,
-                                               CCLayer* ccLayer, 
-                                               b2World* world){
-    
-    LHBezierNode *pobBNode = new LHBezierNode();
-	if (pobBNode && pobBNode->initWithDictionary(properties, ccLayer, world))
+LHBezier* LHBezier::bezierWithDictionary(LHDictionary* properties)
+{
+    LHBezier *pobBNode = new LHBezier();
+	if (pobBNode && pobBNode->initWithDictionary(properties))
     {
 	    pobBNode->autorelease();
         return pobBNode;
@@ -129,48 +144,48 @@ LHBezierNode* LHBezierNode::nodeWithDictionary(LHDictionary* properties,
 	return NULL;
 }
 ////////////////////////////////////////////////////////////////////////////////
-LHPathNode* LHBezierNode::addSpriteOnPath(LHSprite* spr, 
-                                          float   pathSpeed, 
-                                          bool    startAtEndPoint,
-                                          bool    isCyclic,
-                                          bool    restartOtherEnd,
-                                          int     axis,
-                                          bool    flipx,
-                                          bool    flipy,
-                                          bool    deltaMove){
-    
-    
-    
-	LHPathNode* node = LHPathNode::nodePathWithPoints(pathPoints);	
-    node->setStartAtEndPoint(startAtEndPoint);
-	node->setSprite(spr);
-	node->setBody(spr->getBody());
-    
-    if(!deltaMove){
-        if((int)pathPoints.size() > 0)
-        {
-            CCPoint pathPos = pathPoints[0];
-            spr->transformPosition(pathPos);
-        }
-    }
-    
-	node->setSpeed(pathSpeed);
-    node->setRestartOtherEnd(restartOtherEnd);
-	node->setIsCyclic(isCyclic);
-	node->setAxisOrientation(axis);
-	node->setIsLine(isLine);
-    node->setFlipX(flipx);
-    node->setFlipY(flipy);
-    node->setUniqueName(uniqueName.c_str());
-    //pathNodes.addObject(node);
-	    
-    this->getParent()->addChild(node);
-    
-    return  node;
-
-}
+//LHPathNode* LHBezier::addSpriteOnPath(LHSprite* spr, 
+//                                          float   pathSpeed, 
+//                                          bool    startAtEndPoint,
+//                                          bool    isCyclic,
+//                                          bool    restartOtherEnd,
+//                                          int     axis,
+//                                          bool    flipx,
+//                                          bool    flipy,
+//                                          bool    deltaMove){
+//    
+//    
+//    
+//	LHPathNode* node = LHPathNode::nodePathWithPoints(pathPoints);	
+//    node->setStartAtEndPoint(startAtEndPoint);
+//	node->setSprite(spr);
+//	node->setBody(spr->getBody());
+//    
+//    if(!deltaMove){
+//        if((int)pathPoints.size() > 0)
+//        {
+//            CCPoint pathPos = pathPoints[0];
+//            spr->transformPosition(pathPos);
+//        }
+//    }
+//    
+//	node->setSpeed(pathSpeed);
+//    node->setRestartOtherEnd(restartOtherEnd);
+//	node->setIsCyclic(isCyclic);
+//	node->setAxisOrientation(axis);
+//	node->setIsLine(isLine);
+//    node->setFlipX(flipx);
+//    node->setFlipY(flipy);
+//    node->setUniqueName(uniqueName.c_str());
+//    //pathNodes.addObject(node);
+//	    
+//    this->getParent()->addChild(node);
+//    
+//    return  node;
+//
+//}
 ////////////////////////////////////////////////////////////////////////////////
-CCPoint LHBezierNode::pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, float t){    
+CCPoint LHBezier::pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, float t){    
 	float var1, var2, var3;
     CCPoint vPoint(0.0f, 0.0f);
     
@@ -182,12 +197,14 @@ CCPoint LHBezierNode::pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p
     return(vPoint);				
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHBezierNode::initTileVerticesFromDictionary(LHDictionary* bezierDict)
+void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary, LHArray* fixtures)
+
+//void LHBezier::initTileVerticesFromDictionary(LHDictionary* bezierDict)
 {
     float scale = CCDirector::sharedDirector()->getContentScaleFactor();
     
 	CCPoint convert = LHSettings::sharedInstance()->convertRatio();
-	LHArray* fixtures = bezierDict->arrayForKey("TileVertices");
+//	LHArray* fixtures = bezierDict->arrayForKey("TileVertices");
     
     if(NULL != fixtures)
     {
@@ -199,7 +216,7 @@ void LHBezierNode::initTileVerticesFromDictionary(LHDictionary* bezierDict)
         
             for(int j = 0; j < fix->count(); ++j)
             {
-                CCPoint point = LHPointFromString(fix->objectAtIndex(j)->stringValue());
+                CCPoint point = fix->pointAtIndex(j);
 			
                 CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
             
@@ -220,18 +237,18 @@ void LHBezierNode::initTileVerticesFromDictionary(LHDictionary* bezierDict)
 	
 	if(isVisible)
 	{
-		LHArray* curvesInShape = bezierDict->objectForKey("Curves")->arrayValue();
+		LHArray* curvesInShape = dictionary->arrayForKey("Curves");
 		
 		int MAX_STEPS = 25;
 		
         for(int i = 0; i < curvesInShape->count(); ++i)
 		{
-            LHDictionary* curvDict = curvesInShape->objectAtIndex(i)->dictValue();
+            LHDictionary* curvDict = curvesInShape->dictAtIndex(i);
             
-			CCPoint endCtrlPt   = LHPointFromString(curvDict->objectForKey("EndControlPoint")->stringValue());
-			CCPoint startCtrlPt = LHPointFromString(curvDict->objectForKey("StartControlPoint")->stringValue());
-			CCPoint endPt       = LHPointFromString(curvDict->objectForKey("EndPoint")->stringValue());
-			CCPoint startPt     = LHPointFromString(curvDict->objectForKey("StartPoint")->stringValue());
+			CCPoint endCtrlPt   = curvDict->pointForKey("EndControlPoint");
+			CCPoint startCtrlPt = curvDict->pointForKey("StartControlPoint");
+			CCPoint endPt       = curvDict->pointForKey("EndPoint");
+			CCPoint startPt     = curvDict->pointForKey("StartPoint");
 			
             CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
                         
@@ -242,11 +259,11 @@ void LHBezierNode::initTileVerticesFromDictionary(LHDictionary* bezierDict)
 				
 				for(float t = 0; t <= (1 + (1.0f / MAX_STEPS)); t += 1.0f / MAX_STEPS)
 				{
-					CCPoint vPoint = LHBezierNode::pointOnCurve(startPt,
-                                                                startCtrlPt,
-                                                                endCtrlPt,
-                                                                endPt,
-                                                                t);
+					CCPoint vPoint = LHBezier::pointOnCurve(startPt,
+                                                            startCtrlPt,
+                                                            endCtrlPt,
+                                                            endPt,
+                                                            t);
 					
 					if(!firstPt)
 					{
@@ -301,21 +318,21 @@ void LHBezierNode::initTileVerticesFromDictionary(LHDictionary* bezierDict)
 	}
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHBezierNode::initPathPointsFromDictionary(LHDictionary* bezierDict)
+void LHBezier::initPathPointsFromDictionary(LHDictionary* bezierDict)
 {	
-    LHArray* curvesInShape = bezierDict->objectForKey("Curves")->arrayValue();    
+    LHArray* curvesInShape = bezierDict->arrayForKey("Curves");    
     int MAX_STEPS = 25;    
 	CCPoint conv = LHSettings::sharedInstance()->convertRatio();
 	
 	int i = 0;
     for(int j = 0; j < curvesInShape->count(); ++j)
     {
-        LHDictionary* curvDict = curvesInShape->objectAtIndex(j)->dictValue();
+        LHDictionary* curvDict = curvesInShape->dictAtIndex(j);
         
-        CCPoint endCtrlPt   = LHPointFromString(curvDict->objectForKey("EndControlPoint")->stringValue());
-        CCPoint startCtrlPt = LHPointFromString(curvDict->objectForKey("StartControlPoint")->stringValue());
-        CCPoint endPt       = LHPointFromString(curvDict->objectForKey("EndPoint")->stringValue());
-        CCPoint startPt     = LHPointFromString(curvDict->objectForKey("StartPoint")->stringValue());
+        CCPoint endCtrlPt   = curvDict->pointForKey("EndControlPoint");
+        CCPoint startCtrlPt = curvDict->pointForKey("StartControlPoint");
+        CCPoint endPt       = curvDict->pointForKey("EndPoint");
+        CCPoint startPt     = curvDict->pointForKey("StartPoint");
 		
 		CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
         
@@ -323,11 +340,11 @@ void LHBezierNode::initPathPointsFromDictionary(LHDictionary* bezierDict)
         {
             for(float t = 0; t <= (1 + (1.0f / MAX_STEPS)); t += 1.0f / MAX_STEPS)
             {
-                CCPoint vPoint = LHBezierNode::pointOnCurve(startPt,
-                                                            startCtrlPt,
-                                                            endCtrlPt,
-                                                            endPt,
-                                                            t);
+                CCPoint vPoint = LHBezier::pointOnCurve(startPt,
+                                                        startCtrlPt,
+                                                        endCtrlPt,
+                                                        endPt,
+                                                        t);
 				
                 vPoint = ccp(vPoint.x*conv.x, winSize.height - vPoint.y*conv.y);
                 
@@ -364,7 +381,7 @@ void LHBezierNode::initPathPointsFromDictionary(LHDictionary* bezierDict)
 	}		
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHBezierNode::createBodyFromDictionary(LHDictionary* bezierDict, b2World* world)
+void LHBezier::createBodyFromDictionary(LHDictionary* bezierDict, b2World* world)
 {
 	if(isPath)
 		return;
@@ -374,7 +391,7 @@ void LHBezierNode::createBodyFromDictionary(LHDictionary* bezierDict, b2World* w
 	
 	b2BodyDef bodyDef;	
 	
-	int bodyType = bezierDict->objectForKey("PhysicType")->intValue();
+	int bodyType = bezierDict->intForKey("Type");
 	if(bodyType > 2)
         return;
         
@@ -388,12 +405,7 @@ void LHBezierNode::createBodyFromDictionary(LHDictionary* bezierDict, b2World* w
 	body = world->CreateBody(&bodyDef);
 	
 	float ptm = LHSettings::sharedInstance()->lhPtmRatio();
-    
-    if(b2_version.major <= 2)
-        if(b2_version.minor <=2)
-            if(b2_version.revision <2)
-                CCLog("Please update to Box2d 2.2.2 or above or else you may experience asserts");
-    
+        
     for(int k =0; k< (int)trianglesHolder.size();++k)
     {
         std::vector<CCPoint> fix = trianglesHolder[k];
@@ -401,7 +413,8 @@ void LHBezierNode::createBodyFromDictionary(LHDictionary* bezierDict, b2World* w
         int size = fix.size();
         b2Vec2 *verts = new b2Vec2[size];
         int i = 0;
-        for(int j = 0; j < size; ++j)
+        for(int j = size -1; j >=0; --j)
+//        for(int j = 0; j < size; ++j)
         {
             CCPoint pt = fix[j];
             
@@ -415,15 +428,15 @@ void LHBezierNode::createBodyFromDictionary(LHDictionary* bezierDict, b2World* w
         
         b2FixtureDef fixture;
         
-        fixture.density = bezierDict->objectForKey("Density")->floatValue();
-		fixture.friction = bezierDict->objectForKey("Friction")->floatValue();
-		fixture.restitution = bezierDict->objectForKey("Restitution")->floatValue();
+        fixture.density     = bezierDict->floatForKey("Density");
+		fixture.friction    = bezierDict->floatForKey("Friction");
+		fixture.restitution = bezierDict->floatForKey("Restitution");
 		
-		fixture.filter.categoryBits = bezierDict->objectForKey("Category")->intValue();
-		fixture.filter.maskBits = bezierDict->objectForKey("Mask")->intValue();
-		fixture.filter.groupIndex = bezierDict->objectForKey("Group")->intValue();
+		fixture.filter.categoryBits = bezierDict->intForKey("Category");
+		fixture.filter.maskBits     = bezierDict->intForKey("Mask");
+		fixture.filter.groupIndex   = bezierDict->intForKey("Group");
 		
-		fixture.isSensor = bezierDict->objectForKey("IsSenzor")->boolValue();
+		fixture.isSensor = bezierDict->boolForKey("IsSensor");
         
         fixture.shape = &shape;
         body->CreateFixture(&fixture);
@@ -442,22 +455,22 @@ void LHBezierNode::createBodyFromDictionary(LHDictionary* bezierDict, b2World* w
     
     b2FixtureDef fixture;
     
-    fixture.density = bezierDict-> objectForKey ("Density") -> floatValue ();
-    fixture.friction = bezierDict-> objectForKey ("Friction") -> floatValue ();
-    fixture.restitution = bezierDict-> objectForKey ("Restitution") -> floatValue ();
+    fixture.density     = bezierDict-> floatForKey ("Density");
+    fixture.friction    = bezierDict-> floatForKey ("Friction");
+    fixture.restitution = bezierDict-> floatForKey ("Restitution");
     
-    fixture.filter.categoryBits = bezierDict-> objectForKey ("Category") -> intValue ();
-    fixture.filter.maskBits = bezierDict-> objectForKey ("Mask") -> intValue ();
-    fixture.filter.groupIndex = bezierDict-> objectForKey ("Group") -> intValue ();
+    fixture.filter.categoryBits = bezierDict-> intForKey ("Category");
+    fixture.filter.maskBits     = bezierDict-> intForKey ("Mask");
+    fixture.filter.groupIndex   = bezierDict-> intForKey ("Group");
     
-    fixture.isSensor = bezierDict-> objectForKey ("IsSenzor") -> boolValue ();
+    fixture.isSensor = bezierDict-> boolForKey ("IsSensor");
     
     fixture.shape = &shape;
     body-> CreateFixture (& fixture);
     delete [] verts;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHBezierNode::pushBlendingTextureNamed(const std::string& texName, 
+void LHBezier::pushBlendingTextureNamed(const std::string& texName, 
                                             bool tile,
                                             GLenum blendSource, 
                                             GLenum blendDestination){
@@ -472,7 +485,13 @@ void LHBezierNode::pushBlendingTextureNamed(const std::string& texName,
     }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHBezierNode::draw(void)
+#if COCOS2D_VERSION >= 0x00020000
+void LHBezier::draw(void)
+{
+    
+}
+#else
+void LHBezier::draw(void)
 {
     
     float scale = CCDirector::sharedDirector()->getContentScaleFactor();
@@ -586,17 +605,18 @@ void LHBezierNode::draw(void)
 		glPopMatrix();
 	}	
 }
+#endif
 ////////////////////////////////////////////////////////////////////////////////
-bool LHBezierNode::isLHBezierNode(CCNode* obj){
+bool LHBezier::isLHBezier(CCNode* obj){
     
-    if( 0 != dynamic_cast<LHBezierNode*>(obj))
+    if( 0 != dynamic_cast<LHBezier*>(obj))
         return true;
     
     return false;    
 }
 
 
-bool LHBezierNode::isTouchedAtPoint(CCPoint point){
+bool LHBezier::isTouchedAtPoint(CCPoint point){
     
     if(body != NULL){
         b2Fixture* stFix = body->GetFixtureList();
@@ -612,26 +632,26 @@ bool LHBezierNode::isTouchedAtPoint(CCPoint point){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void LHBezierNode::registerTouchBeginObserver(CCObject* observer, 
+void LHBezier::registerTouchBeginObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
     touchBeginObserver.object = observer;
     touchBeginObserver.selector = selector;
 }
 //------------------------------------------------------------------------------
-void LHBezierNode::registerTouchMovedObserver(CCObject* observer, 
+void LHBezier::registerTouchMovedObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
     touchMovedObserver.object = observer;
     touchMovedObserver.selector = selector;
 }
 //------------------------------------------------------------------------------
-void LHBezierNode::registerTouchEndedObserver(CCObject* observer, 
+void LHBezier::registerTouchEndedObserver(CCObject* observer, 
                                               SEL_CallFuncO selector){
     touchEndedObserver.object = observer;
     touchEndedObserver.selector = selector;    
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-bool LHBezierNode::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
+bool LHBezier::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
 {    
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -659,7 +679,7 @@ bool LHBezierNode::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
     return false;
 }
 //------------------------------------------------------------------------------
-void LHBezierNode::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
+void LHBezier::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
     
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -687,7 +707,7 @@ void LHBezierNode::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
     }
 }
 //------------------------------------------------------------------------------
-void LHBezierNode::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
+void LHBezier::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     
     CCPoint touchPoint =     pTouch->locationInView();
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -713,17 +733,17 @@ void LHBezierNode::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     }
 }
 //------------------------------------------------------------------------------
-void LHBezierNode::ccTouchCancelled(CCTouch *pTouch, CCEvent *pEvent){
+void LHBezier::ccTouchCancelled(CCTouch *pTouch, CCEvent *pEvent){
     
 }
 
-void LHBezierNode::setTagTouchBeginObserver(LHObserverPair* pair){
+void LHBezier::setTagTouchBeginObserver(LHObserverPair* pair){
     tagTouchBeginObserver = pair;
 }
-void LHBezierNode::setTagTouchMovedObserver(LHObserverPair* pair){
+void LHBezier::setTagTouchMovedObserver(LHObserverPair* pair){
     tagTouchMovedObserver = pair;
 }
-void LHBezierNode::setTagTouchEndedObserver(LHObserverPair* pair){
+void LHBezier::setTagTouchEndedObserver(LHObserverPair* pair){
     tagTouchEndedObserver = pair;
 }
 
