@@ -29,86 +29,157 @@
 #define __LHSPRITE_NODE__
 
 #include "cocos2d.h"
-#include "Box2D.h"
-#include "LHBezierNode.h"
+#include "Box2d/Box2D.h"
 #include "LHTouchMgr.h"
+#include "LHPathNode.h"
 using namespace cocos2d;
 
 class LevelHelperLoader;
-class LHPathNode;
 class LHAnimationNode;
 class LHParallaxNode;
 class LHJoint;
+class LHBatch;
+class LHBezier;
+class LHDictionary;
+class LHArray;
 
 class LHSprite : public CCSprite, public CCStandardTouchDelegate
 {
-protected:
-	b2Body* body; //week ptr
-    std::string uniqueName;
-    std::map<std::string, void*> customUserValues;
     
-    int currentFrame;
+public:
+    virtual ~LHSprite(void);
+	virtual void removeSelf();
+
+    LHSprite();    
+    
+    virtual bool initBatchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch);
+    virtual bool initWithDictionary(LHDictionary* dictionary);
+    
+    //functions to be used by the user
+    static LHSprite* batchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch);//render by batch node
+    static LHSprite* spriteWithDictionary(LHDictionary* dictionary);//self render
+    
+    static LHSprite* spriteWithName(const std::string& spriteName, const std::string& sheetName, const std::string& spriteHelperFile);
+    static LHSprite* batchSpriteWithName(const std::string& spriteName, LHBatch* batch);
+    virtual void postInit(void){}; 
+
+    
+    
+    
+    
+protected:
+	friend class LevelHelperLoader;
+    
+    b2Body* body; //week ptr
+    CCArray* fixturesObj;
+    LHArray* fixturesInfo;
+    
+    std::string uniqueName;
+    std::string shSceneName;
+    std::string shSheetName;
+    std::string shSpriteName;
+    
+    std::string imageFile;
+    CCRect originalRect;
+    
     LHAnimationNode* animation;
     LHPathNode* pathNode;
-    
-    LHParallaxNode* parallaxNode;
-    
-    CCSize realScale; //used for the joints in case you create a level with SD graphics using ipad template
-    
-    LHParallaxNode* parallaxFollowingThisSprite;
+    LH_PATH_DEFAULTS pathDefaults;
     
     LevelHelperLoader* parentLoader;
     
+    CCSize realScale;
+    
+    LHParallaxNode* parallaxFollowingThisSprite;
+    LHParallaxNode* spriteIsInParallax;
+    
+        
     LHObserverPair touchBeginObserver;
     LHObserverPair touchMovedObserver;
     LHObserverPair touchEndedObserver;
-    bool swallowTouches;
+    
     LHObserverPair* tagTouchBeginObserver;
     LHObserverPair* tagTouchMovedObserver;
     LHObserverPair* tagTouchEndedObserver;
 
+    bool swallowTouches;
     
-    friend class LHParallaxNode;
-    friend class LevelHelperLoader;
-    friend class LHAnimationNode;
-    friend class LHPathNode;
+    
+    bool usesOverloadedTransformations;
+    bool usePhysicsForTouches;
+    
+    void* userCustomInfo;
+    
 public:
-
-    CCSize getRealScale(){return realScale;}
-    void setRealScale(CCSize scale){realScale = scale;}
+    //USEFUL INFO
+    //--------------------------------------------------------------------------    
+    CCSize  getRealScale(){return realScale;}
+    void    setRealScale(CCSize scl){realScale = scl;}
     
-    //INFO
+    
+    const std::string&  getUniqueName(void){return uniqueName;}
+    void                setUniqueName(const std::string& str){uniqueName = str;}
+    
+    
+    void    setBody(b2Body* b){body = b;}
+    b2Body* getBody(){return body;}
+    bool removeBodyFromWorld();
+    
+    
+    const std::string&  getImageFile(){return imageFile;}
+    void                setImageFile(const std::string& str){imageFile = str;}
+    
+    
+    CCRect  getOriginalRect(){return originalRect;}
+    void    setOrinalRect(CCRect rc){originalRect = rc;}
+    
+    const std::string& getShSceneName(){return shSceneName;}
+    const std::string& getSheetName(){return shSheetName;}
+    const std::string& getSpriteName(){return shSpriteName;}
+    
+    
+    //TRANSFORMATIONS
     //--------------------------------------------------------------------------
-    const std::string& getUniqueName(void);
+    bool getUsesOverloadedTransformations(){return usesOverloadedTransformations;}
+    void setUsesOverloadedTransformations(bool v){usesOverloadedTransformations = v;}
     
-    void setBody(b2Body* body);
-    b2Body* getBody(void);
-    bool removeBodyFromWorld(void); 
-    
-    //ANIMATION
-    //--------------------------------------------------------------------------
-    void startAnimationNamed(const std::string& animName,                         
-                             int startFrame = 0,
-                             CCObject* customAnimNotifierId = NULL,
-                             SEL_CallFuncND customAnimNotifierSel = NULL,
-                             bool observeLooping = false);
+    void transformPosition(CCPoint pos);
+    void transformRotation(float rot);
 
-    //does not start the animation - just changed the texture. 
-    //use this when you want to use nextFrame / prevFrame methods
-    void prepareAnimationNamed(const std::string& animName);
-
-    void stopAnimation(void);
+    void transformScale(float scale);
+    void transformScaleX(float sclX);
+    void transformScaleY(float sclY);
+    
+    //ANIMATIONS
+    //--------------------------------------------------------------------------    
+    void prepareAnimationNamed(const std::string& animName, const std::string& shScene);
+    
+    void playAnimation();
+    void pauseAnimation();
+    void restartAnimation();
+    void stopAnimation(); //removes the animation entirely
+    
+    bool isAnimationPaused();
+    
+    std::string animationName();
+    int numberOfFrames();
+    int currentFrame();
+    
+    float animationDelayPerUnit();
+    void setAnimationDelayPerUnit(float d);
+    
+    std::vector<std::string>    getCurrentFrameDataKeys(); //if no data info -returns empty vector
+    float                       getCurrentFrameFloatDataForKey(const std::string& key); //if no data or wrong key - returns -1.0f
+    std::string                 getCurrentFrameStringDataForKey(const std::string& key); //if no data or wrong key - returns empty string
+    bool                        getCurrentFrameBoolDataForKey(const std::string& key); //if no data or wrong key returns false
+    bool                        isCurrentFrameValueForKeyFloat(const std::string& key);
+    bool                        isCurrentFrameValueForKeyString(const std::string& key);
+    bool                        isCurrentFrameValueForKeyBool(const std::string& key);
     
     
-    void setAnimation(LHAnimationNode* anim); //use wisely e.g. don't use it
-    LHAnimationNode* getAnimation(void);
-    std::string getAnimationName(void);
+    float animationDuration();//return how much time will take for a loop to complete
     
-    int getNumberOfFrames(void);    
     void setFrame(int frmNo);
-    int  getCurrentFrame(void);
-    
-    
     void nextFrame();
     void prevFrame();
     
@@ -116,130 +187,132 @@ public:
     void prevFrameAndRepeat(); //will loop when it reaches start
     
     bool isAtLastFrame();
+
+    //USER DATA
+    //--------------------------------------------------------------------------    
+    const std::string& userInfoClassName();
+    void* userInfo(); 
     
-    //------------------------------------------------------------------------------
+    //JOINTS
+    //--------------------------------------------------------------------------        
+    CCArray* jointList();
+    LHJoint* jointWithUniqueName(const std::string& name);
+    bool removeAllAttachedJoints();
     
     
-    //PATH METHODS
-    //------------------------------------------------------------------------------
-    void  moveOnPathWithUniqueName(const std::string& pathName,
-                                   float movementTime,
-                                   bool startAtEndPoint,
-                                   bool isCyclic,
-                                   bool restartOtherEnd,
-                                   int axisOrientation,
-                                   bool flipx,
-                                   bool flipy,
-                                   bool dMove,//describe path movement without setting the sprite position on the actual points on the path
-                                   CCObject* obj = NULL,
-                                   SEL_CallFuncN sel = NULL);
+    
+    //PATH MOVEMENT
+    //--------------------------------------------------------------------------            
+    void prepareMovementOnPathWithUniqueName(const std::string& pathName);
+    
+    const std::string& pathUniqueName();
+    
+    void startPathMovement();
+    void pausePathMovement();
+    void restartPathMovement();
+    void stopPathMovement(); //removes the path movement;
+    
+    void setPathMovementSpeed(float value);
+    float pathMovementSpeed();
+    
+    void setPathMovementStartPoint(enum LH_PATH_MOVEMENT_START_POINT point);
+    enum LH_PATH_MOVEMENT_START_POINT pathMovementStartPoint();
+    
+    void setPathMovementIsCyclic(bool cyclic);
+    bool pathMovementIsCyclic();
+    
+    void setPathMovementRestartsAtOtherEnd(bool otherEnd);
+    bool pathMovementRestartsAtOtherEnd();
+    
+    void setPathMovementOrientation(enum LH_PATH_MOVEMENT_ORIENTATION point);
+    enum LH_PATH_MOVEMENT_ORIENTATION pathMovementOrientation();
+    
+    void setPathMovementFlipXAtEnd(bool flip);
+    bool pathMovementFlipXAtEnd();
+    
+    void setPathMovementFlipYAtEnd(bool flip);
+    bool pathMovementFlipYAtEnd();
+    
+    void setPathMovementRelative(bool rel);
+    bool pathMovementRelative();
+    
 
     
-    LHPathNode* getPathNode(void);
-    void cancelPathMovement(void);//will remove the path node if any - sprite will no longer move on a path
-    void pausePathMovement(const bool& pauseStatus);
-    
-    void setPathSpeed(float value);
-    float getPathSpeed(void);
-    
-    void registerNotifierOnPathEndPoints(CCObject* obj, 
-                                         SEL_CallFuncN sel);
-
     //PARALLAX
     //--------------------------------------------------------------------------
-    LHParallaxNode* getParallaxNode(void){return parallaxNode;}
+    LHParallaxNode* getParallaxNode(void){return spriteIsInParallax;}
 
     
-    //USER INFO
-    //--------------------------------------------------------------------------
-    void setCustomValue(void* value, const char* key);
-    void* getCustomValueWithKey(const char* key);
-    
-    //TRANSFORMATIONS
-    //--------------------------------------------------------------------------
-    //The following method will transform the physic body also - if any
-    void transformPosition(CCPoint pos);    
-    void transformRotation(float rot);
-    
-    //JOINTS LIST
-    //--------------------------------------------------------------------------
-    //returns the LHJoint* objects attached to the body of this sprite
-    //from the LHJoint you can take back the box2d joint
-    CCArray* jointList(void);//
-    LHJoint* jointWithUniqueName(const std::string& name);
-    
-    //remove all joints attached to this sprite
-    //methods may not remove the joints if body is in contact 
-    //but rather is markes the joints for removal 
-    //so make sure you call removeMarkedJoints from LevelHelperLoader.h in your tick method
-    bool removeAllAttachedJoints(void);
-    bool removeJoint(LHJoint* jt);
 
-    
-    //TOUCH METHODS
-    //--------------------------------------------------------------------------
-    //If NO_PHYSICS type - touch is detected inside the sprite quad, meaning touch can be
-    //detected on the non visible part of the sprite also.
-    
-    //If sprite has physics - touch is detected on the body of the sprite, meaning touch will be detected
-    //based on the shape of the body - useful when you dont want to detect touch on the non visible part
-    //of the sprite
+    //TOUCH HANDLING
+    //--------------------------------------------------------------------------            
     bool isTouchedAtPoint(CCPoint point);
     
-    //selector needs to have this signature void HelloWorldLayer::touchXXX:(LHTouchInfo*)info
-    //in visual studio the method signature should be void HelloWorldLayer::touchXXX(CCObject* cinfo){LHTouchInfo* info = (LHTouchInfo*)info; ...} because compiler doesn't know how to cast
-    //info will have all information regarding the touch (see API Documentation or top of this file)
-    //for generic touch on sprites with tag use the observers from LevelHelperLoader
+    void setUsePhysicsForTouches(bool val){usePhysicsForTouches = val;}
+    bool getUsePhysicsForTouches(){return usePhysicsForTouches;}
+        
     void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector);
+    
+    
+    //Box2d helpful methods
+    //--------------------------------------------------------------------------            
+    static std::string  uniqueNameForBody(b2Body* body);
+    static LHSprite*    spriteForBody(b2Body* body);
+    static int          tagForBody(b2Body* body);
+    static bool         isLHSprite(CCNode* obj);
 
+    
+    //Box2d COLLISION FILTER
+    //--------------------------------------------------------------------------            
+    void setCollisionFilterCategory(int category);
+    void setCollisionFilterMask(int mask);
+    void setCollisionFilterGroup(int group);
+
+    //Box2d BODY TYPE TRANSFORMATION
+    //--------------------------------------------------------------------------                
+    void makeDynamic();
+    void makeStatic();
+    void makeKinematic();
+
+        
+    
+    
     virtual bool ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent);
 	virtual void ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent);
 	virtual void ccTouchCancelled(CCTouch *pTouch, CCEvent *pEvent);
-    //CLASS METHODS
-    //------------------------------------------------------------------------------
-    static std::string uniqueNameForBody(b2Body* body);
-    static LHSprite* spriteForBody(b2Body* body);
-    static int tagForBody(b2Body* body);
-    static bool isLHSprite(CCNode* obj);
-
-    
     virtual void touchDelegateRetain() {} //compatibility with old cocos2d-x version
     virtual void touchDelegateRelease() {}//compatibility with old cocos2d-x version
-public:
-    //CONSTRUCTORS
-    virtual bool init(void);
-    virtual ~LHSprite(void);
-	LHSprite();    
-    
-    //static int numberOfSprites;
-    
-    static LHSprite* sprite(void);
-    static LHSprite* spriteWithTexture(CCTexture2D *pTexture);
-	static LHSprite* spriteWithTexture(CCTexture2D *pTexture, const CCRect& rect);
-    static LHSprite* spriteWithTexture(CCTexture2D *pTexture, const CCRect& rect, const CCPoint& offset);
-	static LHSprite* spriteWithSpriteFrame(CCSpriteFrame *pSpriteFrame);
-	static LHSprite* spriteWithSpriteFrameName(const char *pszSpriteFrameName);
-    static LHSprite* spriteWithFile(const char *pszFileName);
-	static LHSprite* spriteWithFile(const char *pszFileName, const CCRect& rect);
-    static LHSprite* spriteWithBatchNode(CCSpriteBatchNode *batchNode, const CCRect& rect);
-    
-    //overwrite this method in your custom sprite class if you want to do special
-    //logic after the complete initialization - like working on the b2body
-    virtual void postInit(void){}; 
 
-    void setAnimationSequence(CCObject* seq); 
+    virtual void update(float dt);
 private:
-    void setUniqueName(const char* name);
-  
-    void setPathNode(LHPathNode* node);
-    void setParallaxNode(LHParallaxNode*node){parallaxNode = node;}
+    
+    friend class LHBatch;
+    friend class LHLayer;
+    friend class LHParallaxNode;
+
+    void createFixturesFromInfoOnBody();
+    void loadPhysicalInformationFromDictionary(LHDictionary* dictionary);
+    void loadAnimationsInformationFromDictionary(LHDictionary* dictionary);
+    void loadPathMovementFromDictionary(LHDictionary* dictionary);
+    void loadInformationFromDictionary(LHDictionary* dictionary);
+
+    
+    void setShSceneName(const std::string& scene){shSceneName = scene;}
+    void setSheetName(const std::string& name){shSheetName = name;}
+    void setSpriteName(const std::string& name){shSpriteName = name;}
+
+    
+        
+    void setParallaxNode(LHParallaxNode*node){spriteIsInParallax = node;}
     
     void setTagTouchBeginObserver(LHObserverPair* pair);
     void setTagTouchMovedObserver(LHObserverPair* pair);
     void setTagTouchEndedObserver(LHObserverPair* pair);
+    
+    void setParentLoader(LevelHelperLoader* p){parentLoader = p;}
 };
 ////////////////////////////////////////////////////////////////////////////////
 

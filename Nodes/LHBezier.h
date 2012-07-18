@@ -29,8 +29,8 @@
 #define __LH_BEZIER_NODE__
 
 #include "cocos2d.h"
-#include "Box2D.h"
-#include "LHDictionary.h"
+#include "Box2d/Box2D.h"
+#include "../Utilities/LHDictionary.h"
 #include "LHTouchMgr.h"
 
 using namespace cocos2d;
@@ -48,7 +48,7 @@ typedef struct __LHBezierBlendingInfo{
 } LHBezierBlendingInfo;
 
 
-class LHBezierNode : public CCNode, public CCStandardTouchDelegate
+class LHBezier : public CCNode, public CCStandardTouchDelegate
 {
 protected:
     
@@ -77,6 +77,7 @@ protected:
     
     //static int numberOfBezierNodes;
     
+    LevelHelperLoader* parentLoader;
     friend class LevelHelperLoader;    
     
     LHObserverPair touchBeginObserver;
@@ -88,6 +89,8 @@ protected:
     LHObserverPair* tagTouchEndedObserver;
     
 public:
+    
+    const std::vector<CCPoint>& getPathPoints(){return pathPoints;}
     
     bool getIsClosed(void){return isClosed;}
  
@@ -108,30 +111,37 @@ public:
                                   GLenum blendSource = GL_DST_COLOR, 
                                   GLenum blendDestination = GL_ZERO);
     
-    static bool isLHBezierNode(CCNode* obj);
+    static bool isLHBezier(CCNode* obj);
     
     virtual void init(void);
-    virtual ~LHBezierNode(void);
-    LHBezierNode(void);
+    virtual ~LHBezier(void);
+    LHBezier(void);
     
-    bool initWithDictionary(LHDictionary* properties, 
-                            CCLayer* ccLayer, 
-                            b2World* world);
-    static LHBezierNode* nodeWithDictionary(LHDictionary* properties, 
-                                            CCLayer* ccLayer, 
-                                            b2World* world);
     
-    LHPathNode* addSpriteOnPath(LHSprite* spr, 
-                                float   pathSpeed, 
-                                bool    startAtEndPoint,
-                                bool    isCyclic,
-                                bool    restartOtherEnd,
-                                int     axis,
-                                bool    flipx,
-                                bool    flipy,
-                                bool    deltaMove);
+    void removeSelf();//use this to remove the bezier node entirely;
+    
+    bool initWithDictionary(LHDictionary* properties);
+    
+    static LHBezier* bezierWithDictionary(LHDictionary* properties);
+    
+//    static LHBezier* nodeWithDictionary(LHDictionary* properties, 
+//                                            CCLayer* ccLayer, 
+//                                            b2World* world);
+    
+//    LHPathNode* addSpriteOnPath(LHSprite* spr, 
+//                                float   pathSpeed, 
+//                                bool    startAtEndPoint,
+//                                bool    isCyclic,
+//                                bool    restartOtherEnd,
+//                                int     axis,
+//                                bool    flipx,
+//                                bool    flipy,
+//                                bool    deltaMove);
     
     virtual void draw(void);
+    
+    void setParentLoader(LevelHelperLoader* p){ parentLoader = p;}
+
     
     //TOUCH METHODS
     //------------------------------------------------------------------------------
@@ -160,7 +170,8 @@ private:
     
     static CCPoint pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, float t);
     
-    void initTileVerticesFromDictionary(LHDictionary* bezierDict);
+    void initTileVerticesFromDictionary(LHDictionary* dictionary, LHArray* fixtures);
+//    void initTileVerticesFromDictionary(LHDictionary* bezierDict);
     void initPathPointsFromDictionary(LHDictionary* bezierDict);
     void createBodyFromDictionary(LHDictionary* bezierDict, b2World* world);
     

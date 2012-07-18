@@ -25,8 +25,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef __LH_JOINT__
-#define __LH_JOINT__
+#ifndef __LHJOINT_NODE__
+#define __LHJOINT_NODE__
 
 #include "cocos2d.h"
 #include "Box2D.h"
@@ -34,6 +34,8 @@
 using namespace cocos2d;
 
 class LHSprite;
+class LevelHelperLoader;
+class LHDictionary;
 
 enum LH_JOINT_TYPE
 {
@@ -51,43 +53,59 @@ enum LH_JOINT_TYPE
 
 class LHJoint : public CCObject
 {
-private:
-    std::string uniqueName;
-    std::map<std::string, void*> customUserValues;
-
-    bool removeJointFromWorld(void);
-
-    //static int numberOfJoints;
+public:;
     
-    b2Joint* joint; //week ptr
-    int tag;
+    virtual bool initWithDictionary(LHDictionary* dictionary, b2World* box2d, LevelHelperLoader* pLoader);
+    virtual ~LHJoint();
+    LHJoint();
+
+    static LHJoint* jointWithDictionary(LHDictionary* dictionary, b2World* box2d, LevelHelperLoader* pLoader);
+    void removeSelf();
+    
+    
+    std::string& getUniqueName(){return uniqueName;};
+    enum LH_JOINT_TYPE getType(){return type;}
+    
+    int getTag(){return tag;}
+    void setTag(int t){ tag = t;}
+    
+    bool getShouldDestroyJointOnDealloc(){return shouldDestroyJointOnDealloc;}
+    void setShouldDestroyJointOnDealloc(bool val){shouldDestroyJointOnDealloc = val;}
+
+    b2Joint* getJoint(){return joint;}
+
+    LHSprite* getSpriteA();
+    LHSprite* getSpriteB();
+
+    
+    static bool isLHJoint(CCNode* object);
+    static LHJoint* jointFromBox2dJoint(b2Joint* jt);
+    static int tagFromBox2dJoint(b2Joint* joint);
+    static std::string uniqueNameFromBox2dJoint(b2Joint* joint);
+    
+    //this method will return LH_UNKNOWN_TYPE if fail
+    static enum LH_JOINT_TYPE typeFromBox2dJoint(b2Joint* joint);
+
+private:
+    
+    friend class LHSprite;
+    
+	b2Joint*    joint; //week ptr
+    b2World*    boxWorld;
+    std::string uniqueName;
+    int         tag;
     LH_JOINT_TYPE type;
     
+    LevelHelperLoader* parentLoader;
+    
     bool shouldDestroyJointOnDealloc;
-    friend class LHSprite;
-public:
-    b2Joint* getJoint(void){return joint;}//box2d joint 
-    int getTag(void){return tag;}
-    LH_JOINT_TYPE getType(void){return type;}//type of the joint in order to know how to convert the b2Joint
     
-    std::string& getUniqueName(void){return uniqueName;}
+    bool removeJointFromWorld();
     
-    LHJoint(int _tag, LH_JOINT_TYPE _type, b2Joint* _boxJoint);
-    virtual ~LHJoint(void);
+    void removeJoint(LHJoint* jt);
     
-    bool initWithUniqueName(const char* name);
-    static LHJoint* jointWithUniqueName(const char* name, int _tag, LH_JOINT_TYPE _type, b2Joint* _boxJoint);
-
-    //setting a custom value will require that you release the value 
-    void setCustomValueWithKey(void* value, const std::string& key);
-    void* customValueWithKey(const char* key);
-    
-    LHSprite* getSpriteA(void);
-    LHSprite* getSpriteB(void);
-    
-    static LHJoint* jointFromBox2dJoint(b2Joint* jt);    
-    static bool isLHJoint(CCObject* obj);
+    void createBox2dJointFromDictionary(LHDictionary* dictionary);
 };
 
-////////////////////////////////////////////////////////////////////////////////
 #endif
+////////////////////////////////////////////////////////////////////////////////

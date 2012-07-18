@@ -9,6 +9,9 @@
 #ifndef __LH_DICTIONARY_TYPE__
 #define __LH_DICTIONARY_TYPE__
 
+
+#include "cocos2d.h"
+
 #include <iostream>
 #include "assert.h"
 #include "sstream"
@@ -55,6 +58,20 @@ public:
     void removeAllObjects(void);
     
     void setObjectForKey(LHObject* obj, const std::string& key);    
+    void setDictForKey(LHDictionary* dic, const std::string& key);
+    void setArrayForKey(LHArray* array, const std::string& key);
+    
+    cocos2d::CCRect     rectForKey(const std::string& key);
+    float               floatForKey(const std::string& key);
+    int                 intForKey(const std::string& key);
+    bool                boolForKey(const std::string& key);
+    cocos2d::CCPoint    pointForKey(const std::string& key);
+    cocos2d::CCSize     sizeForKey(const std::string& key);
+    cocos2d::ccColor3B  colorForKey(const std::string& key);
+    std::string         stringForKey(const std::string& key);
+    
+    LHDictionary*       dictForKey(const std::string& key);
+    LHArray*            arrayForKey(const std::string& key);
     
 private:
 //------------------------------------------------------------------------------
