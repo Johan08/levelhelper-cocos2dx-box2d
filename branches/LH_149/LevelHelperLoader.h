@@ -57,7 +57,7 @@
 #include "Nodes/LHJoint.h"
 #include "Nodes/LHPathNode.h"
 
-
+#include "CustomClasses/LHCustomClasses.h"
 using namespace cocos2d;
 
 enum LevelHelper_TAG;
@@ -450,6 +450,7 @@ private:
 };
 
 #endif
+
 
 
 
