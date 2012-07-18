@@ -298,7 +298,7 @@ private:
     void loadAnimationsInformationFromDictionary(LHDictionary* dictionary);
     void loadPathMovementFromDictionary(LHDictionary* dictionary);
     void loadInformationFromDictionary(LHDictionary* dictionary);
-
+    void loadUserCustomInfoFromDictionary(LHDictionary* dictionary);
     
     void setShSceneName(const std::string& scene){shSceneName = scene;}
     void setSheetName(const std::string& name){shSheetName = name;}

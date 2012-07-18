@@ -50,6 +50,11 @@ public:
     
     LHDictionary*       dictAtIndex(const int& idx);
     LHArray*            arrayAtIndex(const int& idx);
+    
+    void insertObjectsInVector(std::vector<std::string>* vec);
+    void insertObjectsInVector(std::vector<float>* vec);    
+    void insertObjectsInVector(std::vector<bool>* vec);
+    
 private:
 //------------------------------------------------------------------------------    
     std::vector<LHObject*> objects;
