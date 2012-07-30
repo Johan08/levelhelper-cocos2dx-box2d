@@ -10,6 +10,9 @@
 	<true/>
 	<key>Files</key>
 	<array>
+		<string>TemporaryDummyClass.h</string>
+		<string>TemporaryDummyClass.cpp</string>
+	
 		<string>LHObject.h</string>
 		<string>LHObject.cpp</string>
 		<string>LHDictionary.h</string>
@@ -59,6 +62,11 @@
 	</array>
 	<key>Directories</key>
 	<dict>
+		<key>TemporaryDummyClass.h</key>
+		<string>CustomClasses</string>
+		<key>TemporaryDummyClass.cpp</key>
+		<string>CustomClasses</string>
+			
 		<key>LHAnimationNode.h</key>
 		<string>Nodes</string>
 		<key>LHAnimationNode.cpp</key>
