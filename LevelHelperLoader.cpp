@@ -376,160 +376,129 @@ CCArray* LevelHelperLoader::jointsWithTag(enum LevelHelper_TAG tag){
     
 #endif
 }
-
-
-
-
-
-
-
-
-
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void LevelHelperLoader::registerLoadingProgressObserver(CCObject* loadingProgressObj, SEL_CallFuncFloat sel){
     loadingProgressId = loadingProgressObj;
     loadingProgressSel = sel;
 }
-void LevelHelperLoader::callLoadingProgressObserverWithValue(float val)
-{
+//------------------------------------------------------------------------------
+void LevelHelperLoader::callLoadingProgressObserverWithValue(float val){
     if(NULL != loadingProgressId && NULL != loadingProgressSel){         
 		(loadingProgressId->*loadingProgressSel)(val);
     }
 }
 ////------------------------------------------------------------------------------
 ////------------------------------------------------------------------------------
-//bool LevelHelperLoader::isPaused(void){
-//    return LHSettings::sharedInstance()->levelPaused();
-//}
+bool LevelHelperLoader::isPaused(void){
+    return LHSettings::sharedInstance()->levelPaused();
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::setPaused(bool value){
+    LHSettings::sharedInstance()->setLevelPaused(value);    
+}
 ////------------------------------------------------------------------------------
-//void LevelHelperLoader::setPaused(bool value){
-//    LHSettings::sharedInstance()->setLevelPaused(value);    
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::dontStretchArtOnIpad(){
-//    LHSettings::sharedInstance()->setStretchArt(false);
-//}
-//void LevelHelperLoader::preloadBatchNodes(){
-//    LHSettings::sharedInstance()->setPreloadBatchNodes(true);
-//}
-////------------------------------------------------------------------------------
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::useLevelHelperCollisionHandling(void)
-//{
-//    if(0 == box2dWorld){
-//        CCLog("LevelHelper WARNING: Please call useLevelHelperCollisionHandling after addObjectsToWorld");
-//        return;
-//    }
-//    
-//    contactNode = LHContactNode::contactNodeWithWorld(box2dWorld);    
-//    if(contactNode)
-//        cocosLayer->addChild(contactNode);
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::registerBeginOrEndCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
-//                                                                       enum LevelHelper_TAG tagB,
-//                                                                       CCObject* obj,
-//                                                                       SEL_CallFuncO selector){
-//    if(NULL == contactNode){
-//        CCLog("LevelHelper WARNING: Please call registerBeginOrEndCollisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
-//        return;
-//    }
-//    contactNode->registerBeginOrEndCollisionCallbackBetweenTagA(tagA, tagB, obj, selector);
-//
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::cancelBeginOrEndCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
-//                                                                     enum LevelHelper_TAG tagB){
-//    if(NULL == contactNode){
-//        CCLog("LevelHelper WARNING: Please call cancelBeginOrEndCollisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
-//        return;
-//    }
-//
-//    contactNode->cancelBeginOrEndCollisionCallbackBetweenTagA((int)tagA, (int)tagB);
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::registerPreCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
-//                                                               enum LevelHelper_TAG tagB,
-//                                                               CCObject* obj,
-//                                                               SEL_CallFuncO selector)
-//{
-//    if(NULL == contactNode){
-//        CCLog("LevelHelper WARNING: Please call registerPreColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
-//        return;
-//    }
-//    contactNode->registerPreCollisionCallbackBetweenTagA(tagA, tagB, obj, selector);
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::cancelPreCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
-//                                                              enum LevelHelper_TAG tagB)
-//{
-//    if(NULL == contactNode){
-//        CCLog("LevelHelper WARNING: Please call registerPreColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
-//        return;
-//    }
-//    contactNode->cancelPreCollisionCallbackBetweenTagA((int)tagA, (int)tagB);
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::registerPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
-//                                                                enum LevelHelper_TAG tagB,
-//                                                                CCObject* obj,
-//                                                                SEL_CallFuncO selector)
-//{
-//    if(NULL == contactNode){
-//        CCLog("LevelHelper WARNING: Please call registerPostColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
-//        return;
-//    }
-//    contactNode->registerPostCollisionCallbackBetweenTagA(tagA, tagB, obj, selector);    
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::cancelPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
-//                                                               enum LevelHelper_TAG tagB)
-//{
-//    if(NULL == contactNode){
-//        CCLog("LevelHelper WARNING: Please call registerPreColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
-//        return;
-//    }
-//    contactNode->cancelPostCollisionCallbackBetweenTagA((int)tagA,(int)tagB);
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::markSpriteForRemoval(LHSprite* ccsprite){
-//    
-//    if(NULL == ccsprite)
-//        return;
-//    
-//    markedSprites.setObject(ccsprite, ccsprite->getUniqueName());
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::removeMarkedSprites(){
-//    
-//    std::vector<std::string> keys = markedSprites.allKeys();
-//
-//    for(size_t i = 0; i < keys.size(); ++i){
-//        LHSprite* spr = (LHSprite*)markedSprites.objectForKey(keys[i]);
-//        removeSprite(spr);
-//    }
-//    markedSprites.removeAllObjects();
-//}
-////------------------------------------------------------------------------------
-////------------------------------------------------------------------------------
-//CCSize LevelHelperLoader::gameScreenSize(void){
-//    return CCSizeMake(safeFrame.x, safeFrame.y);
-//}
-////------------------------------------------------------------------------------
-//CCRect LevelHelperLoader::gameWorldSize(void)
-//{
-//    CCPoint  wbConv = LHSettings::sharedInstance()->convertRatio();
-//	
-//    CCRect ws = gameWorldRect;
-//    
-//    ws.origin.x *= wbConv.x;
-//    ws.origin.y *= wbConv.y;
-//    ws.size.width *= wbConv.x;
-//    ws.size.height *= wbConv.y;
-//    
-//    return ws;
-//}
+void LevelHelperLoader::dontStretchArtOnIpad(){
+    LHSettings::sharedInstance()->setStretchArt(false);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LevelHelperLoader::useLevelHelperCollisionHandling(void)
+{
+    if(0 == box2dWorld){
+        CCLog("LevelHelper WARNING: Please call useLevelHelperCollisionHandling after addObjectsToWorld");
+        return;
+    }
+    
+    contactNode = LHContactNode::contactNodeWithWorld(box2dWorld);    
+    if(contactNode)
+        cocosLayer->addChild(contactNode);
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::registerBeginOrEndCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
+                                                                       enum LevelHelper_TAG tagB,
+                                                                       CCObject* obj,
+                                                                       SEL_CallFuncO selector){
+    if(NULL == contactNode){
+        CCLog("LevelHelper WARNING: Please call registerBeginOrEndCollisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
+        return;
+    }
+    contactNode->registerBeginOrEndCollisionCallbackBetweenTagA(tagA, tagB, obj, selector);
+
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::cancelBeginOrEndCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
+                                                                     enum LevelHelper_TAG tagB){
+    if(NULL == contactNode){
+        CCLog("LevelHelper WARNING: Please call cancelBeginOrEndCollisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
+        return;
+    }
+
+    contactNode->cancelBeginOrEndCollisionCallbackBetweenTagA((int)tagA, (int)tagB);
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::registerPreCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
+                                                               enum LevelHelper_TAG tagB,
+                                                               CCObject* obj,
+                                                               SEL_CallFuncO selector)
+{
+    if(NULL == contactNode){
+        CCLog("LevelHelper WARNING: Please call registerPreColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
+        return;
+    }
+    contactNode->registerPreCollisionCallbackBetweenTagA(tagA, tagB, obj, selector);
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::cancelPreCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
+                                                              enum LevelHelper_TAG tagB)
+{
+    if(NULL == contactNode){
+        CCLog("LevelHelper WARNING: Please call registerPreColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
+        return;
+    }
+    contactNode->cancelPreCollisionCallbackBetweenTagA((int)tagA, (int)tagB);
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::registerPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
+                                                                enum LevelHelper_TAG tagB,
+                                                                CCObject* obj,
+                                                                SEL_CallFuncO selector)
+{
+    if(NULL == contactNode){
+        CCLog("LevelHelper WARNING: Please call registerPostColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
+        return;
+    }
+    contactNode->registerPostCollisionCallbackBetweenTagA(tagA, tagB, obj, selector);    
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::cancelPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
+                                                               enum LevelHelper_TAG tagB)
+{
+    if(NULL == contactNode){
+        CCLog("LevelHelper WARNING: Please call registerPreColisionCallbackBetweenTagA after useLevelHelperCollisionHandling");
+        return;
+    }
+    contactNode->cancelPostCollisionCallbackBetweenTagA((int)tagA,(int)tagB);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+CCSize LevelHelperLoader::gameScreenSize(void){
+    return CCSizeMake(safeFrame.x, safeFrame.y);
+}
+//------------------------------------------------------------------------------
+CCRect LevelHelperLoader::gameWorldSize(void)
+{
+    CCPoint  wbConv = LHSettings::sharedInstance()->convertRatio();
+	
+    CCRect ws = gameWorldRect;
+    
+    ws.origin.x *= wbConv.x;
+    ws.origin.y *= wbConv.y;
+    ws.size.width *= wbConv.x;
+    ws.size.height *= wbConv.y;
+    
+    return ws;
+}
 ////------------------------------------------------------------------------------
 //unsigned int LevelHelperLoader::numberOfBatchNodesUsed(void)
 //{
@@ -705,18 +674,18 @@ LevelHelperLoader::~LevelHelperLoader()
 //////////////////////////////////////////////////////////////////////////////////
 ////GRAVITY
 //////////////////////////////////////////////////////////////////////////////////
-//bool LevelHelperLoader::isGravityZero(void){
-//    if(gravity.x == 0 && gravity.y == 0)
-//        return true;
-//    return false;
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::createGravity(b2World* world)
-//{
-//	if(isGravityZero())
-//		CCLog("LevelHelper Warning: Gravity is not defined in the level. Are you sure you want to set a zero gravity?");
-//    world->SetGravity(b2Vec2(gravity.x, gravity.y));
-//}
+bool LevelHelperLoader::isGravityZero(void){
+    if(gravity.x == 0 && gravity.y == 0)
+        return true;
+    return false;
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::createGravity(b2World* world)
+{
+	if(isGravityZero())
+		CCLog("LevelHelper Warning: Gravity is not defined in the level. Are you sure you want to set a zero gravity?");
+    world->SetGravity(b2Vec2(gravity.x, gravity.y));
+}
 //////////////////////////////////////////////////////////////////////////////////
 ////PHYSIC BOUNDARIES
 //////////////////////////////////////////////////////////////////////////////////
