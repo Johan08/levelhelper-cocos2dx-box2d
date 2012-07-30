@@ -32,6 +32,8 @@
 #include "LHParallaxNode.h"
 #include "LHSettings.h"
 
+#include "../CustomClasses/LHAbstractClass.h"
+
 #include "LHBatch.h"
 #include "LHJoint.h"
 #include "LHDictionary.h"
