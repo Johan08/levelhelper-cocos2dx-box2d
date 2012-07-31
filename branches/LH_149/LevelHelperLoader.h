@@ -201,26 +201,70 @@ public:
     
     //------------------------------------------------------------------------------
     //------------------------------------------------------------------------------
-//    //CREATION
-//    
-//    //New sprite and associated body will be released automatically
-//    //or you can use removeFromParentAndCleanup(true), CCSprite method, to do it at a specific time
-//    //you must set the desired position after creation
-//    
-//    //sprites returned needs to be added in the layer by you
-//    //new sprite unique name for the returned sprite will be
-//    //[OLDNAME]_LH_NEW__SPRITE_XX and [OLDNAME]_LH_NEW_BODY_XX
-//    LHSprite* newSpriteWithUniqueName(const std::string& name); //no physic body
-//    LHSprite* newPhysicalSpriteWithUniqueName(const std::string& name);//with physic body
-//    
-//    //sprites are added in the coresponding batch node automatically
-//    //new sprite unique name for the returned sprite will be
-//    //[OLDNAME]_LH_NEW_BATCH_SPRITE_XX and [OLDNAME]_LH_NEW_BATCH_BODY_XX
-//    LHSprite* newBatchSpriteWithUniqueName(const std::string& name); //no physic body
-//    LHSprite* newPhysicalBatchSpriteWithUniqueName(const std::string& name); //with physic body
-//    
-//    //------------------------------------------------------------------------------
-
+    //CREATION
+    
+    
+    
+    //SPRITE CREATION
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    //name is from one of a sprite already in the level
+    //parent will be Main Layer
+    //if you use custom sprite classes - this will create a sprite of that custom registered class
+    //method will create custom sprite if one is register for the tag of this sprite
+    LHSprite* createSpriteWithUniqueName(const std::string& name);
+    
+    //use this method if you want the sprite to be child of a specific node and not the main LH node
+    //pass nil if you dont want a parent
+    //method will create custom sprite if one is register for the tag of this sprite
+    LHSprite* createSpriteWithUniqueName(const std::string& name, CCNode* parent);
+    
+    //name is from one of a sprite already in the level
+    //parent will be the batch node that is handling the image file of this sprite
+    //method will create custom sprite if one is register for the tag of this sprite
+    LHSprite* createBatchSpriteWithUniqueName(const std::string& name);
+    
+    
+    LHSprite* createSpriteWithName(const std::string& name,
+                                   const std::string& shSheetName,
+                                   const std::string& shFile);
+    
+    //use this method if you want the sprite to be child of a specific node and not the main LH node
+    //pass nil if you dont want a parent
+    LHSprite* createSpriteWithName(const std::string& name,
+                                   const std::string& shSheetName,
+                                   const std::string& shFile,
+                                   CCNode* parent);
+    
+    
+    //use this in order to create sprites of custom types
+    LHSprite* createSpriteWithName(const std::string& name,
+                                   const std::string& shSheetName,
+                                   const std::string& shFile,
+                                   LevelHelper_TAG tag);
+    
+    //use this method if you want the sprite to be child of a specific node and not the main LH node
+    //pass nil if you dont want a parent
+    LHSprite* createSpriteWithName(const std::string& name,
+                                   const std::string& shSheetName,
+                                   const std::string& shFile,
+                                   LevelHelper_TAG tag,
+                                   CCNode* parent);
+    
+    
+    LHSprite* createBatchSpriteWithName(const std::string& name,
+                                        const std::string& shSheetName,
+                                        const std::string& shFile);
+    
+    //use this in order to create sprites of custom types
+    LHSprite* createBatchSpriteWithName(const std::string& name,
+                                        const std::string& shSheetName,
+                                        const std::string& shFile,
+                                        LevelHelper_TAG tag);
+    
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    
 //    //------------------------------------------------------------------------------
 //    //PARALLAX
     void removeParallaxNode(LHParallaxNode* node, bool removeSprites = false);
@@ -305,6 +349,8 @@ private:
         
     void processLevelFileFromDictionary(LHDictionary* dictionary);
 
+    LHDictionary* dictionaryInfoForSpriteNodeNamed(const std::string& name, LHDictionary* dict);
+    
     static void setTouchDispatcherForBezierWithTag(LHBezier* object, int tag);
     static void setTouchDispatcherForSpriteWithTag(LHSprite* object, int tag);
     static void removeTouchDispatcherFromSprite(LHSprite* object);

@@ -33,6 +33,7 @@
 
 class LHSprite;
 class LHBezier;
+class LHFixture;
 class LHNode;
 enum LH_CONTACT_TYPE
 {
@@ -49,6 +50,9 @@ class LHContactInfo : public CCObject
 public:
     b2Body* bodyA; //week ptr;
     b2Body* bodyB; //week ptr;
+    b2Fixture* fixtureA; //week ptr;
+    b2Fixture* fixtureB; //week ptr;
+    
     enum LH_CONTACT_TYPE contactType; //the type of contact that was triggerd
     b2Contact* contact; //available at both pre and post solve
     const b2Manifold* oldManifold;//available at pre solve - else is nil
@@ -63,11 +67,22 @@ public:
     LHBezier* bezierA(void); //may return nil
     LHBezier* bezierB(void); //may return nil
     
+    
+    std::string fixtureNameA();
+    std::string fixtureNameB();
+    
+    int fixtureIdA();
+    int fixtureIdB();
+    
+
+    
     LHContactInfo(void);
     virtual ~LHContactInfo(void);
     
     bool initWithInfo(b2Body* bodyA, 
                       b2Body* bodyB,
+                      b2Fixture* fixtureA,
+                      b2Fixture* fixtureB,
                       b2Contact* _contact,
                       int contactType,
                       const b2Manifold* _manifold,
@@ -75,10 +90,16 @@ public:
     
     static LHContactInfo* contactInfo(b2Body* bodyA,
                                       b2Body* bodyB,
+                                      b2Fixture* fixtureA,
+                                      b2Fixture* fixtureB,
                                       b2Contact* _contact,
                                       int contactType,
                                       const b2Manifold* _manifold,
                                       const b2ContactImpulse* _impulse);
+    
+private:
+    LHFixture* contactFixtureA();
+    LHFixture* contactFixtureB();
 };
 
 #endif

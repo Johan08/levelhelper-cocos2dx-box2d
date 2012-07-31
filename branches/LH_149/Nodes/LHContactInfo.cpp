@@ -29,6 +29,7 @@
 #include "LHBezier.h"
 #include "LHSprite.h"
 #include "LHNode.h"
+#include "LHFixture.h"
 ////////////////////////////////////////////////////////////////////////////////
 
 LHContactInfo::LHContactInfo(void){
@@ -41,6 +42,8 @@ LHContactInfo::~LHContactInfo(void){
 ////////////////////////////////////////////////////////////////////////////////
 bool LHContactInfo::initWithInfo(b2Body* _bodyA, 
                                  b2Body* _bodyB,
+                                 b2Fixture* fixA,
+                                 b2Fixture* fixB,
                                  b2Contact* _contact,
                                  int ctype,
                                  const b2Manifold* _manifold,
@@ -48,6 +51,8 @@ bool LHContactInfo::initWithInfo(b2Body* _bodyA,
     
     bodyA = _bodyA;
     bodyB = _bodyB;
+    fixtureA = fixA;
+    fixtureB = fixB;
     contact = _contact;
     oldManifold = _manifold;
     impulse = _impulse;
@@ -57,13 +62,15 @@ bool LHContactInfo::initWithInfo(b2Body* _bodyA,
 
 LHContactInfo* LHContactInfo::contactInfo(b2Body* _bodyA,
                                           b2Body* _bodyB,
+                                          b2Fixture* fixA,
+                                          b2Fixture* fixB,
                                           b2Contact* _contact,
                                           int ctype,
                                           const b2Manifold* _manifold,
                                           const b2ContactImpulse* _impulse){
     
     LHContactInfo *pobContact = new LHContactInfo();
-	if (pobContact && pobContact->initWithInfo(_bodyA, _bodyB, _contact, 
+	if (pobContact && pobContact->initWithInfo(_bodyA, _bodyB, fixA, fixB, _contact,
                                                ctype, _manifold, _impulse)){
 	    pobContact->autorelease();
         return pobContact;
@@ -134,3 +141,49 @@ LHBezier* LHContactInfo::bezierB(void){
     }
     return 0;
 }
+//------------------------------------------------------------------------------
+LHFixture* LHContactInfo::contactFixtureA()
+{
+    if(NULL == fixtureA){
+        return NULL;
+    }
+    return (LHFixture*)fixtureA->GetUserData();
+}
+//------------------------------------------------------------------------------
+LHFixture* LHContactInfo::contactFixtureB()
+{
+    if(NULL == fixtureB)
+        return NULL;
+    return (LHFixture*)fixtureB->GetUserData();
+}
+//------------------------------------------------------------------------------
+std::string LHContactInfo::fixtureNameA(){
+    LHFixture* fixtureA = contactFixtureA();
+    if(fixtureA)
+        return fixtureA->getFixtureName();
+    
+    return std::string();
+}
+//------------------------------------------------------------------------------
+std::string LHContactInfo::fixtureNameB(){
+    LHFixture* fixtureB = contactFixtureB();
+    if(fixtureB)
+        return fixtureB->getFixtureName();
+    
+    return std::string();
+}
+//------------------------------------------------------------------------------
+int LHContactInfo::fixtureIdA(){
+    LHFixture* fixtureA = contactFixtureA();
+    if(fixtureA)
+        return fixtureA->getFixtureID();
+    return -1;
+}
+//------------------------------------------------------------------------------
+int LHContactInfo::fixtureIdB(){
+    LHFixture* fixtureB = contactFixtureB();
+    if(fixtureB)
+        return fixtureB->getFixtureID();
+    return -1;
+}
+//------------------------------------------------------------------------------
