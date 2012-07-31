@@ -46,7 +46,7 @@ LHBezier::~LHBezier(void){
 //	}
 //	pathNodes.removeAllObjects();
 	
-    removeTouchObserver();
+//    removeTouchObserver();
     
 	if(0 != body)
 	{
@@ -67,17 +67,33 @@ void LHBezier::removeSelf()
 {
     if(body){
         if(body->GetWorld()->IsLocked()){            
-            LHSettings::sharedInstance()->markBezierForRemoval(this);
+            LHSettings::sharedInstance()->markNodeForRemoval(this);
             return;
         }
     }
     removeFromParentAndCleanup(true);
+}
+void LHBezier::onExit(){
+    CCLog("LH BEZIER %s onExit", uniqueName.c_str());
+    removeTouchObserver();
 }
 ////////////////////////////////////////////////////////////////////////////////
 LHBezier::LHBezier(void){
  
     texture = NULL;
     body = NULL;
+    
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
+    
+    tagTouchBeginObserver = NULL;
+    tagTouchMovedObserver = NULL;
+    tagTouchEndedObserver = NULL;
+    swallowTouches = false;
+    touchIsDisabled = false;
+
+    
 //    numberOfBezierNodes++;
 }
 ////////////////////////////////////////////////////////////////////////////////

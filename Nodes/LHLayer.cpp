@@ -27,6 +27,7 @@ bool LHLayer::initWithDictionary(LHDictionary* dictionary){
         ++untitledLayersCount;
     }
     
+    setTag(dictionary->intForKey("Tag"));
     m_nZOrder = dictionary->intForKey("ZOrder");
     
     LHArray* childrenInfo = dictionary->arrayForKey("Children");
@@ -58,6 +59,21 @@ LHLayer* LHLayer::layerWithDictionary(LHDictionary* dict){
 }
 //------------------------------------------------------------------------------
 void LHLayer::removeSelf(){
+    
+    if(isMainLayer)
+    {
+        CCLog("LevelHelper ERROR: MAIN_LAYER cannot be removed with removeSelf(). You will need to delete the entire LevelHelperLoader object.");
+        return;
+    }
+
+    if(parentLoader->getPhysicsWorld()){
+        if(parentLoader->getPhysicsWorld()->IsLocked()){
+            LHSettings::sharedInstance()->markNodeForRemoval(this);
+            return;
+        }
+    }
+
+    parentLoader->removeMainLayer();
     removeFromParentAndCleanup(true);
 }
 //------------------------------------------------------------------------------
@@ -312,9 +328,7 @@ CCArray* LHLayer::beziersWithTag(int tag){
 void LHLayer::draw(void){
     CCLayer::draw(); // calls base class' function
     if(isMainLayer){
-        LHSettings::sharedInstance()->removeMarkedJoints();
-        LHSettings::sharedInstance()->removeMarkedSprites();
-        LHSettings::sharedInstance()->removeMarkedBeziers();
+        LHSettings::sharedInstance()->removeMarkedNodes();
     }
 }
 //------------------------------------------------------------------------------

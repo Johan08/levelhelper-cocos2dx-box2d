@@ -57,7 +57,6 @@ LHSprite::~LHSprite(void){
     if(NULL != parallaxFollowingThisSprite)
         parallaxFollowingThisSprite->setFollowSprite(NULL);
 
-    //CCLog("LHSPRITE Destructor %d", --numberOfSprites);
     stopAllActions();
            
     if(userCustomInfo){
@@ -78,7 +77,7 @@ void LHSprite::removeSelf(){
     
     if(body){
         if(body->GetWorld()->IsLocked()){
-            LHSettings::sharedInstance()->markSpriteForRemoval(this);
+            LHSettings::sharedInstance()->markNodeForRemoval(this);
             return;
         }
     }
@@ -847,7 +846,7 @@ bool  LHSprite::removeBodyFromWorld(void){
                     LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
                     if(jt){
                         jt->shouldDestroyJointOnDealloc = false;
-                        parentLoader->removeJoint(jt);
+                        jt->removeSelf();
                     }
                 }
                 list->removeAllObjects();

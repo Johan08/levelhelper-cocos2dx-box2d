@@ -30,6 +30,10 @@ public:
     void setBody(b2Body* body);
     b2Body* getBody(void);
     
+    std::string& getUniqueName(){return uniqueName;}
+    
+    static bool isLHNode(CCNode* obj);
+        
     //--------------------------------------------------------------------------
     std::string uniqueName;
     b2Body* body;

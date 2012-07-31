@@ -76,6 +76,8 @@ bool LHBatch::initWithDictionary(LHDictionary* dictionary,  LHLayer* layer){
         
     m_nZOrder = dictionary->intForKey("ZOrder");
         
+    setTag(dictionary->intForKey("Tag"));
+    
     if(layer){
         layer->addChild(this, getZOrder());
     }
@@ -173,10 +175,6 @@ CCArray* LHBatch::spritesWithTag(int tag){
         }
     }
     return array;  
-}
-//------------------------------------------------------------------------------
-std::string LHBatch::getUniqueName(){
-    return uniqueName;
 }
 //------------------------------------------------------------------------------
 std::string LHBatch::getImagePath(){

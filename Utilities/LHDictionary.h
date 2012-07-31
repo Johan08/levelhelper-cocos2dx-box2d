@@ -57,7 +57,9 @@ public:
     void removeObjectForKey(const std::string& key);
     void removeAllObjects(void);
     
-    void setObjectForKey(LHObject* obj, const std::string& key);    
+    void setObjectForKey(const std::string& object, const std::string& key);
+    void setObjectForKey(LHObject* obj, const std::string& key);
+    
     void setDictForKey(LHDictionary* dic, const std::string& key);
     void setArrayForKey(LHArray* array, const std::string& key);
     

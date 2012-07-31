@@ -63,7 +63,7 @@ public:;
     void removeSelf();
     
     
-    std::string& getUniqueName(){return uniqueName;};
+    const std::string& getUniqueName(){return uniqueName;};
     enum LH_JOINT_TYPE getType(){return type;}
     
     int getTag(){return tag;}

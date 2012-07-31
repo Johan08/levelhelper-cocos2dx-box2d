@@ -300,6 +300,9 @@ void LHContactNode::beginEndSolve(b2Contact* contact, bool isBegin){
     CCNode* nodeA = (CCNode*)bodyA->GetUserData();
     CCNode* nodeB = (CCNode*)bodyB->GetUserData();
 
+    if(NULL == nodeA || NULL == nodeB){
+        return;
+    }
 #if COCOS2D_VERSION >= 0x00020000
     
     CCDictionary* info = (CCDictionary*)beginEndCollisionMap.objectForKey(nodeA->getTag());
@@ -355,6 +358,9 @@ void LHContactNode::preSolve(b2Contact* contact,
     CCNode* nodeA = (CCNode*)bodyA->GetUserData();
     CCNode* nodeB = (CCNode*)bodyB->GetUserData();
       
+    if(NULL == nodeA || NULL == nodeB)
+        return;
+    
 #if COCOS2D_VERSION >= 0x00020000
     
     CCDictionary* info = (CCDictionary*)preCollisionMap.objectForKey(nodeA->getTag());
@@ -409,9 +415,11 @@ void LHContactNode::postSolve(b2Contact* contact,
     b2Body *bodyA = contact->GetFixtureA()->GetBody();
 	b2Body *bodyB = contact->GetFixtureB()->GetBody();
 	
-    
     CCNode* nodeA = (CCNode*)bodyA->GetUserData();
     CCNode* nodeB = (CCNode*)bodyB->GetUserData();
+    
+    if(NULL == nodeA || NULL == nodeB)
+        return;
     
 #if COCOS2D_VERSION >= 0x00020000
 

@@ -228,6 +228,10 @@ std::string LHDictionary::valueForField(const std::string& field)
     return field.substr(posStart+1, posEnd-posStart-1);
 }
 //------------------------------------------------------------------------------
+void LHDictionary::setObjectForKey(const std::string& object, const std::string& key){
+    setObjectForKey(new LHObject(object), key);
+}
+//------------------------------------------------------------------------------
 void LHDictionary::setObjectForKey(LHObject* obj, const std::string& key){
     
     LHObject* old_obj = objects[key];

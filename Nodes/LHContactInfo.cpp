@@ -28,6 +28,7 @@
 #include "LHSettings.h"
 #include "LHBezier.h"
 #include "LHSprite.h"
+#include "LHNode.h"
 ////////////////////////////////////////////////////////////////////////////////
 
 LHContactInfo::LHContactInfo(void){
@@ -70,7 +71,27 @@ LHContactInfo* LHContactInfo::contactInfo(b2Body* _bodyA,
     CC_SAFE_DELETE(pobContact);
 	return NULL;
 }
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+LHNode* LHContactInfo::nodeA(){
+    CCNode* spr = (CCNode*)bodyA->GetUserData();
+    if(0 != spr){
+        if(LHNode::isLHNode(spr)){
+            return (LHNode*)spr;
+        }
+    }
+    return 0;
+}
+//------------------------------------------------------------------------------
+LHNode* LHContactInfo::nodeB(){
+    CCNode* spr = (CCNode*)bodyB->GetUserData();
+    if(0 != spr){
+        if(LHNode::isLHNode(spr)){
+            return (LHNode*)spr;
+        }
+    }
+    return 0;
+}
+//------------------------------------------------------------------------------
 LHSprite* LHContactInfo::spriteA(void){
     
     CCNode* spr = (CCNode*)bodyA->GetUserData();

@@ -63,10 +63,6 @@ public:
     static LHSprite* spriteWithName(const std::string& spriteName, const std::string& sheetName, const std::string& spriteHelperFile);
     static LHSprite* batchSpriteWithName(const std::string& spriteName, LHBatch* batch);
     virtual void postInit(void){}; 
-
-    
-    
-    
     
 protected:
 	friend class LevelHelperLoader;
