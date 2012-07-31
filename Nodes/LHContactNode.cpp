@@ -35,7 +35,7 @@ class LHContactNodeInfo : public CCObject
 public:
     LHContactNodeInfo(){}
 
-    virtual ~LHContactNodeInfo(void){/*CCLog("ContactNodeInfo release");*/}
+    virtual ~LHContactNodeInfo(void){CCLog("ContactNodeInfo release");}
     
     bool initcontactInfoWithTag(int _tagB,
                                 CCObject* listId,
@@ -108,7 +108,7 @@ LHContactNode::LHContactNode(/*b2World* world*/){
 }
 LHContactNode::~LHContactNode(){
 
-//    CCLog("LHContactNode release");
+    CCLog("LHContactNode release");
         
     preCollisionMap.removeAllObjects();
     postCollisionMap.removeAllObjects();

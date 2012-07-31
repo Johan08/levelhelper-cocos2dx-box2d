@@ -72,7 +72,7 @@ bool SHSceneNode::initSceneNodeWithContentOfFile(const std::string& sceneFile){
     }
     
     delete dictionary;  
-    delete [] levelFileBuffer;
+    delete[] levelFileBuffer;
 
 	return true;
 }

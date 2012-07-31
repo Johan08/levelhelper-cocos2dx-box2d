@@ -49,16 +49,20 @@ LHSprite::~LHSprite(void){
 
     CCLog("LH SPRITE %s dealloc", uniqueName.c_str());
     
+    if(fixturesInfo)
+        delete fixturesInfo;
+    
+    
     unscheduleAllSelectors();
     stopAnimation();
     stopPathMovement();
+    stopAllActions();
     removeBodyFromWorld();
         
+    
     if(NULL != parallaxFollowingThisSprite)
         parallaxFollowingThisSprite->setFollowSprite(NULL);
 
-    stopAllActions();
-           
     if(userCustomInfo){
         delete userCustomInfo;
         userCustomInfo = NULL;
@@ -147,6 +151,7 @@ void LHSprite::createFixturesFromInfoOnBody(){
 //------------------------------------------------------------------------------
 void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
     
+    fixturesInfo = NULL;
     body = NULL;
     
     if(NULL == dictionary)
@@ -852,6 +857,9 @@ bool  LHSprite::removeBodyFromWorld(void){
                 }
                 list->removeAllObjects();
             }
+            
+            if(_world->IsLocked())
+                CCLog("WORLD IS LOCKED");
             
 			_world->DestroyBody(body);
 			body = NULL;

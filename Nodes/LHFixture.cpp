@@ -97,8 +97,6 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
                 ++i;
             }
             
-            CCLog("VERT SIZE %d SPRITE %s", count, sprite->getUniqueName().c_str());
-                
             shapeDef.Set(verts, count);		
                 
             b2FixtureDef fixture;
