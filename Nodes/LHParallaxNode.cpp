@@ -37,6 +37,8 @@ LHParallaxNode::LHParallaxNode(void){
 LHParallaxNode::~LHParallaxNode(void){
     CCLog("LHParallaxNode dealloc");
     
+    unscheduleAllSelectors();
+    
     if(NULL != followedSprite)
         followedSprite->parallaxFollowingThisSprite = NULL;
     followedSprite = NULL;
@@ -100,7 +102,8 @@ bool LHParallaxNode::initWithDictionary(LHDictionary* parallaxDict, LevelHelperL
     uniqueName  = parallaxDict->objectForKey("UniqueName")->stringValue();
     if(!isContinuous)
         speed = 1.0f;
-
+    
+    schedule( schedule_selector(LHParallaxNode::tick) , 1.0f/90.0f);
     return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -123,6 +126,7 @@ void LHParallaxNode::addSprite(LHSprite* sprite, CCPoint ratio)
 	LHParallaxPointObject *obj = createParallaxPointObject(sprite, ratio);
     sprite->setParallaxNode(this);
 	obj->body = sprite->getBody();
+    obj->isLHSprite = true;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void LHParallaxNode::addNode(CCNode* node, CCPoint ratio){
@@ -170,8 +174,6 @@ void LHParallaxNode::removeChild(LHSprite* sprite)
     if(NULL == sprite) 
         return;
     
-    CCLog("REMOVE CHILD FORM PARALLAX");
-        
     for(int i = 0; i< sprites->count(); ++i){        
         LHParallaxPointObject* pt = (LHParallaxPointObject*)sprites->objectAtIndex(i);
 	
@@ -291,10 +293,149 @@ CCSize LHParallaxNode::getBounds(float rw, float rh, float radians)
     return CCSizeMake(x_max-x_min, y_max-y_min);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHParallaxNode::repositionPoint(LHParallaxPointObject* point)
+//void LHParallaxNode::repositionPoint(LHParallaxPointObject* point)
+//{
+//	CCSize spriteContentSize = point->ccsprite->getContentSize();
+//    
+//    float angle = point->ccsprite->getRotation();
+//    float rotation = CC_DEGREES_TO_RADIANS(angle);
+//	float scaleX = point->ccsprite->getScaleX();
+//	float scaleY = point->ccsprite->getScaleY();
+//    
+//    CCSize contentSize = getBounds(spriteContentSize.width,
+//                                   spriteContentSize.height,
+//                                   rotation);
+//        
+//	switch (direction) {
+//		case 1: //right to left
+//		{
+//			if(point->ccsprite->getPosition().x + contentSize.width/2.0f*scaleX <= 0)
+//			{
+//				float difX = point->ccsprite->getPosition().x + contentSize.width/2.0f*scaleX;
+//		
+//				point->setOffset(ccp(winSize.width*screenNumberOnTheRight - point->ratio.x*speed -  contentSize.width/2.0f*scaleX + difX, 
+//                                     point->offset.y));
+//	
+//                if(NULL != point->ccsprite){
+//                    CCPoint newPos = CCPointMake(point->offset.x, point->ccsprite->getPosition().y);
+//                    point->ccsprite->setPosition(newPos);
+//                
+//                    if(point->body != NULL){
+//                    
+//                        float angle = point->ccsprite->getRotation();
+//                        point->body->SetTransform(b2Vec2(newPos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
+//                                                         newPos.y/LHSettings::sharedInstance()->lhPtmRatio()), 
+//                                                 CC_DEGREES_TO_RADIANS(-angle));
+//                    }
+//                }
+//                    
+//                
+//                if(NULL != movedEndListenerObj){
+//                    (movedEndListenerObj->*movedEndListenerSEL)(point->ccsprite);
+//                }
+//			}
+//		}	
+//			break;
+//			
+//		case 0://left to right
+//		{
+//			if(point->ccsprite->getPosition().x - contentSize.width/2.0f*scaleX >= winSize.width)
+//			{
+//				float difX = point->ccsprite->getPosition().x - contentSize.width/2.0f*scaleX - winSize.width;
+//				
+//				point->setOffset(ccp(winSize.width*screenNumberOnTheLeft + point->ratio.x*speed +  contentSize.width/2.0f*scaleX + difX, 
+//                                     point->offset.y));
+//                
+//                
+//                
+//                if(NULL != point->ccsprite){
+//                    CCPoint newPos = CCPointMake(point->offset.x, point->ccsprite->getPosition().y);
+//                    point->ccsprite->setPosition(newPos);
+//                    
+//                    if(point->body != NULL){
+//                        
+//                        float angle = point->ccsprite->getRotation();
+//                        point->body->SetTransform(b2Vec2(newPos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
+//                                                         newPos.y/LHSettings::sharedInstance()->lhPtmRatio()), 
+//                                                 CC_DEGREES_TO_RADIANS(-angle));
+//                    }
+//                }
+//
+//                
+//                if(NULL != movedEndListenerObj){
+//                    (movedEndListenerObj->*movedEndListenerSEL)(point->ccsprite);
+//                }
+//			}
+//		}
+//			break;
+//			
+//		case 2://up to bottom
+//		{
+//			if(point->ccsprite->getPosition().y + contentSize.height/2.0f*scaleY <= 0)
+//			{
+//				float difY = point->ccsprite->getPosition().y + contentSize.height/2.0f*scaleY;
+//				
+//				point->setOffset(ccp(point->offset.x, 
+//                                     winSize.height*screenNumberOnTheTop - point->ratio.y*speed - contentSize.height/2.0f*scaleY + difY));
+//                
+//                
+//                if(NULL != point->ccsprite){
+//                    CCPoint newPos = CCPointMake(point->ccsprite->getPosition().x, point->offset.y);
+//                    point->ccsprite->setPosition(newPos);
+//                    
+//                    if(point->body != NULL){
+//                        
+//                        float angle = point->ccsprite->getRotation();
+//                        point->body->SetTransform(b2Vec2(newPos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
+//                                                         newPos.y/LHSettings::sharedInstance()->lhPtmRatio()), 
+//                                                  CC_DEGREES_TO_RADIANS(-angle));
+//                    }
+//                }
+//                
+//                if(NULL != movedEndListenerObj){
+//                    (movedEndListenerObj->*movedEndListenerSEL)(point->ccsprite);
+//                }
+//			}
+//		}
+//			break;
+//			
+//		case 3://bottom to top
+//		{
+//			if(point->ccsprite->getPosition().y - contentSize.height/2.0f*scaleY >= winSize.height)
+//			{
+//				float difY = point->ccsprite->getPosition().y - contentSize.height/2.0f*scaleY - winSize.height;
+//				
+//				point->setOffset(ccp(point->offset.x, 
+//                                     winSize.height*screenNumberOnTheBottom + point->ratio.y*speed + contentSize.height/2.0f*scaleY + difY));
+//                
+//                if(NULL != point->ccsprite){
+//                    CCPoint newPos = CCPointMake(point->ccsprite->getPosition().x, point->offset.y);
+//                    point->ccsprite->setPosition(newPos);
+//                    
+//                    if(point->body != NULL){
+//                        
+//                        float angle = point->ccsprite->getRotation();
+//                        point->body->SetTransform(b2Vec2(newPos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
+//                                                         newPos.y/LHSettings::sharedInstance()->lhPtmRatio()), 
+//                                                 CC_DEGREES_TO_RADIANS(-angle));
+//                    }
+//                }
+//                
+//                if(NULL != movedEndListenerObj){
+//                    (movedEndListenerObj->*movedEndListenerSEL)(point->ccsprite);
+//                }
+//			}
+//		}
+//			break;
+//		default:
+//			break;
+//	}
+//}
+////////////////////////////////////////////////////////////////////////////////
+void LHParallaxNode::repositionPoint(LHParallaxPointObject* point, double frameTime)
 {
-	CCSize spriteContentSize = point->ccsprite->getContentSize();
-    
+    CCSize spriteContentSize = point->ccsprite->getContentSize();
+    CCPoint spritePosition = point->ccsprite->getPosition();
     float angle = point->ccsprite->getRotation();
     float rotation = CC_DEGREES_TO_RADIANS(angle);
 	float scaleX = point->ccsprite->getScaleX();
@@ -303,62 +444,54 @@ void LHParallaxNode::repositionPoint(LHParallaxPointObject* point)
     CCSize contentSize = getBounds(spriteContentSize.width,
                                    spriteContentSize.height,
                                    rotation);
-        
+    
 	switch (direction) {
 		case 1: //right to left
 		{
-			if(point->ccsprite->getPosition().x + contentSize.width/2.0f*scaleX <= 0)
-			{
-				float difX = point->ccsprite->getPosition().x + contentSize.width/2.0f*scaleX;
-		
-				point->setOffset(ccp(winSize.width*screenNumberOnTheRight - point->ratio.x*speed -  contentSize.width/2.0f*scaleX + difX, 
-                                     point->offset.y));
-	
-                if(NULL != point->ccsprite){
-                    CCPoint newPos = CCPointMake(point->offset.x, point->ccsprite->getPosition().y);
-                    point->ccsprite->setPosition(newPos);
+            if(spritePosition.x + contentSize.width/2.0f*scaleX <= 0)
                 
-                    if(point->body != NULL){
+                //			if(spritePosition.x + contentSize.width*scaleX <= 0)
+			{
+                if(NULL != point->ccsprite){
+                    float difX = spritePosition.x;
                     
-                        float angle = point->ccsprite->getRotation();
-                        point->body->SetTransform(b2Vec2(newPos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
-                                                         newPos.y/LHSettings::sharedInstance()->lhPtmRatio()), 
-                                                 CC_DEGREES_TO_RADIANS(-angle));
+                    CCPoint newPos = CCPointMake(winSize.width*screenNumberOnTheRight + difX,
+                                                 spritePosition.y);
+                    
+                    
+                    if(point->isLHSprite)
+                    {
+                        ((LHSprite*)point->ccsprite)->transformPosition(newPos);
+                    }
+                    else {
+                        point->ccsprite->setPosition(newPos);
                     }
                 }
-                    
+                
                 
                 if(NULL != movedEndListenerObj){
                     (movedEndListenerObj->*movedEndListenerSEL)(point->ccsprite);
                 }
 			}
-		}	
+		}
 			break;
 			
 		case 0://left to right
 		{
-			if(point->ccsprite->getPosition().x - contentSize.width/2.0f*scaleX >= winSize.width)
+            if(spritePosition.x - contentSize.width/2.0f*scaleX >= winSize.width)
 			{
-				float difX = point->ccsprite->getPosition().x - contentSize.width/2.0f*scaleX - winSize.width;
+				float difX = spritePosition.x - winSize.width;
 				
-				point->setOffset(ccp(winSize.width*screenNumberOnTheLeft + point->ratio.x*speed +  contentSize.width/2.0f*scaleX + difX, 
-                                     point->offset.y));
+                CCPoint newPos = CCPointMake(winSize.width*screenNumberOnTheLeft + difX,
+                                             spritePosition.y);
                 
-                
-                
-                if(NULL != point->ccsprite){
-                    CCPoint newPos = CCPointMake(point->offset.x, point->ccsprite->getPosition().y);
-                    point->ccsprite->setPosition(newPos);
-                    
-                    if(point->body != NULL){
-                        
-                        float angle = point->ccsprite->getRotation();
-                        point->body->SetTransform(b2Vec2(newPos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
-                                                         newPos.y/LHSettings::sharedInstance()->lhPtmRatio()), 
-                                                 CC_DEGREES_TO_RADIANS(-angle));
-                    }
+                if(point->isLHSprite)
+                {
+                    ((LHSprite*)point->ccsprite)->transformPosition(newPos);
                 }
-
+                else {
+                    point->ccsprite->setPosition(newPos);
+                }
                 
                 if(NULL != movedEndListenerObj){
                     (movedEndListenerObj->*movedEndListenerSEL)(point->ccsprite);
@@ -369,25 +502,21 @@ void LHParallaxNode::repositionPoint(LHParallaxPointObject* point)
 			
 		case 2://up to bottom
 		{
-			if(point->ccsprite->getPosition().y + contentSize.height/2.0f*scaleY <= 0)
+            if(spritePosition.y + contentSize.height/2.0f*scaleY <= 0)
+                //			if(spritePosition.y + contentSize.height*scaleY <= 0)
 			{
-				float difY = point->ccsprite->getPosition().y + contentSize.height/2.0f*scaleY;
+				float difY = spritePosition.y;
 				
-				point->setOffset(ccp(point->offset.x, 
-                                     winSize.height*screenNumberOnTheTop - point->ratio.y*speed - contentSize.height/2.0f*scaleY + difY));
+                CCPoint newPos = CCPointMake(spritePosition.x,
+                                             winSize.height*screenNumberOnTheTop +difY);
                 
                 
-                if(NULL != point->ccsprite){
-                    CCPoint newPos = CCPointMake(point->ccsprite->getPosition().x, point->offset.y);
+                if(point->isLHSprite)
+                {
+                    ((LHSprite*)point->ccsprite)->transformPosition(newPos);
+                }
+                else {
                     point->ccsprite->setPosition(newPos);
-                    
-                    if(point->body != NULL){
-                        
-                        float angle = point->ccsprite->getRotation();
-                        point->body->SetTransform(b2Vec2(newPos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
-                                                         newPos.y/LHSettings::sharedInstance()->lhPtmRatio()), 
-                                                  CC_DEGREES_TO_RADIANS(-angle));
-                    }
                 }
                 
                 if(NULL != movedEndListenerObj){
@@ -399,24 +528,20 @@ void LHParallaxNode::repositionPoint(LHParallaxPointObject* point)
 			
 		case 3://bottom to top
 		{
-			if(point->ccsprite->getPosition().y - contentSize.height/2.0f*scaleY >= winSize.height)
+            if(spritePosition.y - contentSize.height/2.0f*scaleY >= winSize.height)
+                //			if(spritePosition.y - contentSize.height*scaleY >= winSize.height)
 			{
-				float difY = point->ccsprite->getPosition().y - contentSize.height/2.0f*scaleY - winSize.height;
-				
-				point->setOffset(ccp(point->offset.x, 
-                                     winSize.height*screenNumberOnTheBottom + point->ratio.y*speed + contentSize.height/2.0f*scaleY + difY));
+				float difY = spritePosition.y - winSize.height;
                 
-                if(NULL != point->ccsprite){
-                    CCPoint newPos = CCPointMake(point->ccsprite->getPosition().x, point->offset.y);
+                CCPoint newPos = CCPointMake(spritePosition.x,
+                                             winSize.height*screenNumberOnTheBottom + difY);
+                
+                if(point->isLHSprite)
+                {
+                    ((LHSprite*)point->ccsprite)->transformPosition(newPos);
+                }
+                else {
                     point->ccsprite->setPosition(newPos);
-                    
-                    if(point->body != NULL){
-                        
-                        float angle = point->ccsprite->getRotation();
-                        point->body->SetTransform(b2Vec2(newPos.x/LHSettings::sharedInstance()->lhPtmRatio(), 
-                                                         newPos.y/LHSettings::sharedInstance()->lhPtmRatio()), 
-                                                 CC_DEGREES_TO_RADIANS(-angle));
-                    }
                 }
                 
                 if(NULL != movedEndListenerObj){
@@ -436,7 +561,7 @@ void LHParallaxNode::setPosition(CCPoint newPosition)
     visit();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHParallaxNode::setFollowSprite(LHSprite* sprite, 
+void LHParallaxNode::setFollowSprite(LHSprite* sprite,
                                      bool changeXPosition, 
                                      bool changeYPosition){
     
@@ -458,71 +583,144 @@ void LHParallaxNode::setFollowSprite(LHSprite* sprite,
     }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHParallaxNode::visit(void)
+//void LHParallaxNode::visit(void)
+void LHParallaxNode::tick(float dt)
 {
-    if(LHSettings::sharedInstance()->levelPaused()) //level is paused
-        return;
     
-    if(paused) //this parallax is paused
+    if(LHSettings::sharedInstance()->levelPaused() || paused) //level is paused
+    {
         return;
-    
+    }
     
     if(NULL != followedSprite)
     {
-        float deltaFX = lastFollowedSpritePosition.x - followedSprite->getPosition().x;
-        float deltaFY = lastFollowedSpritePosition.y - followedSprite->getPosition().y;
-        lastFollowedSpritePosition = followedSprite->getPosition();
- 
-        CCPoint lastPosition = this->getPosition();        
-        if(followChangeX && !followChangeY)
-        {
-            CCNode::setPosition(ccp(lastPosition.x + deltaFX, lastPosition.y));
+        CCPoint spritePos = followedSprite->getPosition();
+        float deltaFX = lastFollowedSpritePosition.x - spritePos.x;
+        float deltaFY = lastFollowedSpritePosition.y - spritePos.y;
+        lastFollowedSpritePosition = spritePos;
+        
+        CCPoint lastNodePosition = getPosition();
+        if(followChangeX && !followChangeY){
+            setPosition(ccp(lastNodePosition.x + deltaFX,
+                            lastNodePosition.y));
         }
-        else if(!followChangeX && followChangeY)
-        {
-            CCNode::setPosition(ccp(lastPosition.x, lastPosition.y + deltaFY));
+        else if(!followChangeX && followChangeY){
+            setPosition(ccp(lastNodePosition.x,
+                            lastNodePosition.y + deltaFY));
         }
-        else if(followChangeX && followChangeY)
-        {
-            CCNode::setPosition(ccp(lastPosition.x + deltaFX, lastPosition.y + deltaFY));
+        else if(followChangeX && followChangeY){
+            setPosition(ccp(lastNodePosition.x + deltaFX,
+                            lastNodePosition.y + deltaFY));
         }
     }
     
+    double i = -1.0f; //direction left to right //bottom to up
 	CCPoint pos = getPosition();
-	if( ! CCPoint::CCPointEqualToPoint(pos, lastPosition) || isContinuous) 
+    
+    CCPoint deltaPos = CCPointMake(pos.x - lastPosition.x,
+                                   pos.y - lastPosition.y);
+    
+	if(isContinuous || ! (pos.x == lastPosition.x && pos.y == lastPosition.y))
 	{
-        for(int k = 0; k < sprites->count(); ++k)
-        {
-//#if COCOS2D_VERSION >= 0x00020000
-            LHParallaxPointObject* point = (LHParallaxPointObject*)sprites->objectAtIndex(k);
-//#else
-//            LHParallaxPointObject* point = (LHParallaxPointObject*)sprites->getObjectAtIndex(k);
-//#endif
+        float   frameTime = dt;//[[NSDate date] timeIntervalSince1970] - time;
+        
+        for(int j = 0; j< sprites->count(); ++j){
+            LHParallaxPointObject* point = (LHParallaxPointObject*)sprites->objectAtIndex(j);
+        
+		    i = -1.0f; //direction left to right //bottom to up
+            if(direction == 1 || direction == 2) //right to left //up to bottom
+                i = 1.0f;
             
-			if(NULL != point && point->ccsprite != NULL)
+            LHSprite* spr = (LHSprite*)point->ccsprite;
+            CCPoint oldPos = spr->getPosition();
+            
+            
+            if(isContinuous)
             {
+                spr->transformPosition(CCPointMake((float)(oldPos.x - i*point->ratio.x*speed*frameTime),
+                                                   (float)(oldPos.y - i*point->ratio.y*speed*frameTime)));
                 
-                float x = pos.x * point->ratio.x + point->offset.x;
-                float y = pos.y * point->ratio.y + point->offset.y;	
-
-                int i = -1; //direction left to right //bottom to up
-                if(direction == 1 || direction == 2) //right to left //up to bottom
-                    i = 1;
-            
-                setPositionOnPointWithOffset(CCPointMake(x, y), 
-                                             point, 
-                                             CCPointMake(i*point->ratio.x*speed, 
-                                                         i*point->ratio.y*speed));
-
-                if(isContinuous)
-                {
-                    repositionPoint(point);
-			
-                    point->setOffset(ccp(point->offset.x + i*point->ratio.x*speed, 
-                                         point->offset.y + i*point->ratio.y*speed));
-                }
+                repositionPoint(point, frameTime);
+            }
+            else {
+                
+                spr->transformPosition(CCPointMake(oldPos.x + point->ratio.x*deltaPos.x/*2.0f*frameTime*/,
+                                                   oldPos.y + point->ratio.y*deltaPos.y/*2.0f*frameTime*/));
+                
+                
             }
 		}
-		lastPosition = pos;
 	}
+    lastPosition = pos;
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+//    if(LHSettings::sharedInstance()->levelPaused()) //level is paused
+//        return;
+//    
+//    if(paused) //this parallax is paused
+//        return;
+//    
+//    
+//    if(NULL != followedSprite)
+//    {
+//        float deltaFX = lastFollowedSpritePosition.x - followedSprite->getPosition().x;
+//        float deltaFY = lastFollowedSpritePosition.y - followedSprite->getPosition().y;
+//        lastFollowedSpritePosition = followedSprite->getPosition();
+// 
+//        CCPoint lastPosition = this->getPosition();        
+//        if(followChangeX && !followChangeY)
+//        {
+//            CCNode::setPosition(ccp(lastPosition.x + deltaFX, lastPosition.y));
+//        }
+//        else if(!followChangeX && followChangeY)
+//        {
+//            CCNode::setPosition(ccp(lastPosition.x, lastPosition.y + deltaFY));
+//        }
+//        else if(followChangeX && followChangeY)
+//        {
+//            CCNode::setPosition(ccp(lastPosition.x + deltaFX, lastPosition.y + deltaFY));
+//        }
+//    }
+//    
+//	CCPoint pos = getPosition();
+//	if( ! CCPoint::CCPointEqualToPoint(pos, lastPosition) || isContinuous) 
+//	{
+//        for(int k = 0; k < sprites->count(); ++k)
+//        {
+//            LHParallaxPointObject* point = (LHParallaxPointObject*)sprites->objectAtIndex(k);
+//			if(NULL != point && point->ccsprite != NULL)
+//            {
+//                
+//                float x = pos.x * point->ratio.x + point->offset.x;
+//                float y = pos.y * point->ratio.y + point->offset.y;	
+//
+//                int i = -1; //direction left to right //bottom to up
+//                if(direction == 1 || direction == 2) //right to left //up to bottom
+//                    i = 1;
+//            
+//                setPositionOnPointWithOffset(CCPointMake(x, y), 
+//                                             point, 
+//                                             CCPointMake(i*point->ratio.x*speed, 
+//                                                         i*point->ratio.y*speed));
+//
+//                if(isContinuous)
+//                {
+//                    repositionPoint(point);
+//			
+//                    point->setOffset(ccp(point->offset.x + i*point->ratio.x*speed, 
+//                                         point->offset.y + i*point->ratio.y*speed));
+//                }
+//            }
+//		}
+//		lastPosition = pos;
+//	}
 }

@@ -345,6 +345,9 @@ float LHDictionary::floatForKey(const std::string& key){
         if(obj->type() != LHObject::FLOAT_TYPE){
             printf("floatForKey %s is not a float\n", key.c_str());
         }
+        else if(obj->type() == LHObject::INT_TYPE){
+            return (float)obj->intValue();
+        }
         else {
             return obj->floatValue();
         }

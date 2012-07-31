@@ -27,7 +27,7 @@
 
 #include "Nodes/LHSettings.h"
 #include "Nodes/LHTouchMgr.h"
-
+#include "Nodes/SHDocumentLoader.h"
 
 std::string stringFromInt(const int& i){
     std::stringstream st;
@@ -480,6 +480,219 @@ void LevelHelperLoader::cancelPostCollisionCallbackBetweenTagA(enum LevelHelper_
     }
     contactNode->cancelPostCollisionCallbackBetweenTagA((int)tagA,(int)tagB);
 }
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+LHDictionary* LevelHelperLoader::dictionaryInfoForSpriteNodeNamed(const std::string& name, LHDictionary* dict)
+{
+    LHArray* children = dict->arrayForKey("Children");
+    
+    if(NULL != children)
+    {
+        for(int i = 0; i< children->count(); ++i)
+        {
+            LHDictionary* childDict = children->dictAtIndex(i);
+
+            std::string nodeType = childDict->stringForKey("NodeType");
+            
+            if(nodeType == "LHSprite")
+            {
+                if(childDict->stringForKey("UniqueName") == name)
+                {
+                    return childDict;
+                }
+            }
+            else if(nodeType == "LHBatch" ||
+                    nodeType == "LHLayer")
+            {
+                LHDictionary* retDict = dictionaryInfoForSpriteNodeNamed(name, childDict);
+                if(retDict)
+                    return retDict;
+            }
+        }
+    }
+    
+    return NULL;
+}
+//------------------------------------------------------------------------------
+
+//name is from one of a sprite already in the level
+//parent will be Main Layer
+//if you use custom sprite classes - this will create a sprite of that custom registered class
+//method will create custom sprite if one is register for the tag of this sprite
+LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name){
+    return createSpriteWithUniqueName(name, mainLHLayer);
+}
+
+//use this method if you want the sprite to be child of a specific node and not the main LH node
+//pass nil if you dont want a parent
+//method will create custom sprite if one is register for the tag of this sprite
+LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name, CCNode* parent){
+    
+    for(int i = 0; i< lhNodes->count(); ++i){
+        
+        LHDictionary* dictionary = lhNodes->dictAtIndex(i);
+                
+        LHDictionary* spriteInfo = dictionaryInfoForSpriteNodeNamed(name,dictionary);
+        if(spriteInfo){
+            
+            LHDictionary* texDict = spriteInfo->dictForKey("TextureProperties");
+            if(texDict)
+            {
+                int tag = texDict->intForKey("Tag");
+                
+                lh_spriteCreationMethods methods = LHCustomSpriteMgr::sharedInstance()->customSpriteClassForTag(tag);
+                LHSprite* spr =  (*methods.first)(spriteInfo);
+
+                if(spr && parent)
+                    parent->addChild(spr, spr->getZOrder());
+                return spr;
+            }
+        }
+    }
+    return NULL;
+}
+
+//name is from one of a sprite already in the level
+//parent will be the batch node that is handling the image file of this sprite
+//method will create custom sprite if one is register for the tag of this sprite
+LHSprite* LevelHelperLoader::createBatchSpriteWithUniqueName(const std::string& name){
+
+    for(int i = 0; i< lhNodes->count(); ++i){
+        LHDictionary* dictionary = lhNodes->dictAtIndex(i);
+        LHDictionary* spriteInfo = dictionaryInfoForSpriteNodeNamed(name,dictionary);
+        if(spriteInfo){
+            
+            LHBatch* batch = batchWithUniqueName(spriteInfo->stringForKey("ParentName"));
+            if(batch){
+                LHDictionary* texDict = spriteInfo->dictForKey("TextureProperties");
+                if(texDict)
+                {
+                    int tag = texDict->intForKey("Tag");
+
+                    lh_spriteCreationMethods methods = LHCustomSpriteMgr::sharedInstance()->customSpriteClassForTag(tag);
+                    LHSprite* sprite = (*methods.second)(spriteInfo, batch);
+                    if(sprite){
+                        batch->addChild(sprite, sprite->getZOrder());
+                    }
+                    return sprite;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+
+LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
+                                                  const std::string& shSheetName,
+                                                  const std::string& shFileNoExt){
+    return createSpriteWithName(name, shSheetName, shFileNoExt, mainLHLayer);
+}
+
+//use this method if you want the sprite to be child of a specific node and not the main LH node
+//pass nil if you dont want a parent
+LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
+                                                  const std::string& shSheetName,
+                                                  const std::string& shFileNoExt,
+                                                  CCNode* parent){
+    LHSprite* sprite = LHSprite::spriteWithName(name, shSheetName, shFileNoExt);
+    if(sprite && parent)
+        parent->addChild(sprite);
+    return sprite;
+}
+
+
+//use this in order to create sprites of custom types
+LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
+                                                  const std::string& shSheetName,
+                                                  const std::string& shFileNoExt,
+                                                  LevelHelper_TAG tag){
+    return createSpriteWithName(name, shSheetName, shFileNoExt, tag, mainLHLayer);
+}
+
+//use this method if you want the sprite to be child of a specific node and not the main LH node
+//pass nil if you dont want a parent
+LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
+                                                  const std::string& shSheetName,
+                                                  const std::string& shFileNoExt,
+                                                  LevelHelper_TAG tag,
+                                                  CCNode* parent){
+
+    LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
+                                                                                            shSheetName,
+                                                                                            shFileNoExt);
+    if(dictionary)
+    {
+        lh_spriteCreationMethods methods = LHCustomSpriteMgr::sharedInstance()->customSpriteClassForTag(tag);
+        
+        LHSprite* sprite = (*methods.first)(dictionary);
+                
+        if(sprite){
+            sprite->setTag(tag);
+            if(parent){
+                parent->addChild(sprite);
+            }
+        }
+        return sprite;
+    }
+    return NULL;
+}
+
+LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
+                                                       const std::string& shSheetName,
+                                                       const std::string& shFileNoExt){
+    
+    LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
+                                                                                            shSheetName,
+                                                                                            shFileNoExt);
+    if(dictionary){
+        LHBatch* batch = batchWithUniqueName(dictionary->stringForKey("SHSheetName"));
+        if(!batch){
+            batch = LHBatch::batchWithSheetName(shSheetName, shFileNoExt);
+            mainLHLayer->addChild(batch, batch->getZOrder());
+        }
+        if(batch){
+            LHSprite* sprite = LHSprite::batchSpriteWithDictionary(dictionary, batch);
+            if(sprite){
+                batch->addChild(sprite, sprite->getZOrder());
+            }
+            return sprite;
+        }
+    }
+    return NULL;
+}
+
+//use this in order to create sprites of custom types
+LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
+                                                       const std::string& shSheetName,
+                                                       const std::string& shFileNoExt,
+                                                       LevelHelper_TAG tag){
+  
+    
+    LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
+                                                                                            shSheetName,
+                                                                                            shFileNoExt);
+    if(dictionary)
+    {
+        LHBatch* batch = batchWithUniqueName(dictionary->stringForKey("SHSheetName"));
+        if(!batch){
+            batch = LHBatch::batchWithSheetName(shSheetName, shFileNoExt);
+            mainLHLayer->addChild(batch, batch->getZOrder());
+        }
+        if(batch){
+            lh_spriteCreationMethods methods = LHCustomSpriteMgr::sharedInstance()->customSpriteClassForTag(tag);
+            LHSprite* sprite = (*methods.second)(dictionary, batch);
+        
+            if(sprite){
+                sprite->setTag(tag);
+                batch->addChild(sprite, sprite->getZOrder());
+            }
+            return sprite;
+        }
+    }
+    return NULL;
+}
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 CCSize LevelHelperLoader::gameScreenSize(void){

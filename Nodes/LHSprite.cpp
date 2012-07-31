@@ -170,10 +170,12 @@ void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
                          pos.y/LHSettings::sharedInstance()->lhPtmRatio());
     
 	bodyDef.angle = CC_DEGREES_TO_RADIANS(-1*getRotation());
+
     
     bodyDef.userData = this;
     
-    body = world->CreateBody(&bodyDef);    
+    
+    body = world->CreateBody(&bodyDef);
 	body->SetFixedRotation(dictionary->boolForKey("FixedRot"));
     
     body->SetGravityScale(dictionary->floatForKey("GravityScale"));
@@ -198,7 +200,7 @@ void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
 #endif
     fixturesObj->retain();
     
-    createFixturesFromInfoOnBody();    
+    createFixturesFromInfoOnBody();
 }
 //------------------------------------------------------------------------------
 void LHSprite::loadAnimationsInformationFromDictionary(LHDictionary* dictionary){
@@ -240,7 +242,7 @@ void LHSprite::loadPathMovementFromDictionary(LHDictionary* dictionary){
     pathDefaults.name               = std::string(dictionary->stringForKey("PathName"));
     pathDefaults.orientation        = dictionary->intForKey("PathOrientation");
     pathDefaults.restartOtherEnd    = dictionary->boolForKey("PathOtherEnd");
-    pathDefaults.speed              = dictionary->floatForKey("PathSpeed");
+    pathDefaults.speed              = dictionary->floatForKey("PathSpeed");    
     pathDefaults.startAtLaunch      = dictionary->boolForKey("PathStartAtLaunch");
     pathDefaults.startPoint         = dictionary->intForKey("PathStartPoint");
 }
@@ -340,16 +342,14 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     
     setFlipX(flipX);
     setFlipY(flipY);
-    
-    CCPoint scale = LHSettings::sharedInstance()->transformedScalePointToCocos2d(texDict->pointForKey("Scale"));
-    
+
+    CCPoint scale = LHSettings::sharedInstance()->transformedScalePointToCocos2d(texDict->pointForKey("Scale"));    
     setScaleX(scale.x);
     setScaleY(scale.y);
     
-    //    realScale = CGSizeMake(scale.x, scale.y);
     realScale = CCSizeMake(scale.x*LHSettings::sharedInstance()->convertRatio().x,
                            scale.y*LHSettings::sharedInstance()->convertRatio().y);
-    
+        
     CCPoint position = LHSettings::sharedInstance()->transformedPointToCocos2d(texDict->pointForKey("Position"));
     
     setPosition(ccp((int)position.x, (int)position.y));
@@ -389,7 +389,8 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     originalRect = getTextureRect();
     
     fixturesObj = NULL;
-    loadPhysicalInformationFromDictionary(phyDict);    
+    
+    loadPhysicalInformationFromDictionary(phyDict);
     
     
     loadAnimationsInformationFromDictionary(dictionary->dictForKey("AnimationsProperties"));
@@ -938,7 +939,7 @@ void LHSprite::prepareMovementOnPathWithUniqueName(const std::string& pathName){
         pathNode->setIsCyclic(pathDefaults.isCyclic);
         pathNode->setRelativeMovement(pathDefaults.relativeMovement);
         pathNode->setAxisOrientation(pathDefaults.orientation);
-        pathNode->setRestartOtherEnd(pathDefaults.restartOtherEnd);
+        pathNode->setRestartOtherEnd(pathDefaults.restartOtherEnd);        
         pathNode->setSpeed(pathDefaults.speed);
         pathNode->setStartAtEndPoint(pathDefaults.startPoint);
     }
@@ -1087,49 +1088,68 @@ void LHSprite::transformScaleY(float scaleY){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-#if COCOS2D_VERSION >= 0x00020000
-// this method will only get called if the sprite is batched.
-// return YES if the physics values (angles, position ) changed
-// If you return NO, then nodeToParentTransform won't be called.
-bool LHSprite::isDirty(){
-    return true;
-}
 
-// returns the transform matrix according the Chipmunk Body values
-CCAffineTransform LHSprite::nodeToParentTransform(void)
-{
-    if(!body)
-        return CCSprite::nodeToParentTransform();
-        
-    b2Vec2 pos  = body->GetPosition();
-    
-    float x = pos.x * LevelHelperLoader::pointsToMeterRatio();
-    float y = pos.y * LevelHelperLoader::pointsToMeterRatio();
-    
-
-    if ( isIgnoreAnchorPointForPosition() ) {
-        x += m_tAnchorPointInPoints.x;
-        y += m_tAnchorPointInPoints.y;
-    }    
-    
-    // Make matrix
-    float radians = body->GetAngle();
-    float c = cosf(radians);
-    float s = sinf(radians);
-
-    if( ! CCPoint::CCPointEqualToPoint(m_tAnchorPointInPoints, CCPointZero) ){
-        x += c*-m_tAnchorPointInPoints.x + -s*-m_tAnchorPointInPoints.y;
-        y += s*-m_tAnchorPointInPoints.x + c*-m_tAnchorPointInPoints.y;
-    }
-    
-    // Rot, Translate Matrix
-    m_tTransform = CCAffineTransformMake( c,  s,
-                                         -s,    c,
-                                         x,    y );
-    
-    return m_tTransform;
-}
-#endif
+//scale not working
+//#if COCOS2D_VERSION >= 0x00020000
+//// this method will only get called if the sprite is batched.
+//// return YES if the physics values (angles, position ) changed
+//// If you return NO, then nodeToParentTransform won't be called.
+//bool LHSprite::isDirty(){
+//    return true;
+//}
+//
+//// returns the transform matrix according the Chipmunk Body values
+//CCAffineTransform LHSprite::nodeToParentTransform(void)
+//{
+//    if(!body)
+//        return CCSprite::nodeToParentTransform();
+//        
+//    b2Vec2 pos  = body->GetPosition();
+//    
+//    float x = pos.x * LevelHelperLoader::pointsToMeterRatio();
+//    float y = pos.y * LevelHelperLoader::pointsToMeterRatio();
+//    
+//    m_tTransform = CCAffineTransformMakeIdentity();
+//
+////    CC_DLL CCAffineTransform CCAffineTransformMakeIdentity();
+////    CC_DLL CCRect CCRectApplyAffineTransform(const CCRect& rect, const CCAffineTransform& anAffineTransform);
+////    
+////    CC_DLL CCAffineTransform CCAffineTransformTranslate(const CCAffineTransform& t, float tx, float ty);
+////    CC_DLL CCAffineTransform CCAffineTransformRotate(const CCAffineTransform& aTransform, CCFloat anAngle);
+////    CC_DLL CCAffineTransform CCAffineTransformScale(const CCAffineTransform& t, CCFloat sx, CCFloat sy);
+//    
+//    m_tTransform = CCAffineTransformScale(m_tTransform, getScaleX(), getScaleY());
+//    
+//    
+//    if ( isIgnoreAnchorPointForPosition() ) {
+//        x += m_tAnchorPointInPoints.x;
+//        y += m_tAnchorPointInPoints.y;
+//    }    
+//
+//    m_tTransform = CCAffineTransformTranslate(m_tTransform, x, y);
+//    
+//    // Make matrix
+//    float radians = body->GetAngle();
+//    float c = cosf(radians);
+//    float s = sinf(radians);
+//
+//    if( ! CCPoint::CCPointEqualToPoint(m_tAnchorPointInPoints, CCPointZero) ){
+//        x += c*-m_tAnchorPointInPoints.x + -s*-m_tAnchorPointInPoints.y;
+//        y += s*-m_tAnchorPointInPoints.x + c*-m_tAnchorPointInPoints.y;
+//    }
+//    
+//    m_tTransform = CCAffineTransformRotate(m_tTransform, radians);
+//
+//    
+//    // Rot, Translate Matrix
+//    m_tTransform = CCAffineTransformMake( c,  s,
+//                                         -s,    c,
+//                                         x,    y );
+//    
+//    
+//    return m_tTransform;
+//}
+//#endif
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 bool LHSprite::isTouchedAtPoint(CCPoint point){

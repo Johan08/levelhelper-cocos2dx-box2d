@@ -46,6 +46,7 @@ public:
 	CCPoint initialPosition;
 	CCNode *ccsprite;	//weak ref
 	b2Body *body;		//weak ref
+    bool isLHSprite;
     
 
     virtual ~LHParallaxPointObject(void)
@@ -58,6 +59,11 @@ public:
     LHParallaxPointObject(void){
         ccsprite = NULL;
         body = NULL;
+        ratio = ccp(0,0);
+        initialPosition = ccp(0,0);
+        offset = ccp(0,0);
+        position = ccp(0,0);
+        isLHSprite = false;
     }
     bool initWithCCPoint(CCPoint point){
         ratio = point;
@@ -119,6 +125,7 @@ private:
     LevelHelperLoader* parentLoader;
     
     friend class LevelHelperLoader;
+    
 public:
     
     LHParallaxNode(void);
@@ -153,7 +160,8 @@ public:
     CCArray* spritesInNode(void);
     std::vector<b2Body*> bodiesInNode(void); //better to use spritesInNode and take the body from the LHSprite*
     
-    virtual void visit(void);
+//    virtual void visit(void);
+    virtual void tick(float timeInterval);
 private:
     
     void setPositionOnPointWithOffset(const CCPoint& pos, 
@@ -162,7 +170,8 @@ private:
     
     CCSize getBounds(float rw, float rh, float radians);
     
-    void repositionPoint(LHParallaxPointObject* point);
+    void repositionPoint(LHParallaxPointObject* point, double frameTime);
+//    void repositionPoint(LHParallaxPointObject* point);
 
     LHParallaxPointObject* createParallaxPointObject(CCNode* node, CCPoint ratio);
 };

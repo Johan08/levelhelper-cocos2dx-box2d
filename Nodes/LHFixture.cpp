@@ -31,10 +31,10 @@ b2Vec2 LHFixture::transformPoint(CCPoint point, LHSprite* sprite, CCPoint offset
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSprite* sprite)
-{        
+{
     fixtureName = std::string(dictionary->stringForKey("Name"));
     fixtureID   = dictionary->intForKey("Tag");
-                
+ 
     int category= dictionary->intForKey("Category");
     int group   = dictionary->intForKey("Group");
     int mask    = dictionary->intForKey("Mask");
@@ -115,7 +115,8 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
 
             //------------------------------------------------------------------            
             fixture.shape = &shapeDef;
-            body->CreateFixture(&fixture);
+            b2Fixture* finalFixture = body->CreateFixture(&fixture);
+            finalFixture->SetUserData(this);
             delete[] verts;
         }
     }
@@ -173,7 +174,8 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
                             origin.y/ptm);
                 
             fixture.shape = &circle;
-            body->CreateFixture(&fixture);
+            b2Fixture* finalFixture = body->CreateFixture(&fixture);
+            finalFixture->SetUserData(this);
         }
         else
         {
@@ -195,7 +197,8 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
             shape.SetAsBox(boxWidth/ptm, boxHeight/ptm, b2Vec2(origin.x/ptm, origin.y/ptm), 0);
 
             fixture.shape = &shape;
-            body->CreateFixture(&fixture);
+            b2Fixture* finalFixture = body->CreateFixture(&fixture);
+            finalFixture->SetUserData(this);
         }
     }                
     return true;
