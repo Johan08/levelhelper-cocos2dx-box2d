@@ -334,7 +334,7 @@ void LHContactNode::beginEndSolve(b2Contact* contact, bool isBegin){
         LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
         if(NULL != contactInfo){
             foundA = true;
-            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact, isBegin, 0,0);
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact, isBegin, 0,0);
         }
     }
     if(!foundA){
@@ -342,7 +342,7 @@ void LHContactNode::beginEndSolve(b2Contact* contact, bool isBegin){
         if(NULL != info){
             LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
             if(NULL != contactInfo){
-                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact, isBegin, 0, 0);
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, isBegin, 0, 0);
             }
         }        
     }
@@ -395,7 +395,7 @@ void LHContactNode::preSolve(b2Contact* contact,
         LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
         if(NULL != contactInfo){
             foundA = true;
-            contactInfo->callListenerWithBodyA(bodyA,bodyB,contact,LH_PRE_SOLVE_CONTACT, oldManifold,0);
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact,LH_PRE_SOLVE_CONTACT, oldManifold,0);
         }
     }
     if(!foundA){
@@ -403,7 +403,7 @@ void LHContactNode::preSolve(b2Contact* contact,
         if(NULL != info){
             LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
             if(NULL != contactInfo){
-                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact, LH_PRE_SOLVE_CONTACT, oldManifold, 0);
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, LH_PRE_SOLVE_CONTACT, oldManifold, 0);
             }
         }        
     }
@@ -453,7 +453,7 @@ void LHContactNode::postSolve(b2Contact* contact,
         LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
         if(NULL != contactInfo){
             foundA = true;
-            contactInfo->callListenerWithBodyA(bodyA,bodyB,contact,LH_POST_SOLVE_CONTACT,  0,impulse);
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact,LH_POST_SOLVE_CONTACT,  0,impulse);
         }
     }
     if(!foundA){
@@ -461,7 +461,7 @@ void LHContactNode::postSolve(b2Contact* contact,
         if(NULL != info){
             LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
             if(NULL != contactInfo){
-                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact, LH_POST_SOLVE_CONTACT, 0, impulse);
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, LH_POST_SOLVE_CONTACT, 0, impulse);
             }
         }        
     }    

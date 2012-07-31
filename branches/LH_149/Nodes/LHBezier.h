@@ -52,11 +52,17 @@ class LHBezier : public CCNode, public CCStandardTouchDelegate
 {
 protected:
     
+#if COCOS2D_VERSION >= 0x00020000
+    CCGLProgram *mShaderProgram;
+	GLint		mColorLocation;
+#endif
+
 	bool isClosed;
 	bool isTile;
 	bool isVisible;
 	bool isLine;
 	bool isPath;
+    float opacity;
     std::string uniqueName;
 	b2Body* body; //can be 0
     std::vector<CCPoint> pathPoints;
@@ -85,6 +91,8 @@ protected:
     LHObserverPair* touchEndedObserver;
     bool swallowTouches;
     bool touchIsDisabled;
+    int touchPriority;
+    
     LHObserverPair* tagTouchBeginObserver;
     LHObserverPair* tagTouchMovedObserver;
     LHObserverPair* tagTouchEndedObserver;
@@ -158,10 +166,15 @@ public:
     
     void setSwallowTouches(bool val){swallowTouches = val;}
     bool getSwallowTouches(){return swallowTouches;}
+    
+    void setTouchPriority(int val){touchPriority = val;}
+    int getTouchPriority(){return touchPriority;}
 
     virtual void touchDelegateRetain() {} //compatibility with old cocos2d-x version
     virtual void touchDelegateRelease() {}//compatibility with old cocos2d-x version
     virtual void onExit();
+    
+//    virtual void visit();
 private:
     
     static CCPoint pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, float t);

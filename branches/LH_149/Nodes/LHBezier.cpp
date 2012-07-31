@@ -28,6 +28,34 @@
 #include "LHSettings.h"
 #include "LHSprite.h"
 
+
+typedef struct _ccV3F_C4B_T2F_Triangle
+{
+	//! top left
+	ccV3F_C4B_T2F	tl;
+    //! top right
+	ccV3F_C4B_T2F	tr;
+	//! bottom
+	ccV3F_C4B_T2F	bc;
+    
+} lhV3F_C4B_T2F_Triangle;
+
+
+typedef struct lhV3F_C4B
+{
+    ccVertex3F point;
+    ccColor4B color;
+} lhV3F_C4B;
+
+
+
+typedef struct lhV3F_Line
+{
+	lhV3F_C4B	A;
+	lhV3F_C4B	B;
+} lhV3F_Line;
+
+
 //int LHBezierNode::numberOfBezierNodes = 0;
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,16 +66,7 @@ void LHBezier::init(void){
 LHBezier::~LHBezier(void){
     
     CCLog("LHBezierNode destructor %s", uniqueName.c_str());
-    
-//    for(int i = 0; i < pathNodes.count(); ++i)
-//    {
-//        LHPathNode* pNode = pathNodes.getObjectAtIndex(i);
-//        pNode->removeFromParentAndCleanup(true);
-//	}
-//	pathNodes.removeAllObjects();
-	
-//    removeTouchObserver();
-    
+        
 	if(0 != body)
 	{
 		b2World* _world = body->GetWorld();
@@ -111,32 +130,65 @@ bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     isVisible	= textureDict->boolForKey("IsDrawable");
     isLine		= textureDict->boolForKey("IsSimpleLine");
     isPath		= textureDict->boolForKey("IsPath");
+    opacity     = textureDict->floatForKey("Opacity");
     
     uniqueName  = std::string(textureDict->stringForKey("UniqueName"));
     
     setTag(textureDict->intForKey("Tag"));
     setVertexZ(textureDict->intForKey("ZOrder"));
     
+//    std::string img = textureDict->stringForKey("ImageFile");
+//    imageSize = CCSizeZero;
+//    texture = NULL;
+//    
+//    if(img != "" && img != "No Image")
+//    {
+//        std::string path = LHSettings::sharedInstance()->imagePath(img.c_str());
+//        texture = CCTextureCache::sharedTextureCache()->addImage(path.c_str());
+//        if( texture ) {
+//            imageSize = texture->getContentSize();
+//        }
+//    }
+
     std::string img = textureDict->stringForKey("ImageFile");
     imageSize = CCSizeZero;
     texture = NULL;
     
-    if(img != "" && img != "No Image")
+#if COCOS2D_VERSION >= 0x00020000
+    setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionColor));
+    mShaderProgram = CCShaderCache::sharedShaderCache()->programForKey(kCCShader_Position_uColor);
+    mColorLocation = glGetUniformLocation( mShaderProgram->getProgram(), "u_color");
+#endif
+    
+    if(img!= "" && img != "No Image")
     {
-        std::string path = LHSettings::sharedInstance()->imagePath(img.c_str());
+        
+#if COCOS2D_VERSION >= 0x00020000
+        std::string path = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(img.c_str());
+#else
+        std::string path = CCFileUtils::fullPathFromRelativePath(img.c_str());
+#endif
         texture = CCTextureCache::sharedTextureCache()->addImage(path.c_str());
+//        texture = [[CCTextureCache sharedTextureCache] addImage:path];
+        
         if( texture ) {
+            texture->retain();
+
+#if COCOS2D_VERSION >= 0x00020000
+            setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor));
+#endif
+            
             imageSize = texture->getContentSize();
         }
-    }
+    }    
     
-    winSize = CCDirector::sharedDirector()->getWinSize();		
-    float scale = CCDirector::sharedDirector()->getContentScaleFactor();
+    winSize = CCDirector::sharedDirector()->getWinSize();
+//    float scale = CCDirector::sharedDirector()->getContentScaleFactor();
 
     
     color       = textureDict->rectForKey("Color");
     lineColor   = textureDict->rectForKey("LineColor");
-    lineWidth   = textureDict->floatForKey("LineWidth")*scale;
+    lineWidth   = textureDict->floatForKey("LineWidth");//*scale;
     
     LHDictionary* physicsDict = bezierDict->dictForKey("PhysicsProperties");
     
@@ -146,6 +198,8 @@ bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     b2World* world = LHSettings::sharedInstance()->getActiveBox2dWorld();
     if(NULL != world)
         createBodyFromDictionary(physicsDict,world);
+    
+    LevelHelperLoader::setTouchDispatcherForBezierWithTag(this, getTag());
     
     return true;
 }
@@ -162,47 +216,6 @@ LHBezier* LHBezier::bezierWithDictionary(LHDictionary* properties)
 	return NULL;
 }
 ////////////////////////////////////////////////////////////////////////////////
-//LHPathNode* LHBezier::addSpriteOnPath(LHSprite* spr, 
-//                                          float   pathSpeed, 
-//                                          bool    startAtEndPoint,
-//                                          bool    isCyclic,
-//                                          bool    restartOtherEnd,
-//                                          int     axis,
-//                                          bool    flipx,
-//                                          bool    flipy,
-//                                          bool    deltaMove){
-//    
-//    
-//    
-//	LHPathNode* node = LHPathNode::nodePathWithPoints(pathPoints);	
-//    node->setStartAtEndPoint(startAtEndPoint);
-//	node->setSprite(spr);
-//	node->setBody(spr->getBody());
-//    
-//    if(!deltaMove){
-//        if((int)pathPoints.size() > 0)
-//        {
-//            CCPoint pathPos = pathPoints[0];
-//            spr->transformPosition(pathPos);
-//        }
-//    }
-//    
-//	node->setSpeed(pathSpeed);
-//    node->setRestartOtherEnd(restartOtherEnd);
-//	node->setIsCyclic(isCyclic);
-//	node->setAxisOrientation(axis);
-//	node->setIsLine(isLine);
-//    node->setFlipX(flipx);
-//    node->setFlipY(flipy);
-//    node->setUniqueName(uniqueName.c_str());
-//    //pathNodes.addObject(node);
-//	    
-//    this->getParent()->addChild(node);
-//    
-//    return  node;
-//
-//}
-////////////////////////////////////////////////////////////////////////////////
 CCPoint LHBezier::pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, float t){    
 	float var1, var2, var3;
     CCPoint vPoint(0.0f, 0.0f);
@@ -215,15 +228,12 @@ CCPoint LHBezier::pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, f
     return(vPoint);				
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary, LHArray* fixtures)
-
-//void LHBezier::initTileVerticesFromDictionary(LHDictionary* bezierDict)
+void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
+                                              LHArray* fixtures)
 {
     float scale = CCDirector::sharedDirector()->getContentScaleFactor();
     
-	CCPoint convert = LHSettings::sharedInstance()->convertRatio();
-//	LHArray* fixtures = bezierDict->arrayForKey("TileVertices");
-    
+	CCPoint convert = LHSettings::sharedInstance()->convertRatio();    
     if(NULL != fixtures)
     {
         for(int i = 0; i < fixtures->count(); ++i)
@@ -241,9 +251,6 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary, LHArray*
                 point.x = point.x* convert.x;
                 point.y = winSize.height - point.y*convert.y;
 			
-                //point.x*=scale;
-                //point.y*=scale;
-
                 point.x += pos_offset.x;
                 point.y -= pos_offset.y;
 
@@ -503,10 +510,185 @@ void LHBezier::pushBlendingTextureNamed(const std::string& texName,
     }
 }
 ////////////////////////////////////////////////////////////////////////////////
+//void LHBezier::visit()
+//{
+//	CCNode::visit();
+//}
 #if COCOS2D_VERSION >= 0x00020000
 void LHBezier::draw(void)
 {
+    if(!isVisible){
+        return;
+    }
     
+    CCNode::draw();
+    
+    CC_NODE_DRAW_SETUP();
+    
+    float scale = 1;
+    
+    int size = (int)trianglesHolder.size();
+    
+    lhV3F_C4B_T2F_Triangle points[size];
+    
+    ccColor4B colorVert = { (GLubyte)(color.origin.x*255.0f),
+        (GLubyte)(color.origin.y*255.0f),
+        (GLubyte)(color.size.width*255.0f),
+        (GLubyte)(opacity*255.0f)};
+    
+    for(int k = 0; k < (int)size; ++k)
+    {
+        std::vector<CCPoint> fix = trianglesHolder[k];
+        
+        for(int j = 0; j < 3; ++j)
+        {
+            CCPoint pt = fix[j];
+            
+            pt.x *=scale;
+            pt.y *=scale;
+            
+            ccVertex3F vert = {pt.x, pt.y, 0};
+            ccTex2F tex = { (pt.x/imageSize.width),
+                ((winSize.height - pt.y)/imageSize.height)};
+            
+            if(j == 0)
+            {
+                points[k].tl.vertices = vert;
+                points[k].tl.colors = colorVert;
+                points[k].tl.texCoords = tex;
+            }
+            else if(j == 1)
+            {
+                points[k].tr.vertices = vert;
+                points[k].tr.colors = colorVert;
+                points[k].tr.texCoords = tex;
+            }
+            else if (j == 2)
+            {
+                points[k].bc.vertices = vert;
+                points[k].bc.colors = colorVert;
+                points[k].bc.texCoords = tex;
+            }
+        }
+    }
+    
+    
+    ccBlendFunc	blendFunc_;				// Needed for the texture protocol
+    
+    blendFunc_.src = GL_SRC_ALPHA;
+    blendFunc_.dst = GL_ONE_MINUS_SRC_ALPHA;
+    
+    
+    ccGLEnableVertexAttribs( kCCVertexAttribFlag_PosColorTex );
+    
+    ccGLBlendFunc( blendFunc_.src, blendFunc_.dst );
+    
+    if(texture)
+    {
+        ccGLBindTexture2D( texture->getName());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
+    
+#define kPointSize sizeof(ccV3F_C4B_T2F)
+    long offset = (long)&points;
+    
+    // vertex
+    int diff = offsetof( ccV3F_C4B_T2F, vertices);
+    glVertexAttribPointer(kCCVertexAttrib_Position, 3, GL_FLOAT, GL_FALSE, kPointSize, (void*) (offset + diff));
+    
+    // texCoods
+    diff = offsetof( ccV3F_C4B_T2F, texCoords);
+    glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, kPointSize, (void*)(offset + diff));
+    
+    // color
+    diff = offsetof( ccV3F_C4B_T2F, colors);
+    glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, kPointSize, (void*)(offset + diff));
+    
+    glDrawArrays(GL_TRIANGLES, 0, 3*size);
+    
+    
+    bool wasBlend = glIsEnabled(GL_BLEND);
+    glEnable(GL_BLEND);
+    
+    for(int b = 0; b < (int)blendingTextures.size(); ++b)
+    {
+        LHBezierBlendingInfo info = blendingTextures[b];
+
+        CCTexture2D* tex = info.texture;
+        if(NULL != tex)
+        {
+            glBlendFunc(info.blendSource, info.blendDestination);
+            glBindTexture(GL_TEXTURE_2D, tex->getName());
+            
+            if(info.tile){
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            }
+            
+            glDrawArrays(GL_TRIANGLES, 0, 3*size);
+        }
+    }
+    
+    if(!wasBlend)
+        glDisable(GL_BLEND);
+    
+    float oldLineWidth = 1.0f;
+    glGetFloatv(GL_LINE_WIDTH, &oldLineWidth);
+    
+    glLineWidth(lineWidth);
+    
+//    int linesNo = (int)linesHolder.size();
+        
+    mShaderProgram->use();
+	mShaderProgram->setUniformForModelViewProjectionMatrix();
+	mShaderProgram->setUniformLocationWith4f(mColorLocation,
+                                             lineColor.origin.x,
+                                             lineColor.origin.y,
+                                             lineColor.size.width,
+                                             opacity);
+    
+    
+    ccColor4B lineColorVert = { (GLubyte)(lineColor.origin.x*255.0f),
+                                (GLubyte)(lineColor.origin.y*255.0f),
+                                (GLubyte)(lineColor.size.width*255.0f),
+                                (GLubyte)(opacity*255.0f)};
+    
+
+    lhV3F_Line lines_verts[linesHolder.size()];
+    int l = 0;
+    for(int i = 0; i < (int)linesHolder.size(); i+=2)
+    {
+        CCPoint pt1 = linesHolder[i];
+        CCPoint pt2 = linesHolder[i+1];
+
+        lines_verts[l].A.point = (ccVertex3F){pt1.x, pt1.y, 0};
+        lines_verts[l].A.color = lineColorVert;
+        
+        lines_verts[l].B.point = (ccVertex3F){pt2.x, pt2.y, 0};
+        lines_verts[l].B.color = lineColorVert;
+        
+        l++;
+    }
+    
+    ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position | kCCVertexAttribFlag_Color );
+        
+#define line_kPointSize sizeof(lhV3F_C4B)
+    long line_offset = (long)&lines_verts;
+    
+    // vertex
+    int line_diff = offsetof( lhV3F_C4B, point);
+    glVertexAttribPointer(kCCVertexAttrib_Position, 3, GL_FLOAT, GL_FALSE, line_kPointSize, (void*) (line_offset + line_diff));
+    
+    // color
+    line_diff = offsetof( lhV3F_C4B, color);
+    glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, line_kPointSize, (void*)(line_offset + line_diff));
+    
+    glDrawArrays(GL_LINES, 0, linesHolder.size());
+    	
+	CC_INCREMENT_GL_DRAWS(1);
+    
+	CHECK_GL_ERROR_DEBUG();
 }
 #else
 void LHBezier::draw(void)
@@ -524,18 +706,31 @@ void LHBezier::draw(void)
 		
         glDisableClientState(GL_COLOR_ARRAY);
         
-        if(NULL != texture)
-        {
-            glEnable(GL_TEXTURE_2D);		            
-            glBindTexture(GL_TEXTURE_2D, texture->getName());
+//        if(NULL != texture)
+//        {
+            if(texture)
+            {
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, texture->getName());
 		
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            }
+        else
+        {
+            glDisable(GL_TEXTURE_2D);
+            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+        }
             
             int size = (int)trianglesHolder.size();
             CCPoint* verts = new CCPoint[size* 3];
-            CCPoint* texcoords = new CCPoint[size* 3];
-            
+        
+            CCPoint* texcoords = NULL;
+            if(texture)
+            {
+                texcoords = new CCPoint[size* 3];
+            }
             for(int k = 0; k < (int)trianglesHolder.size();++k)
             {
                 std::vector<CCPoint> fix = trianglesHolder[k];
@@ -548,12 +743,19 @@ void LHBezier::draw(void)
                     pt.y *= scale;
                     
                     verts[k*3 + j] = pt;
-                    texcoords[k*3 + j].x = pt.x/imageSize.width;
-                    texcoords[k*3 + j].y = (winSize.height - pt.y)/imageSize.height;
+                    
+                    if(texcoords)
+                    {
+                        texcoords[k*3 + j].x = pt.x/imageSize.width;
+                        texcoords[k*3 + j].y = (winSize.height - pt.y)/imageSize.height;
+                    }
                 }
             }
                                 
+        if(texcoords)
+        {
             glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
+        }
             glVertexPointer(2, GL_FLOAT, 0, verts);
             glDrawArrays(GL_TRIANGLES, 0, 3*size);
             
@@ -577,7 +779,11 @@ void LHBezier::draw(void)
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                     }
 
-                    glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
+                    if(texcoords)
+                    {
+                        glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
+                    }
+                    
                     glVertexPointer(2, GL_FLOAT, 0, verts);
                     glDrawArrays(GL_TRIANGLES, 0, 3*size);                
                 }
@@ -589,7 +795,7 @@ void LHBezier::draw(void)
             
             delete [] verts;
             delete [] texcoords;
-		}
+//		}
         
 		float oldLineWidth = 1.0f;
 		glGetFloatv(GL_LINE_WIDTH, &oldLineWidth); 
@@ -650,9 +856,27 @@ bool LHBezier::isTouchedAtPoint(CCPoint point){
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void LHBezier::registerTouchBeginObserver(CCObject* observer, 
-                                              SEL_CallFuncO selector){
+                                        SEL_CallFuncO selector){
+
     removeTouchObserver();
-    LevelHelperLoader::setTouchDispatcherForBezierWithTag(this, getTag());
+    
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+    if(touchDispatcher){
+        
+        CCTouchHandler* handler = touchDispatcher->findHandler(this);
+        
+        //if is not already added to the touch dispatcher - then lets add it
+        if(!handler)
+        {
+            touchDispatcher->addTargetedDelegate(this, touchPriority, swallowTouches);
+        }
+    }
     
     if(NULL == touchBeginObserver)
         touchBeginObserver = new LHObserverPair();
@@ -737,7 +961,7 @@ bool LHBezier::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
                 (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
             }
         }
-        return true;
+        return swallowTouches;
     }
     return false;
 }
