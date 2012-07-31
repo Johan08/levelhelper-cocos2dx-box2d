@@ -159,9 +159,9 @@ public:
     void setSwallowTouches(bool val){swallowTouches = val;}
     bool getSwallowTouches(){return swallowTouches;}
 
-    
     virtual void touchDelegateRetain() {} //compatibility with old cocos2d-x version
     virtual void touchDelegateRelease() {}//compatibility with old cocos2d-x version
+    virtual void onExit();
 private:
     
     static CCPoint pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, float t);

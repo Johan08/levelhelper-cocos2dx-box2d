@@ -58,7 +58,7 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
     int flipx = sprite->isFlipX() ? -1 : 1;
     int flipy = sprite->isFlipY() ? -1 : 1;
 
-    if(fixturePoints->count() > 0)
+    if(fixturePoints && fixturePoints->count() > 0)
     {
         if(fixturePoints->objectAtIndex(0)->type() != LHObject::LH_ARRAY_TYPE)
         {
@@ -67,7 +67,7 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
         }
     }
         
-    if(fixturePoints->count() > 0 && fixturePoints->arrayAtIndex(0)->count() > 0)
+    if(fixturePoints && fixturePoints->count() > 0 && fixturePoints->arrayAtIndex(0)->count() > 0)
     {
         for(int f = 0; f < fixturePoints->count(); ++f)
         {

@@ -294,7 +294,7 @@ CCArray* LevelHelperLoader::allLayers(){
 #else
     CCArray* array = CCArray::array();
 #endif
-    //[array addObject:mainLHLayer];//we dont give user access to the main lh layer
+    array->addObject(mainLHLayer);
     array->addObjectsFromArray(mainLHLayer->allLayers());
     return array;
 }
@@ -500,19 +500,13 @@ CCRect LevelHelperLoader::gameWorldSize(void)
     return ws;
 }
 ////------------------------------------------------------------------------------
-//unsigned int LevelHelperLoader::numberOfBatchNodesUsed(void)
-//{
-//	return (int)batchNodesInLevel.count() -1;
-//}
-//////////////////////////////////////////////////////////////////////////////////
-//
 LevelHelperLoader::~LevelHelperLoader()
 {    
 ////    releasePhysicBoundaries();
 ////    removeAllBezierNodes();
 ////    releaseAllJoints();
 ////    releaseAllSprites();
-////    removeAllParallaxes();
+//    removeAllParallaxes();
 ////    releaseAllBatchNodes();
 //    
 ////    delete lhSprites;
@@ -532,15 +526,11 @@ LevelHelperLoader::~LevelHelperLoader()
     LHTouchMgr::sharedInstance()->removeTouchBeginObserver(cocosLayer);
 //    [[LHCuttingEngineMgr sharedInstance] destroyAllPrevioslyCutSprites];
     
-    LHSettings::sharedInstance()->removeLHMainLayer(mainLHLayer);
-
     parallaxesInLevel.removeAllObjects();
     jointsInLevel.removeAllObjects();
     physicBoundariesInLevel.removeAllObjects();
-    mainLHLayer->removeAllChildrenWithCleanup(true);
-    mainLHLayer->removeSelf();
-    mainLHLayer = NULL;
-
+    removeMainLayer();
+    
     if(NULL != contactNode){
         contactNode->removeFromParentAndCleanup(true);
     }
@@ -549,128 +539,22 @@ LevelHelperLoader::~LevelHelperLoader()
     delete lhJoints;
     delete lhParallax;    
 }
+b2World* LevelHelperLoader::getPhysicsWorld(){
+    return box2dWorld;
+}
+
+void LevelHelperLoader::removeMainLayer()
+{
+    LHSettings::sharedInstance()->removeLHMainLayer(mainLHLayer);
+    mainLHLayer->removeAllChildrenWithCleanup(true);
+    mainLHLayer->removeSelf();
+    mainLHLayer = NULL;
+}
 //
 //////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////PRIVATE METHODS//////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
-//
-//////////////////////////////////////////////////////////////////////////////////
-////ANIMATIONS
-//////////////////////////////////////////////////////////////////////////////////
-//void LevelHelperLoader::createAllAnimationsInfo(void)
-//{
-//    for(int i = 0; i< lhAnims->count(); ++i)
-//    {
-//        LHDictionary* animInfo = lhAnims->objectAtIndex(i)->dictValue();
-//        std::string uniqueAnimName = animInfo->objectForKey("UniqueName")->stringValue();
-//        
-//        LHArray* framesInfo = animInfo->objectForKey("Frames")->arrayValue();
-//        
-//        bool loop           = animInfo->objectForKey("LoopForever")->boolValue();
-//        float animSpeed     = animInfo->objectForKey("Speed")->floatValue();
-//        int repetitions     = animInfo->objectForKey("Repetitions")->intValue();
-//        bool startAtLaunch  = animInfo->objectForKey("StartAtLaunch")->boolValue();
-//        
-//        std::string image = animInfo->objectForKey("Image")->stringValue();
-//        
-//        LHAnimationNode* animNode = LHAnimationNode::animationNodeWithUniqueName(uniqueAnimName.c_str());
-//        animNode->loop = loop;
-//        animNode->speed =animSpeed;
-//        animNode->repetitions = repetitions;
-//        animNode->startAtLaunch = startAtLaunch;
-//        animNode->setImageName(image.c_str());
-//        
-//        std::vector<CCRect> frmsInfo;
-//        for(int j = 0; j < framesInfo->count(); ++j)
-//        {
-//            LHDictionary* rectDict = framesInfo->objectAtIndex(j)->dictValue();
-//            CCRect rect = CCRectFromString(rectDict->objectForKey("FrameRect")->stringValue().c_str());
-//            frmsInfo.push_back(rect);
-//        }
-//        animNode->setFramesInfo(frmsInfo);
-//        animationsInLevel.setObject(animNode, uniqueAnimName);
-//    }
-//}
-//
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::createAnimationFromDictionary(LHDictionary* spriteProp,
-//                                                      LHSprite* ccsprite)
-//{
-//    std::string animName = spriteProp->objectForKey("AnimName")->stringValue();
-//	if(animName != "")
-//	{
-//        LHAnimationNode* animNode = (LHAnimationNode*)animationsInLevel.objectForKey(animName);
-//        if(NULL != animNode)
-//        {
-//            if(animNode->startAtLaunch)
-//            {
-//                LHBatch* batch = batchNodeForFile(animNode->getImageName());
-//                
-//                if(batch)
-//                {
-//                    animNode->setBatchNode(batch->getSpriteBatchNode());
-//                    animNode->computeFrames();
-//     
-//                    ccsprite->startAnimationNamed(animName, 0, animNotifierId, animNotifierSel, notifOnLoopForeverAnim);
-//                }
-//            }
-//            else
-//            {
-//                ccsprite->prepareAnimationNamed(animName);
-//            }
-//        }
-//	}
-//}
-//
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::startAnimationWithUniqueName(const std::string& animName,
-//                                                     LHSprite* ccsprite,
-//                                                     CCObject* customAnimNotifierId,
-//                                                     SEL_CallFuncND customAnimNotifierSel)
-//{    
-//    
-//    CCLog("startAnimationWithUniqueName is deprecated. Please use the method provide in LHSprite class");
-//    ccsprite->startAnimationNamed(animName, 0, customAnimNotifierId, customAnimNotifierSel, notifOnLoopForeverAnim);    
-//}
-//
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::stopAnimationOnSprite(LHSprite* ccsprite)
-//{
-//    if(NULL != ccsprite){
-//        ccsprite->stopActionByTag(LH_ANIM_ACTION_TAG);
-//        ccsprite->setAnimation(NULL);
-//    }    
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::prepareAnimationWithUniqueName(const std::string& animName,
-//                                                       LHSprite* sprite)
-//{
-//    LHAnimationNode* animNode = (LHAnimationNode*)animationsInLevel.objectForKey(animName);
-//    if(animNode == NULL)
-//        return;
-//    
-//    LHBatch* batch = batchNodeForFile(animNode->getImageName());
-//    
-//    if(batch)
-//    {
-//        animNode->setBatchNode(batch->getSpriteBatchNode());
-//        animNode->computeFrames();
-//        sprite->setAnimation(animNode);
-//    }
-//}
-//
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::registerNotifierOnAllAnimationEnds(CCObject* obj, SEL_CallFuncND sel)
-//{
-//    animNotifierId = obj;
-//    animNotifierSel = sel;
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::enableNotifOnLoopForeverAnimations(void)
-//{
-//    notifOnLoopForeverAnim = true;
-//}
 //////////////////////////////////////////////////////////////////////////////////
 ////GRAVITY
 //////////////////////////////////////////////////////////////////////////////////
@@ -689,233 +573,307 @@ void LevelHelperLoader::createGravity(b2World* world)
 //////////////////////////////////////////////////////////////////////////////////
 ////PHYSIC BOUNDARIES
 //////////////////////////////////////////////////////////////////////////////////
-//b2Body* LevelHelperLoader::physicBoundarieForKey(const std::string& key)
-//{
-//    LHSprite* spr = (LHSprite*)physicBoundariesInLevel.objectForKey(key);
-//    if(NULL == spr)
-//        return 0;
-//    return spr->getBody();
-//}
+b2Body* LevelHelperLoader::physicBoundarieForKey(const std::string& key){
+    LHNode* spr = (LHNode*)physicBoundariesInLevel.objectForKey(key);
+    if(NULL == spr)
+        return 0;
+    return spr->getBody();
+}
+//------------------------------------------------------------------------------
+b2Body* LevelHelperLoader::leftPhysicBoundary(void){
+    return physicBoundarieForKey("LHPhysicBoundarieLeft");
+}
+LHNode* LevelHelperLoader::leftPhysicBoundaryNode(void){
+    return (LHNode*)physicBoundariesInLevel.objectForKey("LHPhysicBoundarieLeft");
+}
+//------------------------------------------------------------------------------
+b2Body* LevelHelperLoader::rightPhysicBoundary(void){
+	return physicBoundarieForKey("LHPhysicBoundarieRight");
+}
+LHNode* LevelHelperLoader::rightPhysicBoundaryNode(void){
+    return (LHNode*)physicBoundariesInLevel.objectForKey("LHPhysicBoundarieRight");
+}
+//------------------------------------------------------------------------------
+b2Body* LevelHelperLoader::topPhysicBoundary(void){
+    return physicBoundarieForKey("LHPhysicBoundarieTop");
+}
+LHNode* LevelHelperLoader::topPhysicBoundaryNode(void){
+    return (LHNode*)physicBoundariesInLevel.objectForKey("LHPhysicBoundarieTop");
+}
+//------------------------------------------------------------------------------
+b2Body* LevelHelperLoader::bottomPhysicBoundary(void){
+    return physicBoundarieForKey("LHPhysicBoundarieBottom");
+}
+LHNode* LevelHelperLoader::bottomPhysicBoundaryNode(void){
+    return (LHNode*)physicBoundariesInLevel.objectForKey("LHPhysicBoundarieBottom");
+}
+//------------------------------------------------------------------------------
+bool LevelHelperLoader::hasPhysicBoundaries(void){
+	if(wb == NULL){
+		return false;
+	}
+    CCRect rect = wb->rectForKey("WBRect");
+    if(rect.size.width == 0 || rect.size.height == 0)
+        return false;
+	return true;
+}
+//------------------------------------------------------------------------------
+CCRect LevelHelperLoader::physicBoundariesRect(void){
+    CCPoint  wbConv = LHSettings::sharedInstance()->convertRatio();
+    CCRect rect = wb->rectForKey("WBRect");
+    rect.origin.x = rect.origin.x*wbConv.x,
+    rect.origin.y = rect.origin.y*wbConv.y;
+    rect.size.width = rect.size.width*wbConv.x;
+    rect.size.height= rect.size.height*wbConv.y;
+    return rect;
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::createPhysicBoundariesNoStretching(b2World * _world){
+
+    if(_world == NULL)
+        return;
+
+    CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
+    CCPoint  wbConv = LHSettings::sharedInstance()->convertRatio();
+    
+    createPhysicBoundariesHelper(_world, wbConv, CCPointMake(pos_offset.x/2.0f,
+                                                   pos_offset.y/2.0f));
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::removePhysicBoundaries()
+{
+    physicBoundariesInLevel.removeAllObjects();
+}
+//------------------------------------------------------------------------------
+void LevelHelperLoader::createPhysicBoundaries(b2World* _world)
+{
+    if(_world == NULL)
+        return;
+    CCPoint  wbConv = LHSettings::sharedInstance()->realConvertRatio();
+    createPhysicBoundariesHelper(_world,
+                                 wbConv,
+                                 CCPointMake(0.0f, 0.0f));
+}
 ////------------------------------------------------------------------------------
-//b2Body* LevelHelperLoader::leftPhysicBoundary(void){
-//    return physicBoundarieForKey("LHPhysicBoundarieLeft");
-//}
-//LHSprite* LevelHelperLoader::leftPhysicBoundarySprite(void){
-//    return (LHSprite*)physicBoundariesInLevel.objectForKey("LHPhysicBoundarieLeft");
-//}
+void LevelHelperLoader::setFixtureDefPropertiesFromDictionary(LHDictionary* spritePhysic, b2FixtureDef* shapeDef)
+{
+	shapeDef->density       = spritePhysic->floatForKey("Density");
+	shapeDef->friction      = spritePhysic->floatForKey("Friction");
+	shapeDef->restitution   = spritePhysic->floatForKey("Restitution");
+	
+	shapeDef->filter.categoryBits   = spritePhysic->intForKey("Category");
+	shapeDef->filter.maskBits       = spritePhysic->intForKey("Mask");
+	shapeDef->filter.groupIndex     = spritePhysic->intForKey("Group");
+    
+    shapeDef->isSensor = spritePhysic->boolForKey("IsSensor");
+}
+//------------------------------------------------------------------------------
+
+void LevelHelperLoader::createPhysicBoundariesHelper(b2World* _world,
+                                                     const CCPoint& wbConv,
+                                                     const CCPoint& pos_offset)
+{
+	if(!hasPhysicBoundaries()){
+        CCLog("LevelHelper WARNING - Please create physic boundaries in LevelHelper in order to call method \"createPhysicBoundaries\"");
+        return;
+    }	
+    
+    b2BodyDef bodyDef;
+	bodyDef.type = b2_staticBody;
+	bodyDef.position.Set(0.0f, 0.0f);
+    b2Body* wbBodyT = _world->CreateBody(&bodyDef);
+	b2Body* wbBodyL = _world->CreateBody(&bodyDef);
+	b2Body* wbBodyB = _world->CreateBody(&bodyDef);
+	b2Body* wbBodyR = _world->CreateBody(&bodyDef);
+	
+	{
+        LHDictionary dict;
+        dict.setObjectForKey("LHPhysicBoundarieLeft", "UniqueName");
+    
+        LHNode* spr = LHNode::nodeWithDictionary(&dict);
+		spr->setTag(wb->intForKey("TagLeft"));
+        
+#if COCOS2D_VERSION >= 0x00020000
+        spr->setVisible(false);
+#else
+        spr->setIsVisible(false);
+#endif
+        spr->setBody(wbBodyL);
+        wbBodyL->SetUserData(spr);
+        physicBoundariesInLevel.setObject(spr, "LHPhysicBoundarieLeft");
+	}
+	
+	{
+        LHDictionary dict;
+        dict.setObjectForKey("LHPhysicBoundarieRight", "UniqueName");
+
+        LHNode* spr = LHNode::nodeWithDictionary(&dict);
+		spr->setTag(wb->intForKey("TagRight"));
+        
+#if COCOS2D_VERSION >= 0x00020000
+        spr->setVisible(false);
+#else
+        spr->setIsVisible(false);
+#endif
+
+        spr->setBody(wbBodyR);
+        wbBodyR->SetUserData(spr);
+        physicBoundariesInLevel.setObject(spr, "LHPhysicBoundarieRight");
+	}
+	
+	{
+        LHDictionary dict;
+        dict.setObjectForKey("LHPhysicBoundarieTop", "UniqueName");
+
+        LHNode* spr = LHNode::nodeWithDictionary(&dict);
+		spr->setTag(wb->intForKey("TagTop"));
+#if COCOS2D_VERSION >= 0x00020000
+        spr->setVisible(false);
+#else
+        spr->setIsVisible(false);
+#endif
+
+        spr->setBody(wbBodyT);
+        wbBodyT->SetUserData(spr);
+        physicBoundariesInLevel.setObject(spr, "LHPhysicBoundarieTop");
+	}
+	
+	{
+        LHDictionary dict;
+        dict.setObjectForKey("LHPhysicBoundarieBottom", "UniqueName");
+
+        LHNode* spr = LHNode::nodeWithDictionary(&dict);
+        
+		spr->setTag(wb->intForKey("TagBottom"));
+#if COCOS2D_VERSION >= 0x00020000
+        spr->setVisible(false);
+#else
+        spr->setIsVisible(false);
+#endif
+
+        spr->setBody(wbBodyB);
+        wbBodyB->SetUserData(spr);
+        physicBoundariesInLevel.setObject(spr, "LHPhysicBoundarieBottom");
+	}
+	
+    bool canSleep = wb->boolForKey("CanSleep");
+	wbBodyT->SetSleepingAllowed(canSleep);
+	wbBodyL->SetSleepingAllowed(canSleep);
+	wbBodyB->SetSleepingAllowed(canSleep);
+	wbBodyR->SetSleepingAllowed(canSleep);
+	
+    CCRect rect = wb->rectForKey("WBRect");
+    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
+	
+    float ptm = LHSettings::sharedInstance()->lhPtmRatio();
+    
+    rect.origin.x += pos_offset.x;
+    rect.origin.y += pos_offset.y;
+    
+    {//TOP
+#ifdef B2_EDGE_SHAPE_H
+        b2EdgeShape shape;
+#else
+        b2PolygonShape shape;
+#endif
+		
+        b2Vec2 pos1 = b2Vec2(rect.origin.x/ptm*wbConv.x,
+							 (winSize.height - rect.origin.y*wbConv.y)/ptm);
+        
+        b2Vec2 pos2 = b2Vec2((rect.origin.x + rect.size.width)*wbConv.x/ptm,
+							 (winSize.height - rect.origin.y*wbConv.y)/ptm);
+#ifdef B2_EDGE_SHAPE_H
+		shape.Set(pos1, pos2);
+#else
+        shape.SetAsEdge(pos1, pos2);
+#endif
+		
+        b2FixtureDef fixture;
+        setFixtureDefPropertiesFromDictionary(wb, &fixture);
+        fixture.shape = &shape;
+        wbBodyT->CreateFixture(&fixture);
+    }
+	
+    {//LEFT
+#ifdef B2_EDGE_SHAPE_H
+        b2EdgeShape shape;
+#else
+        b2PolygonShape shape;
+#endif
+        
+		
+		b2Vec2 pos1 = b2Vec2(rect.origin.x*wbConv.x/ptm,
+							 (winSize.height - rect.origin.y*wbConv.y)/ptm);
+        
+		b2Vec2 pos2 = b2Vec2((rect.origin.x*wbConv.x)/ptm,
+							 (winSize.height - (rect.origin.y + rect.size.height)*wbConv.y)/ptm);
+#ifdef B2_EDGE_SHAPE_H
+		shape.Set(pos1, pos2);
+#else
+        shape.SetAsEdge(pos1, pos2);
+#endif
+        
+		
+        b2FixtureDef fixture;
+        setFixtureDefPropertiesFromDictionary(wb, &fixture);
+        fixture.shape = &shape;
+        wbBodyL->CreateFixture(&fixture);
+    }
+	
+    {//RIGHT
+#ifdef B2_EDGE_SHAPE_H
+        b2EdgeShape shape;
+#else
+        b2PolygonShape shape;
+#endif
+        
+        
+        b2Vec2 pos1 = b2Vec2((rect.origin.x + rect.size.width)*wbConv.x/ptm,
+							 (winSize.height - rect.origin.y*wbConv.y)/ptm);
+        
+        b2Vec2 pos2 = b2Vec2((rect.origin.x+ rect.size.width)*wbConv.x/ptm,
+							 (winSize.height - (rect.origin.y + rect.size.height)*wbConv.y)/ptm);
+#ifdef B2_EDGE_SHAPE_H
+		shape.Set(pos1, pos2);
+#else
+        shape.SetAsEdge(pos1, pos2);
+#endif
+        
+		
+        b2FixtureDef fixture;
+        setFixtureDefPropertiesFromDictionary(wb, &fixture);
+        fixture.shape = &shape;
+        wbBodyR->CreateFixture(&fixture);
+        
+    }
+	
+    {//BOTTOM
+#ifdef B2_EDGE_SHAPE_H
+        b2EdgeShape shape;
+#else
+        b2PolygonShape shape;
+#endif
+        
+        
+        b2Vec2 pos1 = b2Vec2(rect.origin.x*wbConv.x/ptm,
+							 (winSize.height - (rect.origin.y + rect.size.height)*wbConv.y)/ptm);
+        
+        b2Vec2 pos2 = b2Vec2((rect.origin.x+ rect.size.width)*wbConv.x/ptm,
+							 (winSize.height - (rect.origin.y + rect.size.height)*wbConv.y)/ptm);
+#ifdef B2_EDGE_SHAPE_H
+		shape.Set(pos1, pos2);
+#else
+        shape.SetAsEdge(pos1, pos2);
+#endif
+        
+		
+        b2FixtureDef fixture;
+        setFixtureDefPropertiesFromDictionary(wb, &fixture);
+        fixture.shape = &shape;
+        wbBodyB->CreateFixture(&fixture);
+    }    
+}
 ////------------------------------------------------------------------------------
-//b2Body* LevelHelperLoader::rightPhysicBoundary(void){
-//	return physicBoundarieForKey("LHPhysicBoundarieRight");
-//}
-//LHSprite* LevelHelperLoader::rightPhysicBoundarySprite(void){
-//    return (LHSprite*)physicBoundariesInLevel.objectForKey("LHPhysicBoundarieRight");
-//}
-////------------------------------------------------------------------------------
-//b2Body* LevelHelperLoader::topPhysicBoundary(void){
-//    return physicBoundarieForKey("LHPhysicBoundarieTop");
-//}
-//LHSprite* LevelHelperLoader::topPhysicBoundarySprite(void){
-//    return (LHSprite*)physicBoundariesInLevel.objectForKey("LHPhysicBoundarieTop");
-//}
-////------------------------------------------------------------------------------
-//b2Body* LevelHelperLoader::bottomPhysicBoundary(void){
-//    return physicBoundarieForKey("LHPhysicBoundarieBottom");
-//}
-//LHSprite* LevelHelperLoader::bottomPhysicBoundarySprite(void){
-//    return (LHSprite*)physicBoundariesInLevel.objectForKey("LHPhysicBoundarieBottom");
-//}
-////------------------------------------------------------------------------------
-//bool LevelHelperLoader::hasPhysicBoundaries(void){
-//	if(wb == NULL){
-//		return false;
-//	}
-//    CCRect rect = LHRectFromString(wb->objectForKey("WBRect")->stringValue());    
-//    if(rect.size.width == 0 || rect.size.height == 0)
-//        return false;
-//	return true;
-//}
-////------------------------------------------------------------------------------
-//CCRect LevelHelperLoader::physicBoundariesRect(void)
-//{
-//    CCPoint  wbConv = LHSettings::sharedInstance()->convertRatio();
-//    CCRect rect = LHRectFromString(wb->objectForKey("WBRect")->stringValue());    
-//    rect.origin.x = rect.origin.x*wbConv.x,
-//    rect.origin.y = rect.origin.y*wbConv.y;
-//    rect.size.width = rect.size.width*wbConv.x;
-//    rect.size.height= rect.size.height*wbConv.y;
-//    return rect;
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::createPhysicBoundariesNoStretching(b2World * _world){
-//    
-//    CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
-//    CCPoint  wbConv = LHSettings::sharedInstance()->convertRatio();
-//    
-//    createPhysicBoundariesHelper(_world, 
-//                                 wbConv, 
-//                                 CCPointMake(pos_offset.x/2.0f, 
-//                                            pos_offset.y/2.0f));
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::createPhysicBoundaries(b2World* _world)
-//{
-//    CCPoint  wbConv = LHSettings::sharedInstance()->realConvertRatio();
-//    createPhysicBoundariesHelper(_world,
-//                                 wbConv,
-//                                 CCPointMake(0.0f, 0.0f));
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::createPhysicBoundariesHelper(b2World* _world,
-//                                                     const CCPoint& wbConv,
-//                                                     const CCPoint& pos_offset)
-//{
-//	if(!hasPhysicBoundaries()){
-//        CCLog("LevelHelper WARNING - Please create physic boundaries in LevelHelper in order to call method \"createPhysicBoundaries\"");
-//        return;
-//    }	
-//    
-//    b2BodyDef bodyDef;		
-//	bodyDef.type = b2_staticBody;
-//	bodyDef.position.Set(0.0f, 0.0f);
-//    b2Body* wbBodyT = _world->CreateBody(&bodyDef);
-//	b2Body* wbBodyL = _world->CreateBody(&bodyDef);
-//	b2Body* wbBodyB = _world->CreateBody(&bodyDef);
-//	b2Body* wbBodyR = _world->CreateBody(&bodyDef);
-//	
-//	{
-//        LHSprite* spr = LHSprite::sprite();
-//		spr->setTag(wb->objectForKey("TagLeft")->intValue()); 
-//		spr->setIsVisible(false);
-//		spr->setUniqueName("LHPhysicBoundarieLeft");
-//        spr->setBody(wbBodyL);    
-//        wbBodyL->SetUserData(spr);
-//        physicBoundariesInLevel.setObject(spr, "LHPhysicBoundarieLeft");
-//	}
-//	
-//	{
-//        LHSprite* spr = LHSprite::sprite();
-//		spr->setTag(wb->objectForKey("TagRight")->intValue()); 
-//		spr->setIsVisible(false);
-//		spr->setUniqueName("LHPhysicBoundarieRight");
-//        spr->setBody(wbBodyR);  
-//        wbBodyR->SetUserData(spr);
-//        physicBoundariesInLevel.setObject(spr,"LHPhysicBoundarieRight");
-//	}
-//	
-//	{
-//        LHSprite* spr = LHSprite::sprite();
-//		spr->setTag(wb->objectForKey("TagTop")->intValue()); 
-//		spr->setIsVisible(false);
-//		spr->setUniqueName("LHPhysicBoundarieTop");
-//        spr->setBody(wbBodyT);  
-//        wbBodyT->SetUserData(spr);        
-//        physicBoundariesInLevel.setObject(spr,"LHPhysicBoundarieTop");
-//	}
-//	
-//	{
-//        LHSprite* spr = LHSprite::sprite();
-//		spr->setTag(wb->objectForKey("TagBottom")->intValue()); 
-//		spr->setIsVisible(false);
-//		spr->setUniqueName("LHPhysicBoundarieBottom");
-//        spr->setBody(wbBodyB);  
-//        wbBodyB->SetUserData(spr);        
-//        physicBoundariesInLevel.setObject(spr, "LHPhysicBoundarieBottom");
-//	}
-//	
-//	wbBodyT->SetSleepingAllowed(wb->objectForKey("CanSleep")->boolValue());  
-//	wbBodyL->SetSleepingAllowed(wb->objectForKey("CanSleep")->boolValue());  
-//	wbBodyB->SetSleepingAllowed(wb->objectForKey("CanSleep")->boolValue());  
-//	wbBodyR->SetSleepingAllowed(wb->objectForKey("CanSleep")->boolValue());  
-//	
-//	
-//    CCRect rect = LHRectFromString(wb->objectForKey("WBRect")->stringValue());    
-//    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
-//	
-//    
-//#ifndef LH_SCENE_TESTER
-//    rect.origin.x += pos_offset.x;
-//    rect.origin.y += pos_offset.y;
-//#else
-//    rect.origin.x += pos_offset.x*2.0f;
-//    rect.origin.y += pos_offset.y*2.0f;
-//#endif
-//    
-//    float ptm = LHSettings::sharedInstance()->lhPtmRatio();
-//    
-//    {//TOP
-//        b2EdgeShape shape;
-//		
-//        b2Vec2 pos1 = b2Vec2(rect.origin.x/ptm*wbConv.x,
-//							 (winSize.height - rect.origin.y*wbConv.y)/ptm);
-//        
-//        b2Vec2 pos2 = b2Vec2((rect.origin.x + rect.size.width)*wbConv.x/ptm, 
-//							 (winSize.height - rect.origin.y*wbConv.y)/ptm);		
-//		shape.Set(pos1, pos2);
-//		
-//        b2FixtureDef fixture;
-//        setFixtureDefPropertiesFromDictionary(wb, &fixture);
-//        fixture.shape = &shape;
-//        wbBodyT->CreateFixture(&fixture);
-//    }
-//	
-//    {//LEFT
-//        b2EdgeShape shape;
-//		
-//		b2Vec2 pos1 = b2Vec2(rect.origin.x*wbConv.x/ptm,
-//							 (winSize.height - rect.origin.y*wbConv.y)/ptm);
-//        
-//		b2Vec2 pos2 = b2Vec2((rect.origin.x*wbConv.x)/ptm, 
-//							 (winSize.height - (rect.origin.y + rect.size.height)*wbConv.y)/ptm);
-//        shape.Set(pos1, pos2);
-//		
-//        b2FixtureDef fixture;
-//        setFixtureDefPropertiesFromDictionary(wb, &fixture);
-//        fixture.shape = &shape;
-//        wbBodyL->CreateFixture(&fixture);
-//    }
-//	
-//    {//RIGHT
-//        b2EdgeShape shape;
-//        
-//        b2Vec2 pos1 = b2Vec2((rect.origin.x + rect.size.width)*wbConv.x/ptm,
-//							 (winSize.height - rect.origin.y*wbConv.y)/ptm);
-//        
-//        b2Vec2 pos2 = b2Vec2((rect.origin.x+ rect.size.width)*wbConv.x/ptm, 
-//							 (winSize.height - (rect.origin.y + rect.size.height)*wbConv.y)/ptm);
-//        shape.Set(pos1, pos2);
-//		
-//        b2FixtureDef fixture;
-//        setFixtureDefPropertiesFromDictionary(wb, &fixture);
-//        fixture.shape = &shape;
-//        wbBodyR->CreateFixture(&fixture);
-//    }
-//	
-//    {//BOTTOM
-//        b2EdgeShape shape;
-//        
-//        b2Vec2 pos1 = b2Vec2(rect.origin.x*wbConv.x/ptm,
-//							 (winSize.height - (rect.origin.y + rect.size.height)*wbConv.y)/ptm);
-//        
-//        b2Vec2 pos2 = b2Vec2((rect.origin.x+ rect.size.width)*wbConv.x/ptm, 
-//							 (winSize.height - (rect.origin.y + rect.size.height)*wbConv.y)/ptm);
-//        shape.Set(pos1, pos2);
-//		
-//        b2FixtureDef fixture;
-//        setFixtureDefPropertiesFromDictionary(wb, &fixture);
-//        fixture.shape = &shape;
-//        wbBodyB->CreateFixture(&fixture);
-//    }
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::removePhysicBoundaries()
-//{
-//    physicBoundariesInLevel.removeAllObjects();
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::releasePhysicBoundaries(void)
-//{
-//    removePhysicBoundaries();
-//}
 //////////////////////////////////////////////////////////////////////////////////
 ////PHYSICS
 //////////////////////////////////////////////////////////////////////////////////
@@ -1837,21 +1795,35 @@ void LevelHelperLoader::removeTouchDispatcherFromBezier(LHBezier* object){
 //    return parallaxNodeWithUniqueName(uniqueName);
 //}
 ////------------------------------------------------------------------------------
-//LHParallaxNode* LevelHelperLoader::parallaxNodeWithUniqueName(const std::string& uniqueName)
-//{
-//    return (LHParallaxNode*)parallaxesInLevel.objectForKey(uniqueName);
-//}
+LHParallaxNode* LevelHelperLoader::parallaxNodeWithUniqueName(const std::string& uniqueName)
+{
+    return (LHParallaxNode*)parallaxesInLevel.objectForKey(uniqueName);
+}
 ////------------------------------------------------------------------------------
-//CCArray* LevelHelperLoader::allParallaxes(void){
-//    std::vector<std::string> keys = parallaxesInLevel.allKeys();
-//    CCArray* allNodes = CCArray::array();
-//    for(size_t i = 0; i < keys.size(); ++i){        
-//        LHParallaxNode* node = (LHParallaxNode*)parallaxesInLevel.objectForKey(keys[i]);
-//        if(node)
-//            allNodes->addObject(node);
-//	}
-//    return allNodes;
-//}
+CCArray* LevelHelperLoader::allParallaxes(void){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* keys = parallaxesInLevel.allKeys();
+    CCArray* array = CCArray::create();
+    for(int i = 0; i < (int)keys->count(); ++i){
+        LHParallaxNode* node = (LHParallaxNode*)parallaxesInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+        if(node)
+            array->addObject(node);
+    }
+    return array;
+#else
+    std::vector<std::string> keys = parallaxesInLevel.allKeys();
+    CCArray* array = CCArray::array();
+    for(int i = 0; i < (int)keys.size(); ++i){
+        LHParallaxNode* node = (LHParallaxNode*)parallaxesInLevel.objectForKey(keys[i]);
+      
+        if(node)
+            array->addObject(node);
+    }
+    return array;
+    
+#endif
+}
 ////------------------------------------------------------------------------------
 //void LevelHelperLoader::createParallaxes(void)
 //{
@@ -1895,34 +1867,48 @@ void LevelHelperLoader::removeTouchDispatcherFromBezier(LHBezier* object){
 //    return node;
 //}
 ////------------------------------------------------------------------------------
-//void LevelHelperLoader::removeAllParallaxes(bool removeSprites)
-//{
-//    std::vector<std::string> keys = parallaxesInLevel.allKeys();
-//    
-//    for(size_t i = 0; i < keys.size(); ++i)
-//    {
-//        std::string key = keys[i];
-//        
-//        LHParallaxNode* par = (LHParallaxNode*)parallaxesInLevel.objectForKey(key);
-//        
-//        if(NULL != par){
-//            par->removeSpritesOnDelete = removeSprites;
-//            par->removeFromParentAndCleanup(true);
-//        }
-//    }
-//    parallaxesInLevel.removeAllObjects();
-//}
+void LevelHelperLoader::removeAllParallaxes(bool removeSprites)
+{
+    
+#if COCOS2D_VERSION >= 0x00020000
+    
+    CCArray* keys = parallaxesInLevel.allKeys();
+    if(keys){
+        for(int i = 0; i < keys->count(); ++i){
+            LHParallaxNode* node = (LHParallaxNode*)parallaxesInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+            if(NULL != node){
+                node->removeSpritesOnDelete = removeSprites;
+                node->removeFromParentAndCleanup(true);
+            }
+        }
+    }
+    parallaxesInLevel.removeAllObjects();
+    
+#else
+    
+    std::vector<std::string> keys = parallaxesInLevel.allKeys();
+    for(int i = 0; i < keys.size(); ++i){
+        LHParallaxNode* node = (LHParallaxNode*)parallaxesInLevel.objectForKey(keys[i]);
+        if(NULL != node){
+            node->removeSpritesOnDelete = removeSprites;
+            node->removeFromParentAndCleanup(true);
+        }
+        
+    }
+    parallaxesInLevel.removeAllObjects();
+#endif
+}
 ////------------------------------------------------------------------------------
-//void LevelHelperLoader::removeParallaxNode(LHParallaxNode* node, bool removeSprites){
-//    
-//    if(NULL == node)
-//        return;    
-//    
-//    node->removeSpritesOnDelete = removeSprites;
-//    parallaxesInLevel.removeObjectForKey(node->getUniqueName());
-//    
-//    node->removeFromParentAndCleanup(true);
-//}
+void LevelHelperLoader::removeParallaxNode(LHParallaxNode* node, bool removeSprites){
+    
+    if(NULL == node)
+        return;    
+    
+    node->removeSpritesOnDelete = removeSprites;
+    parallaxesInLevel.removeObjectForKey(node->getUniqueName());
+    
+    node->removeFromParentAndCleanup(true);
+}
 ////------------------------------------------------------------------------------
 //////////////////////////////////////////////////////////////////////////////////
 ////JOINTS
@@ -2444,8 +2430,7 @@ void LevelHelperLoader::removeTouchDispatcherFromBezier(LHBezier* object){
 //}
 
 
-void LevelHelperLoader::removeJoint(LHJoint* jt)
-{
+void LevelHelperLoader::removeJoint(LHJoint* jt){
     if(jt)
         jointsInLevel.removeObjectForKey(jt->getUniqueName());
 }

@@ -35,7 +35,8 @@ LHParallaxNode::LHParallaxNode(void){
 }
 ////////////////////////////////////////////////////////////////////////////////
 LHParallaxNode::~LHParallaxNode(void){
-    //CCLog("LHParallaxNode dealloc");
+    CCLog("LHParallaxNode dealloc");
+    
     if(NULL != followedSprite)
         followedSprite->parallaxFollowingThisSprite = NULL;
     followedSprite = NULL;
@@ -54,6 +55,7 @@ LHParallaxNode::~LHParallaxNode(void){
         {        
             LHParallaxPointObject* pt = (LHParallaxPointObject*)tempSprites->objectAtIndex(i);
             if(pt->ccsprite){
+                ((LHSprite*)pt->ccsprite)->setParallaxNode(NULL);
                 ((LHSprite*)pt->ccsprite)->removeSelf();
             }
         }
@@ -168,18 +170,8 @@ void LHParallaxNode::removeChild(LHSprite* sprite)
     if(NULL == sprite) 
         return;
     
-//#if COCOS2D_VERSION >= 0x00020000
-//
-//    for(int i = 0; i< sprites->count(); ++i){        
-//        LHParallaxPointObject* pt = (LHParallaxPointObject*)sprites->objectAtIndex(i);
-//        if(pt->ccsprite == sprite){
-//            sprites->removeObjectAtIndex(i);
-//            return;
-//        }
-//	}
-//
-//#else
-    
+    CCLog("REMOVE CHILD FORM PARALLAX");
+        
     for(int i = 0; i< sprites->count(); ++i){        
         LHParallaxPointObject* pt = (LHParallaxPointObject*)sprites->objectAtIndex(i);
 	

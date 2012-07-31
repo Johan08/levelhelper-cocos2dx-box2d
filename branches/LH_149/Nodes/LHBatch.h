@@ -61,7 +61,7 @@ public:
     CCArray* allSprites();
     CCArray* spritesWithTag(int tag);
     
-    std::string getUniqueName();
+    const std::string& getUniqueName(){return uniqueName;};
     std::string getImagePath();
 
     std::string getSHFile();

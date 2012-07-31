@@ -47,6 +47,7 @@
 #include "Nodes/LHParallaxNode.h"
 #include "Nodes/LHContactInfo.h"
 
+#include "Nodes/LHNode.h"
 #include "Nodes/LHLayer.h"
 #include "Nodes/LHBatch.h"
 #include "Nodes/LHSprite.h"
@@ -222,8 +223,8 @@ public:
 
 //    //------------------------------------------------------------------------------
 //    //PARALLAX
-//    void removeParallaxNode(LHParallaxNode* node, bool removeSprites = false);
-//    void removeAllParallaxes(bool removeSprites = false); //does not remove the sprites
+    void removeParallaxNode(LHParallaxNode* node, bool removeSprites = false);
+    void removeAllParallaxes(bool removeSprites = false); //does not remove the sprites
 //    //------------------------------------------------------------------------------
 //    //------------------------------------------------------------------------------
 
@@ -232,24 +233,25 @@ public:
     void createGravity(b2World* world);
     //------------------------------------------------------------------------------
 //    //PHYSIC BOUNDARIES
-//    void createPhysicBoundaries(b2World* _world);
-//    
-//    //this method should be used when using dontStretchArtOnIpad
-//    //see api documentatin for more info
-//    void createPhysicBoundariesNoStretching(b2World * _world);
-//    
-//    CCRect physicBoundariesRect(void);
-//    bool hasPhysicBoundaries(void);
-//    
-//    b2Body* leftPhysicBoundary(void);
-//    LHSprite* leftPhysicBoundarySprite(void);
-//    b2Body* rightPhysicBoundary(void);
-//    LHSprite* rightPhysicBoundarySprite(void);
-//    b2Body* topPhysicBoundary(void);
-//    LHSprite* topPhysicBoundarySprite(void);
-//    b2Body* bottomPhysicBoundary(void);
-//    LHSprite* bottomPhysicBoundarySprite(void);
-//    void removePhysicBoundaries(void);
+    void createPhysicBoundaries(b2World* _world);
+
+    //this method should be used when using dontStretchArtOnIpad
+    //see api documentatin for more info
+    void createPhysicBoundariesNoStretching(b2World * _world);
+
+    CCRect physicBoundariesRect(void);
+    bool hasPhysicBoundaries(void);
+
+    b2Body* leftPhysicBoundary(void);
+    LHNode* leftPhysicBoundaryNode(void);
+    b2Body* rightPhysicBoundary(void);
+    LHNode* rightPhysicBoundaryNode(void);
+    b2Body* topPhysicBoundary(void);
+    LHNode* topPhysicBoundaryNode(void);
+    b2Body* bottomPhysicBoundary(void);
+    LHNode* bottomPhysicBoundaryNode(void);
+    void removePhysicBoundaries(void);
+    
 //    //------------------------------------------------------------------------------
 //    //LEVEL INFO
     CCSize gameScreenSize(void); //the device size set in loaded level
@@ -277,6 +279,9 @@ private:
     friend class LHJoint;
     friend class LHSprite;
     friend class LHBezier;
+    friend class LHLayer;
+    
+
     
     void createAllNodes();
     void createAllJoints();
@@ -284,7 +289,9 @@ private:
     LHParallaxNode*  parallaxNodeFromDictionary(LHDictionary* parallaxDict, CCLayer*layer);
     void createParallaxes();
     void startAllPaths();
-    
+
+    b2World* getPhysicsWorld();
+    void removeMainLayer();
     
     void removeJoint(LHJoint* jt);
     void callLoadingProgressObserverWithValue(float val);
@@ -302,6 +309,14 @@ private:
     static void setTouchDispatcherForSpriteWithTag(LHSprite* object, int tag);
     static void removeTouchDispatcherFromSprite(LHSprite* object);
     static void removeTouchDispatcherFromBezier(LHBezier* object);
+    
+    b2Body* physicBoundarieForKey(const std::string& key);
+    void setFixtureDefPropertiesFromDictionary(LHDictionary* spritePhysic, b2FixtureDef* shapeDef);
+    void createPhysicBoundariesHelper(b2World* _world,
+                                      const CCPoint& wbConv,
+                                      const CCPoint& pos_offset);
+
 };
 
 #endif
+

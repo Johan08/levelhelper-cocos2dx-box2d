@@ -36,6 +36,8 @@ class LHLayer;
 class LHSprite;
 class LHJoint;
 class LHBezier;
+class LHLayer;
+class LHBatch;
 class b2World;
 
 
@@ -61,13 +63,19 @@ private:
     CCArray* allLHMainLayers;
     
 #if COCOS2D_VERSION >= 0x00020000
-    CCDictionary markedSprites;
-    CCDictionary markedJoints;
-    CCDictionary markedBeziers;
+    CCDictionary markedNodes;
+    
+//    CCDictionary markedSprites;
+//    CCDictionary markedLayers;
+//    CCDictionary markedBatches;
+//    CCDictionary markedJoints;
+//    CCDictionary markedBeziers;
 #else
-    CCMutableDictionary<std::string> markedSprites;
-    CCMutableDictionary<std::string> markedJoints;
-    CCMutableDictionary<std::string> markedBeziers;    
+    CCMutableDictionary<std::string> markedNodes;
+    
+//    CCMutableDictionary<std::string> markedSprites;
+//    CCMutableDictionary<std::string> markedJoints;
+//    CCMutableDictionary<std::string> markedBeziers;    
 #endif
     
  
@@ -82,13 +90,20 @@ public:
     b2World* getActiveBox2dWorld();
     void setActiveBox2dWorld(b2World* world);
     
-    void markSpriteForRemoval(LHSprite* sprite);
-    void markBezierForRemoval(LHBezier* node); 
-    void markJointForRemoval(LHJoint* jt);
+    void markNodeForRemoval(CCObject* node);
+    void removeMarkedNodes();
     
-    void removeMarkedSprites();
-    void removeMarkedBeziers();
-    void removeMarkedJoints();
+//    void markLayerForRemoval(LHLayer* layer);
+//    void markBatchForRemoval(LHBatch* batch);
+//    void markSpriteForRemoval(LHSprite* sprite);
+//    void markBezierForRemoval(LHBezier* node); 
+//    void markJointForRemoval(LHJoint* jt);
+//    
+//    void removeMarkedLayers();
+//    void removeMarkedBatches();
+//    void removeMarkedSprites();
+//    void removeMarkedBeziers();
+//    void removeMarkedJoints();
     
     
     CCPoint transformedScalePointToCocos2d(CCPoint point);
@@ -158,6 +173,7 @@ private:
     std::string hdSuffix;
     std::string hd2xSuffix;
 
+    void removeMarkedNode(CCObject* node);
     
     LHSettings();
     static LHSettings *m_sharedInstance;

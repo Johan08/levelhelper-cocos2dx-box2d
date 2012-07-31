@@ -29,6 +29,7 @@ bool LHNode::initWithDictionary(LHDictionary* dictionary){
     
     LHArray* childrenInfo = dictionary->arrayForKey("Children");
     
+    if(childrenInfo)
     for(int i = 0; i < childrenInfo->count(); ++i)
     {
         LHDictionary* childDict = childrenInfo->dictAtIndex(i);
@@ -59,6 +60,14 @@ void LHNode::removeSelf(){
 }
 //------------------------------------------------------------------------------
 LHNode::LHNode(){
+}
+//------------------------------------------------------------------------------
+bool LHNode::isLHNode(CCNode* obj){
+    
+    if( 0 != dynamic_cast<LHNode*>(obj))
+        return true;
+    
+    return false;
 }
 //------------------------------------------------------------------------------
 LHNode* LHNode::nodeWithDictionary(LHDictionary* dictionary){

@@ -36,7 +36,10 @@
 //}
 
 ////////////////////////////////////////////////////////////////////////////////
-LHJoint::~LHJoint(){		
+LHJoint::~LHJoint(){
+	
+    printf("LHJoint dealloc\n");
+    
     if(shouldDestroyJointOnDealloc)
         removeJointFromWorld();
 }
@@ -112,12 +115,14 @@ LHSprite* LHJoint::getSpriteB()
 //------------------------------------------------------------------------------
 void LHJoint::removeSelf()
 {
+    printf("LH JOINT REMOVE SELF %s\n", getUniqueName().c_str());
     if(parentLoader){
         if(!boxWorld->IsLocked()){
             parentLoader->removeJoint(this);
         }
         else {
-            LHSettings::sharedInstance()->markJointForRemoval(this);
+            printf("MARKING\n");
+            LHSettings::sharedInstance()->markNodeForRemoval(this);
         }
     }
 }

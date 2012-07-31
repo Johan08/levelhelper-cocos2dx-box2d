@@ -33,7 +33,7 @@
 
 class LHSprite;
 class LHBezier;
-
+class LHNode;
 enum LH_CONTACT_TYPE
 {
     LH_BEGIN_CONTACT = 1,
@@ -54,6 +54,8 @@ public:
     const b2Manifold* oldManifold;//available at pre solve - else is nil
     const b2ContactImpulse* impulse; //available at post solve - else is nil
     
+    LHNode* nodeA();//may return nil - this should be used when you have collision with the physics boundaries
+    LHNode* nodeB();//may return nil - this should be used when you have collision with the physics boundaries
 
     LHSprite* spriteA();//may return nil;
     LHSprite* spriteB();//may return nil;

@@ -34,6 +34,8 @@
 #include "LHBatch.h"
 #include "LHJoint.h"
 #include "LHBezier.h"
+#include "LHNode.h"
+
 LHSettings *LHSettings::m_sharedInstance = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,92 +99,160 @@ void LHSettings::setActiveBox2dWorld(b2World* world){
     activeBox2dWorld = world;
 }
 
-void LHSettings::markSpriteForRemoval(LHSprite* sprite){
-    if(NULL !=sprite){
-        markedSprites.setObject(sprite, sprite->getUniqueName());
-    }
-}
-void LHSettings::markBezierForRemoval(LHBezier* node){
+
+void LHSettings::markNodeForRemoval(CCObject* node){
     if(NULL !=node){
-        markedBeziers.setObject(node, node->getUniqueName());
-    }
-}
-void LHSettings::markJointForRemoval(LHJoint* jt){
-    if(NULL !=jt){
-        markedJoints.setObject(jt, jt->getUniqueName());
-    }    
-}
-
-void LHSettings::removeMarkedSprites(){
-
-#if COCOS2D_VERSION >= 0x00020000
-
-    CCArray* keys = markedSprites.allKeys();
-    if(keys){
-        for(int i = 0; i < keys->count(); ++i){
-            LHSprite* spr = (LHSprite*)markedSprites.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-            spr->removeSelf();
+        //the object can be LHBatch, LHLayer, LHJoint, LHSprite, LHBezier
+        //we are doing a LHNode cast so we dont get an error
+        if( 0 != dynamic_cast<LHSprite*>(node)){
+            markedNodes.setObject(node, ((LHSprite*)node)->getUniqueName());
+        }
+        else if( 0 != dynamic_cast<LHBezier*>(node)){
+            markedNodes.setObject(node, ((LHBezier*)node)->getUniqueName());
+        }
+        else if( 0 != dynamic_cast<LHJoint*>(node)){
+            markedNodes.setObject(node, ((LHJoint*)node)->getUniqueName());
+        }
+        else if( 0 != dynamic_cast<LHBatch*>(node)){
+            markedNodes.setObject(node, ((LHBatch*)node)->getUniqueName());
+        }
+        else if( 0 != dynamic_cast<LHLayer*>(node)){
+            markedNodes.setObject(node, ((LHLayer*)node)->getUniqueName());
         }
     }
-    markedSprites.removeAllObjects();
-
-#else
-    
-    std::vector<std::string> keys = markedSprites.allKeys();
-    for(int i = 0; i < keys.size(); ++i){
-        LHSprite* spr = (LHSprite*)markedSprites.objectForKey(keys[i]);
-        spr->removeSelf();
-    }
-    markedSprites.removeAllObjects();
-    
-#endif
 }
-void LHSettings::removeMarkedBeziers(){
 
+void LHSettings::removeMarkedNode(CCObject* node)
+{
+    if( 0 != dynamic_cast<LHSprite*>(node)){
+        ((LHSprite*)node)->removeSelf();
+    }
+    else if( 0 != dynamic_cast<LHBezier*>(node)){
+        ((LHBezier*)node)->removeSelf();
+    }
+    else if( 0 != dynamic_cast<LHJoint*>(node)){
+        ((LHJoint*)node)->removeSelf();
+    }
+    else if( 0 != dynamic_cast<LHBatch*>(node)){
+        ((LHBatch*)node)->removeSelf();
+    }
+    else if( 0 != dynamic_cast<LHLayer*>(node)){
+        ((LHLayer*)node)->removeSelf();
+    }
+}
+void LHSettings::removeMarkedNodes(){
+    
 #if COCOS2D_VERSION >= 0x00020000
     
-    CCArray* keys = markedBeziers.allKeys();
+    CCArray* keys = markedNodes.allKeys();
     if(keys){
         for(int i = 0; i < keys->count(); ++i){
-            LHBezier* node = (LHBezier*)markedBeziers.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-            node->removeSelf();
+            LHNode* node = (LHNode*)markedNodes.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+            removeMarkedNode(node);
         }
     }
-    markedBeziers.removeAllObjects();    
+    markedNodes.removeAllObjects();
     
 #else
     
-    std::vector<std::string> keys = markedBeziers.allKeys();
+    std::vector<std::string> keys = markedNodes.allKeys();
     for(int i = 0; i < keys.size(); ++i){
-        LHBezier* node = (LHBezier*)markedBeziers.objectForKey(keys[i]);
-        node->removeSelf();
+        LHNode* node = (LHNode*)markedNodes.objectForKey(keys[i]);
+        removeMarkedNode(node);
     }
-    markedBeziers.removeAllObjects();    
-    
+    markedNodes.removeAllObjects();
 #endif
 }
-void LHSettings::removeMarkedJoints(){
-#if COCOS2D_VERSION >= 0x00020000
-    CCArray* keys = markedJoints.allKeys();
-    if(keys){
-        for(int i = 0; i < keys->count(); ++i){
-            LHJoint* node = (LHJoint*)markedJoints.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-            node->removeSelf();
-        }
-    }
-    markedJoints.removeAllObjects();
 
-#else
-    
-    std::vector<std::string> keys = markedJoints.allKeys();
-    for(int i = 0; i < keys.size(); ++i){
-        LHJoint* node = (LHJoint*)markedJoints.objectForKey(keys[i]);
-        node->removeSelf();
-    }
-    markedJoints.removeAllObjects();
-    
-#endif
-}
+
+
+//
+//void LHSettings::markSpriteForRemoval(LHSprite* sprite){
+//    if(NULL !=sprite){
+//        markedSprites.setObject(sprite, sprite->getUniqueName());
+//    }
+//}
+//void LHSettings::markBezierForRemoval(LHBezier* node){
+//    if(NULL !=node){
+//        markedBeziers.setObject(node, node->getUniqueName());
+//    }
+//}
+//void LHSettings::markJointForRemoval(LHJoint* jt){
+//    if(NULL !=jt){
+//        markedJoints.setObject(jt, jt->getUniqueName());
+//    }    
+//}
+//
+//void LHSettings::removeMarkedSprites(){
+//
+//#if COCOS2D_VERSION >= 0x00020000
+//
+//    CCArray* keys = markedSprites.allKeys();
+//    if(keys){
+//        for(int i = 0; i < keys->count(); ++i){
+//            LHSprite* spr = (LHSprite*)markedSprites.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+//            spr->removeSelf();
+//        }
+//    }
+//    markedSprites.removeAllObjects();
+//
+//#else
+//    
+//    std::vector<std::string> keys = markedSprites.allKeys();
+//    for(int i = 0; i < keys.size(); ++i){
+//        LHSprite* spr = (LHSprite*)markedSprites.objectForKey(keys[i]);
+//        spr->removeSelf();
+//    }
+//    markedSprites.removeAllObjects();
+//    
+//#endif
+//}
+//void LHSettings::removeMarkedBeziers(){
+//
+//#if COCOS2D_VERSION >= 0x00020000
+//    
+//    CCArray* keys = markedBeziers.allKeys();
+//    if(keys){
+//        for(int i = 0; i < keys->count(); ++i){
+//            LHBezier* node = (LHBezier*)markedBeziers.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+//            node->removeSelf();
+//        }
+//    }
+//    markedBeziers.removeAllObjects();    
+//    
+//#else
+//    
+//    std::vector<std::string> keys = markedBeziers.allKeys();
+//    for(int i = 0; i < keys.size(); ++i){
+//        LHBezier* node = (LHBezier*)markedBeziers.objectForKey(keys[i]);
+//        node->removeSelf();
+//    }
+//    markedBeziers.removeAllObjects();    
+//    
+//#endif
+//}
+//void LHSettings::removeMarkedJoints(){
+//#if COCOS2D_VERSION >= 0x00020000
+//    CCArray* keys = markedJoints.allKeys();
+//    if(keys){
+//        for(int i = 0; i < keys->count(); ++i){
+//            LHJoint* node = (LHJoint*)markedJoints.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+//            node->removeSelf();
+//        }
+//    }
+//    markedJoints.removeAllObjects();
+//
+//#else
+//    
+//    std::vector<std::string> keys = markedJoints.allKeys();
+//    for(int i = 0; i < keys.size(); ++i){
+//        LHJoint* node = (LHJoint*)markedJoints.objectForKey(keys[i]);
+//        node->removeSelf();
+//    }
+//    markedJoints.removeAllObjects();
+//    
+//#endif
+//}
 
 
 
