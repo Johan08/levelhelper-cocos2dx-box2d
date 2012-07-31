@@ -95,7 +95,9 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
                 verts[idx] = transformPoint(point, sprite, offset, scale);
                     
                 ++i;
-            } 
+            }
+            
+            CCLog("VERT SIZE %d SPRITE %s", count, sprite->getUniqueName().c_str());
                 
             shapeDef.Set(verts, count);		
                 

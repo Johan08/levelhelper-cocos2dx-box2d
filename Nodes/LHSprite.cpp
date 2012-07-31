@@ -107,6 +107,7 @@ LHSprite::LHSprite(){
     tagTouchEndedObserver = NULL;
     swallowTouches = false;
     touchIsDisabled = false;
+    touchPriority = 0;
 
    // ++numberOfSprites;
    // CCLog("LHSprite Constructor %d", numberOfSprites);
@@ -392,7 +393,6 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     
     loadPhysicalInformationFromDictionary(phyDict);
     
-    
     loadAnimationsInformationFromDictionary(dictionary->dictForKey("AnimationsProperties"));
     
     loadUserCustomInfoFromDictionary(dictionary->dictForKey("CustomClassInfo"));
@@ -401,9 +401,9 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     pathNode = NULL;
     spriteIsInParallax = NULL;
     
-//    touchBeginObserver = NULL;
-//    touchMovedObserver = NULL;
-//    touchEndedObserver = NULL;
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
     
     tagTouchBeginObserver = NULL;
     tagTouchMovedObserver = NULL;
@@ -412,7 +412,7 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     usesOverloadedTransformations = false;
     usePhysicsForTouches = true;
     
-//    LevelHelperLoader::setTouchDispatcherForObject(this, getTag());
+    LevelHelperLoader::setTouchDispatcherForSpriteWithTag(this, getTag());
     
     scheduleUpdate();
 }
@@ -1198,8 +1198,25 @@ bool LHSprite::isTouchedAtPoint(CCPoint point){
 void LHSprite::registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector){
     
     removeTouchObserver();
-    LevelHelperLoader::setTouchDispatcherForSpriteWithTag(this, getTag());
+        
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
     
+    if(touchDispatcher){
+        
+        CCTouchHandler* handler = touchDispatcher->findHandler(this);
+        
+        //if is not already added to the touch dispatcher - then lets add it
+        if(!handler)
+        {
+            touchDispatcher->addTargetedDelegate(this, touchPriority, swallowTouches);
+        }
+    }
+        
     if(NULL == touchBeginObserver)
         touchBeginObserver = new LHObserverPair();
     
@@ -1245,7 +1262,16 @@ void LHSprite::removeTouchObserver()
     touchMovedObserver = NULL;
     touchEndedObserver = NULL;
     
-    LevelHelperLoader::removeTouchDispatcherFromSprite(this);
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+    if(touchDispatcher){
+        touchDispatcher->removeDelegate(this);
+    }
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -1283,9 +1309,9 @@ bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
                 (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
             }
         }
-        return true;
+        return swallowTouches;
     }
-    return true;
+    return false;
 }
 //------------------------------------------------------------------------------
 void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){

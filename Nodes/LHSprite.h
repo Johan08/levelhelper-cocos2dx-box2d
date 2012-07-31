@@ -100,6 +100,7 @@ protected:
     LHObserverPair* tagTouchEndedObserver;
     bool touchIsDisabled;
     bool swallowTouches;
+    int touchPriority;
     
     
     bool usesOverloadedTransformations;
@@ -277,6 +278,9 @@ public:
     
     void setSwallowTouches(bool val){swallowTouches = val;}
     bool getSwallowTouches(){return swallowTouches;}
+    
+    void setTouchPriority(int val){touchPriority = val;}
+    int getTouchPriority(){return touchPriority;}
     
     //Box2d helpful methods
     //--------------------------------------------------------------------------            
