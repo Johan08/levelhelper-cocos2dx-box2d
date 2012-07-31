@@ -734,6 +734,11 @@ LevelHelperLoader::~LevelHelperLoader()
 //    if(NULL != contactNode){
 //        contactNode->removeFromParentAndCleanup(true);
 //    }
+
+    if(NULL != contactNode){
+        contactNode->removeFromParentAndCleanup(true);
+    }
+
     
     CCLog("LH DEALLOC");
     LHTouchMgr::sharedInstance()->removeTouchBeginObserver(cocosLayer);
@@ -741,16 +746,14 @@ LevelHelperLoader::~LevelHelperLoader()
     
     parallaxesInLevel.removeAllObjects();
     jointsInLevel.removeAllObjects();
-    physicBoundariesInLevel.removeAllObjects();
     removeMainLayer();
+    physicBoundariesInLevel.removeAllObjects();
     
-    if(NULL != contactNode){
-        contactNode->removeFromParentAndCleanup(true);
-    }
 
     delete lhNodes;
     delete lhJoints;
-    delete lhParallax;    
+    delete lhParallax;
+    delete wb;
 }
 b2World* LevelHelperLoader::getPhysicsWorld(){
     return box2dWorld;
@@ -760,7 +763,7 @@ void LevelHelperLoader::removeMainLayer()
 {
     LHSettings::sharedInstance()->removeLHMainLayer(mainLHLayer);
     mainLHLayer->removeAllChildrenWithCleanup(true);
-    mainLHLayer->removeSelf();
+    mainLHLayer->removeFromParentAndCleanup(true);
     mainLHLayer = NULL;
 }
 //
@@ -1223,7 +1226,7 @@ LHParallaxNode* LevelHelperLoader::parallaxNodeWithUniqueName(const std::string&
 {
     return (LHParallaxNode*)parallaxesInLevel.objectForKey(uniqueName);
 }
-////------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 CCArray* LevelHelperLoader::allParallaxes(void){
     
 #if COCOS2D_VERSION >= 0x00020000
@@ -1248,49 +1251,7 @@ CCArray* LevelHelperLoader::allParallaxes(void){
     
 #endif
 }
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::createParallaxes(void)
-//{
-//    for(int i = 0; i< lhParallax->count(); ++i){
-//        
-//        LHDictionary* parallaxDict = lhParallax->objectAtIndex(i)->dictValue();
-//
-//		LHParallaxNode* node = parallaxNodeFromDictionary(parallaxDict, cocosLayer);
-//        if(NULL != node){
-//            node->parentLoader = this;
-//			parallaxesInLevel.setObject(node, 
-//                                        parallaxDict->objectForKey("UniqueName")->stringValue());
-//		}
-//    }
-//}
-////------------------------------------------------------------------------------
-//LHParallaxNode*  LevelHelperLoader::parallaxNodeFromDictionary(LHDictionary* parallaxDict,CCLayer* layer)
-//{
-//	LHParallaxNode* node = LHParallaxNode::nodeWithDictionary(parallaxDict);
-//    
-//    if(layer != NULL && node != NULL){
-//        int z = parallaxDict->objectForKey("ZOrder")->intValue();
-//        layer->addChild(node, z);
-//    }
-//    
-//    LHArray* spritesInfo = parallaxDict->objectForKey("Sprites")->arrayValue();
-//
-//    for(int i = 0; i < spritesInfo->count(); ++i)
-//    {
-//        LHDictionary* sprInf = spritesInfo->objectAtIndex(i)->dictValue();
-//
-//        float ratioX = sprInf->objectForKey("RatioX")->floatValue();
-//        float ratioY = sprInf->objectForKey("RatioY")->floatValue();
-//        std::string sprName = sprInf->objectForKey("SpriteName")->stringValue();
-//        
-//		LHSprite* spr = spriteWithUniqueName(sprName);
-//		if(NULL != node && spr != NULL){
-//			node->addSprite(spr, ccp(ratioX, ratioY));
-//		}
-//    }
-//    return node;
-//}
-////------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void LevelHelperLoader::removeAllParallaxes(bool removeSprites)
 {
     
@@ -1322,7 +1283,7 @@ void LevelHelperLoader::removeAllParallaxes(bool removeSprites)
     parallaxesInLevel.removeAllObjects();
 #endif
 }
-////------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void LevelHelperLoader::removeParallaxNode(LHParallaxNode* node, bool removeSprites){
     
     if(NULL == node)
@@ -1333,525 +1294,6 @@ void LevelHelperLoader::removeParallaxNode(LHParallaxNode* node, bool removeSpri
     
     node->removeFromParentAndCleanup(true);
 }
-////------------------------------------------------------------------------------
-//////////////////////////////////////////////////////////////////////////////////
-////JOINTS
-//////////////////////////////////////////////////////////////////////////////////
-//LHJoint* LevelHelperLoader::jointFromDictionary(LHDictionary* joint, b2World* world)
-//{
-//    b2Joint* boxJoint = 0;
-//    
-//	if(NULL == joint)
-//		return 0;
-//	
-//	if(world == 0)
-//		return 0;
-//    
-//    LHSprite* sprA = (LHSprite*)spritesInLevel.objectForKey(joint->objectForKey("ObjectA")->stringValue());
-//    b2Body* bodyA = sprA->getBody();
-//	
-//    LHSprite* sprB = (LHSprite*)spritesInLevel.objectForKey(joint->objectForKey("ObjectB")->stringValue());
-//    b2Body* bodyB = sprB->getBody();
-//	
-//    CCPoint sprPosA = sprA->getPosition();
-//    CCPoint sprPosB = sprB->getPosition();
-//    
-//    CCSize scaleA = sprA->getRealScale();
-//    CCSize scaleB = sprB->getRealScale();
-//    
-//	if(NULL == bodyA || 
-//       NULL == bodyB )
-//		return NULL;
-//	
-//	CCPoint anchorA = LHPointFromString(joint->objectForKey("AnchorA")->stringValue());
-//	CCPoint anchorB = LHPointFromString(joint->objectForKey("AnchorB")->stringValue());
-//    
-//	bool collideConnected = joint->objectForKey("CollideConnected")->boolValue();
-//	
-//    int tag = joint->objectForKey("Tag")->intValue();
-//    int type = joint->objectForKey("Type")->intValue();
-//    
-//	b2Vec2 posA, posB;
-//	
-//	float convertX = LHSettings::sharedInstance()->convertRatio().x;
-//	float convertY = LHSettings::sharedInstance()->convertRatio().y;
-//    
-//    float ptm = LHSettings::sharedInstance()->lhPtmRatio();
-//    
-//    if(!joint->objectForKey("CenterOfMass")->boolValue())
-//    {        
-//        posA = b2Vec2((sprPosA.x + anchorA.x*scaleA.width)/ptm, 
-//                      (sprPosA.y - anchorA.y*scaleA.height)/ptm);
-//        
-//        posB = b2Vec2((sprPosB.x + anchorB.x*scaleB.width)/ptm, 
-//                      (sprPosB.y - anchorB.y*scaleB.height)/ptm);
-//        
-//    }
-//    else {		
-//        posA = bodyA->GetWorldCenter();
-//        posB = bodyB->GetWorldCenter();
-//    }
-//	
-//	if(0 != bodyA && 0 != bodyB)
-//	{
-//		switch (type)
-//		{
-//			case LH_DISTANCE_JOINT:
-//			{
-//				b2DistanceJointDef jointDef;
-//				
-//				jointDef.Initialize(bodyA, 
-//									bodyB, 
-//									posA,
-//									posB);
-//				
-//				jointDef.collideConnected = collideConnected;
-//				
-//				jointDef.frequencyHz = joint->objectForKey("Frequency")->floatValue();
-//				jointDef.dampingRatio = joint->objectForKey("Damping")->floatValue();
-//				
-//				if(0 != world)
-//				{
-//					boxJoint = (b2DistanceJoint*)world->CreateJoint(&jointDef);
-//				}
-//			}	
-//				break;
-//				
-//			case LH_REVOLUTE_JOINT:
-//			{
-//				b2RevoluteJointDef jointDef;
-//				
-//				jointDef.lowerAngle = CC_DEGREES_TO_RADIANS(joint->objectForKey("LowerAngle")->floatValue());
-//				jointDef.upperAngle = CC_DEGREES_TO_RADIANS(joint->objectForKey("UpperAngle")->floatValue());
-//				jointDef.motorSpeed = joint->objectForKey("MotorSpeed")->floatValue(); //Usually in radians per second. ?????
-//				jointDef.maxMotorTorque = joint->objectForKey("MaxTorque")->floatValue(); //Usually in N-m.  ?????
-//				jointDef.enableLimit = joint->objectForKey("EnableLimit")->boolValue();
-//				jointDef.enableMotor = joint->objectForKey("EnableMotor")->boolValue();
-//				jointDef.collideConnected = collideConnected;    
-//				
-//				jointDef.Initialize(bodyA, bodyB, posA);
-//				
-//				if(0 != world)
-//				{
-//					boxJoint = (b2RevoluteJoint*)world->CreateJoint(&jointDef);
-//				}
-//			}
-//				break;
-//				
-//			case LH_PRISMATIC_JOINT:
-//			{
-//				b2PrismaticJointDef jointDef;
-//				
-//				// Bouncy limit
-//				CCPoint axisPt = LHPointFromString(joint->objectForKey("Axis")->stringValue());
-//				
-//				b2Vec2 axis(axisPt.x, axisPt.y);
-//				axis.Normalize();
-//				
-//				jointDef.Initialize(bodyA, bodyB, posA, axis);
-//				
-//				jointDef.motorSpeed = joint->objectForKey("MotorSpeed")->floatValue();
-//				jointDef.maxMotorForce = joint->objectForKey("MaxMotorForce")->floatValue();
-//				
-//				
-//				jointDef.lowerTranslation =  CC_DEGREES_TO_RADIANS(joint->objectForKey("LowerTranslation")->floatValue());
-//				jointDef.upperTranslation = CC_DEGREES_TO_RADIANS(joint->objectForKey("UpperTranslation")->floatValue());
-//				
-//				jointDef.enableMotor = joint->objectForKey("EnableMotor")->boolValue();
-//				jointDef.enableLimit = joint->objectForKey("EnableLimit")->boolValue();
-//				jointDef.collideConnected = collideConnected;   
-//				if(0 != world)
-//				{
-//					boxJoint = (b2PrismaticJoint*)world->CreateJoint(&jointDef);
-//				}
-//			}	
-//				break;
-//				
-//			case LH_PULLEY_JOINT:
-//			{
-//				b2PulleyJointDef jointDef;
-//				
-//				CCPoint grAnchorA = LHPointFromString(joint->objectForKey("GroundAnchorA")->stringValue());
-//				CCPoint grAnchorB = LHPointFromString(joint->objectForKey("GroundAnchorB")->stringValue());
-//				
-//				CCSize winSize = CCDirector::sharedDirector()->getDisplaySizeInPixels();
-//				
-//				grAnchorA.y = winSize.height - convertY*grAnchorA.y;
-//				grAnchorB.y = winSize.height - convertY*grAnchorB.y;
-//				
-//				b2Vec2 groundAnchorA = b2Vec2(convertX*grAnchorA.x/ptm, 
-//											  grAnchorA.y/ptm);
-//				
-//				b2Vec2 groundAnchorB = b2Vec2(convertX*grAnchorB.x/ptm, 
-//											  grAnchorB.y/ptm);
-//				
-//				float ratio = joint->objectForKey("Ratio")->floatValue();
-//				jointDef.Initialize(bodyA, bodyB, groundAnchorA, groundAnchorB, posA, posB, ratio);				
-//				jointDef.collideConnected = collideConnected;   
-//				
-//				if(0 != world)
-//				{
-//					boxJoint = (b2PulleyJoint*)world->CreateJoint(&jointDef);
-//				}
-//			}
-//				break;
-//				
-//			case LH_GEAR_JOINT:
-//			{
-//				b2GearJointDef jointDef;
-//				
-//				jointDef.bodyA = bodyB;
-//				jointDef.bodyB = bodyA;
-//				
-//				if(bodyA == 0)
-//					return 0;
-//				if(bodyB == 0)
-//					return 0;
-//				
-//                LHJoint* jointAObj = jointWithUniqueName(joint->objectForKey("JointA")->stringValue());
-//                b2Joint* jointA = jointAObj->getJoint();
-//                
-//                LHJoint* jointBObj = jointWithUniqueName(joint->objectForKey("JointB")->stringValue());
-//                b2Joint* jointB = jointBObj->getJoint();
-//                
-//				if(jointA == 0)
-//					return 0;
-//				if(jointB == 0)
-//					return 0;
-//				
-//				
-//				jointDef.joint1 = jointA;
-//				jointDef.joint2 = jointB;
-//				
-//				jointDef.ratio = joint->objectForKey("Ratio")->floatValue();
-//				jointDef.collideConnected = collideConnected;
-//				if(0 != world)
-//				{
-//					boxJoint = (b2GearJoint*)world->CreateJoint(&jointDef);
-//				}
-//			}	
-//				break;
-//				
-//				
-//			case LH_WHEEL_JOINT: //aka line joint
-//			{
-//				b2WheelJointDef jointDef;
-//				
-//				CCPoint axisPt = LHPointFromString(joint->objectForKey("Axis")->stringValue());
-//				b2Vec2 axis(axisPt.x, axisPt.y);
-//				axis.Normalize();
-//				
-//				jointDef.motorSpeed = joint->objectForKey("MotorSpeed")->floatValue(); //Usually in radians per second. ?????
-//				jointDef.maxMotorTorque = joint->objectForKey("MaxTorque")->floatValue(); //Usually in N-m.  ?????
-//				jointDef.enableMotor = joint->objectForKey("EnableMotor")->boolValue();
-//				jointDef.frequencyHz = joint->objectForKey("Frequency")->floatValue();
-//				jointDef.dampingRatio = joint->objectForKey("Damping")->floatValue();
-//				
-//				jointDef.Initialize(bodyA, bodyB, posA, axis);
-//				jointDef.collideConnected = collideConnected; 
-//				
-//				if(0 != world)
-//				{
-//					boxJoint = (b2WheelJoint*)world->CreateJoint(&jointDef);
-//				}
-//			}
-//				break;				
-//			case LH_WELD_JOINT:
-//			{
-//				b2WeldJointDef jointDef;
-//				
-//				jointDef.frequencyHz = joint->objectForKey("Frequency")->floatValue();
-//				jointDef.dampingRatio = joint->objectForKey("Damping")->floatValue();
-//				
-//				jointDef.Initialize(bodyA, bodyB, posA);
-//				jointDef.collideConnected = collideConnected; 
-//				
-//				if(0 != world)
-//				{
-//					boxJoint = (b2WheelJoint*)world->CreateJoint(&jointDef);
-//				}
-//			}
-//				break;
-//				
-//			case LH_ROPE_JOINT: //NOT WORKING YET AS THE BOX2D JOINT FOR THIS TYPE IS A TEST JOINT
-//			{
-//				
-//				b2RopeJointDef jointDef;
-//				
-//				jointDef.localAnchorA = bodyA->GetPosition();
-//				jointDef.localAnchorB = bodyB->GetPosition();
-//				jointDef.bodyA = bodyA;
-//				jointDef.bodyB = bodyB;
-//				jointDef.maxLength = joint->objectForKey("MaxLength")->floatValue();
-//				jointDef.collideConnected = collideConnected; 
-//				
-//				if(0 != world)
-//				{
-//					boxJoint = (b2RopeJoint*)world->CreateJoint(&jointDef);
-//				}
-//			}
-//				break;
-//				
-//			case LH_FRICTION_JOINT:
-//			{
-//				b2FrictionJointDef jointDef;
-//				
-//				jointDef.maxForce   = joint->objectForKey("MaxForce")->floatValue();
-//				jointDef.maxTorque  = joint->objectForKey("MaxTorque")->floatValue();
-//				
-//				jointDef.Initialize(bodyA, bodyB, posA);
-//				jointDef.collideConnected = collideConnected; 
-//				
-//				if(0 != world)
-//				{
-//					boxJoint = (b2FrictionJoint*)world->CreateJoint(&jointDef);
-//				}
-//				
-//			}
-//				break;
-//				
-//			default:
-//				CCLog("Unknown joint type in LevelHelper file.");
-//				break;
-//		}
-//	}
-//    
-//    LHJoint* levelJoint = LHJoint::jointWithUniqueName(joint->objectForKey("UniqueName")->stringValue().c_str(), 
-//                                                       tag, 
-//                                                       (LH_JOINT_TYPE)type, 
-//                                                       boxJoint);
-//    //levelJoint->getTag() = tag;
-//    //levelJoint->type = (LH_JOINT_TYPE)type;
-//    //levelJoint->joint = boxJoint;
-//    boxJoint->SetUserData(levelJoint);
-//    
-//	return levelJoint;
-//}
-////------------------------------------------------------------------------------
-//LHJoint* LevelHelperLoader::jointWithUniqueName(const std::string& name)
-//{
-//    return (LHJoint*)jointsInLevel.objectForKey(name);
-//}
-////------------------------------------------------------------------------------
-//CCArray* LevelHelperLoader::jointsWithTag(enum LevelHelper_TAG tag){
-//    std::vector<std::string> keys = jointsInLevel.allKeys();
-//    CCArray* jointsWithTag = CCArray::array();
-//    for(size_t i = 0; i < keys.size(); ++i){        
-//        LHJoint* levelJoint = (LHJoint*)jointsInLevel.objectForKey(keys[i]);
-//        if(levelJoint->getTag() == (int)tag){
-//            jointsWithTag->addObject(levelJoint);
-//        }
-//	}
-//    return jointsWithTag;
-//}
-////------------------------------------------------------------------------------
-//CCArray* LevelHelperLoader::allJoints(void){
-//    std::vector<std::string> keys = jointsInLevel.allKeys();
-//    CCArray* allJoints = CCArray::array();
-//    for(size_t i = 0; i < keys.size(); ++i){        
-//        LHJoint* levelJoint = (LHJoint*)jointsInLevel.objectForKey(keys[i]);
-//        if(levelJoint)
-//            allJoints->addObject(levelJoint);
-//	}
-//    return allJoints;
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::createJoints(void)
-//{
-//    for(int i = 0; i < lhJoints->count(); ++i)
-//    {
-//        LHDictionary* jointDict = lhJoints->objectAtIndex(i)->dictValue();
-//
-//		LHJoint* boxJoint = jointFromDictionary(jointDict, box2dWorld);
-//		
-//		if(NULL != boxJoint){
-//			jointsInLevel.setObject(boxJoint,
-//                                    jointDict->objectForKey("UniqueName")->stringValue());	
-//		}
-//	}	
-//}
-////------------------------------------------------------------------------------
-//bool LevelHelperLoader::removeAllJoints(void){    
-//    jointsInLevel.removeAllObjects();
-//    markedJoints.removeAllObjects();
-//    return true;
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::releaseAllJoints(void)
-//{
-//    removeAllJoints();
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::markJointForRemoval(LHJoint* jt){
-//    
-//    if(NULL == jt)
-//        return;
-//    
-//    markedJoints.setObject(jt, jt->getUniqueName());
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::markJointsAttachedToSpriteForRemoval(LHSprite* spr){
-//    
-//    if(NULL == spr)
-//        return;
-//    
-//    CCArray* joints = spr->jointList();
-//    
-//    if(joints == NULL)
-//        return;
-//    
-//    for(int i = 0; i < (int)joints->count(); ++i)
-//    {
-//        LHJoint* jt = (LHJoint*)joints->objectAtIndex(i);
-//        markJointForRemoval(jt);
-//    }
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::removeMarkedJoints(void){
-//
-//    std::vector<std::string> keys = markedJoints.allKeys();
-//    for(size_t i = 0; i< keys.size(); ++i){
-//        LHJoint* jt = (LHJoint*)markedJoints.objectForKey(keys[i]);
-//        removeJoint(jt);
-//    }
-//    markedJoints.removeAllObjects();
-//}
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::removeJointsWithTag(enum LevelHelper_TAG tag)
-//{
-//    std::vector<std::string> keys = jointsInLevel.allKeys();
-//    
-//    for(size_t i = 0; i< keys.size(); ++i)
-//    {
-//        std::string key = keys[i];
-//        LHJoint* jt = (LHJoint*)jointsInLevel.objectForKey(key);
-//        
-//        if(NULL != jt)
-//        {
-//            if(jt->getTag() == tag)
-//            {
-//                jointsInLevel.removeObjectForKey(key);
-//            }
-//        }
-//    }
-//}
-////------------------------------------------------------------------------------
-//bool LevelHelperLoader::removeJoint(LHJoint* joint)
-//{
-//	if(0 == joint)
-//		return false;
-//    
-//    markedJoints.removeObjectForKey(joint->getUniqueName());
-//    jointsInLevel.removeObjectForKey(joint->getUniqueName());
-//	return true;
-//}
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-//void LevelHelperLoader::setCustomAttributesForPhysics(LHDictionary* spriteProp, b2Body* body, LHSprite* sprite)
-//{
-//    
-//}
-//void LevelHelperLoader::setCustomAttributesForNonPhysics(LHDictionary* spriteProp, LHSprite* sprite)
-//{
-//    
-//}
-//
-//void LevelHelperLoader::setCustomAttributesForBezierBodies(LHDictionary* bezierProp, CCNode* sprite, b2Body* body)
-//{
-//  
-//}
-
-////////////////////////////////////////////////////////////////////////////////
-//------------------------------------------------------------------------------
-//LHBatch* LevelHelperLoader::loadBatchNodeWithImage(const std::string& image)
-//{
-//    if("" == image)
-//        return 0;
-//
-//    LHDictionary* imageInfo = lhBatchInfo->dictForKey(image.c_str());
-//    
-//    if(0 == imageInfo)
-//        return 0;
-//    
-//    CCSpriteBatchNode *batch = CCSpriteBatchNode::batchNodeWithFile(LHSettings::sharedInstance()->imagePath(image.c_str()).c_str());
-//    
-//    LHBatch* bNode = LHBatch::batchWithUniqueName(image);
-//    bNode->setSpriteBatchNode(batch);
-//    
-//    bNode->setZ(imageInfo->objectForKey("OrderZ")->intValue());
-//    batchNodesInLevel.setObject(bNode, image);		
-//    return bNode;
-//}
-//
-//void LevelHelperLoader::addBatchNodesToLayer(CCLayer* _cocosLayer)
-//{
-//    if(!LHSettings::sharedInstance()->preloadBatchNodes())
-//        return;
-//    
-//    std::vector<std::string> keys = batchNodesInLevel.allKeys();
-//
-//	int tag = 0;
-//    for(size_t i = 0; i < keys.size(); ++i)
-//    {
-//        std::string key = keys[i];
-//        
-//        LHBatch* info = (LHBatch*)batchNodesInLevel.objectForKey(key);
-//        
-//        _cocosLayer->addChild(info->getSpriteBatchNode(), info->getZ(), tag);
-//    }
-//}
-//
-//void LevelHelperLoader::addBatchNodeToLayer(CCLayer* _cocosLayer, LHBatch* info)
-//{
-//    if(info!= 0 && _cocosLayer != 0){
-//        _cocosLayer->addChild(info->getSpriteBatchNode(), info->getZ());
-//    }
-//}
-//
-////------------------------------------------------------------------------------
-//void LevelHelperLoader::releaseAllBatchNodes(void)
-//{
-//    batchNodesInLevel.removeAllObjects();
-//    //delete batchNodesInLevel;
-//    //batchNodesInLevel = 0;
-//}
-//
-////this will load the batch if its not loaded
-//LHBatch* LevelHelperLoader::batchNodeForFile(const std::string& image)
-//{
-//    LHBatch* bNode = (LHBatch*)batchNodesInLevel.objectForKey(image);
-//    if(0 != bNode){
-//        return bNode;
-//    }
-//    else{
-//        bNode = loadBatchNodeWithImage(image);
-//        addBatchNodeToLayer(cocosLayer, bNode);
-//        return bNode;
-//    }
-//    return 0;
-//}
-//
-//void LevelHelperLoader::removeUnusedBatchesFromMemory(void)
-//{
-//    std::vector<std::string> keys = batchNodesInLevel.allKeys();
-//	for(size_t i = 0; i < keys.size(); ++i)
-//    {
-//        std::string key = keys[i];
-//        
-//        LHBatch* bNode = (LHBatch*)batchNodesInLevel.objectForKey(key);
-//        
-//        if(bNode)
-//        {
-//            CCSpriteBatchNode* cNode = bNode->getSpriteBatchNode();
-//            
-//            if(0 == (int)(cNode->getDescendants()->count()))
-//            {
-//                //delete bNode;
-//                batchNodesInLevel.removeObjectForKey(key);
-//            }
-//        }
-//    }    
-//}
 
 
 void LevelHelperLoader::removeJoint(LHJoint* jt){
@@ -1938,7 +1380,7 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
 	if(NULL != dictionary->objectForKey("WBInfo")){
 		wb = new LHDictionary(dictionary->dictForKey("WBInfo"));
 	}
-	    
+	   
     ////////////////////////LOAD SPRITES////////////////////////////////////////////////////
     lhNodes = new LHArray(dictionary->arrayForKey("NODES_INFO"));
     

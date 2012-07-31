@@ -30,7 +30,7 @@ LHDictionary::LHDictionary()
 }
 LHDictionary::~LHDictionary(){
     
-    //printf("LHDictionary dealloc %d\n", --numberOfDicts);
+//    printf("LHDictionary dealloc %d\n", --numberOfDicts);
 
     for ( m_it=objects.begin() ; m_it != objects.end(); ++m_it)
     {

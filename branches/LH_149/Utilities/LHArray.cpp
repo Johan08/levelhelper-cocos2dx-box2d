@@ -21,9 +21,8 @@ LHArray::LHArray()
 //------------------------------------------------------------------------------
 LHArray::~LHArray(){
     
-    //printf("ARRAY DEALLOC %d\n", --numberOfArrays);
-    for(size_t i = 0; i< objects.size(); ++i)
-    {
+//    printf("ARRAY DEALLOC %d\n", --numberOfArrays);
+    for(size_t i = 0; i< objects.size(); ++i){
         delete objects[i];
     }
     objects.clear();
