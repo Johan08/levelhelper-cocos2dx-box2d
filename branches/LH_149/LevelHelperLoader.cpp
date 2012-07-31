@@ -735,25 +735,28 @@ LevelHelperLoader::~LevelHelperLoader()
 //        contactNode->removeFromParentAndCleanup(true);
 //    }
 
-    if(NULL != contactNode){
-        contactNode->removeFromParentAndCleanup(true);
-    }
-
-    
     CCLog("LH DEALLOC");
+
+    delete lhNodes;
+    delete lhJoints;
+    delete lhParallax;
+    delete wb;
+
+
+    physicBoundariesInLevel.removeAllObjects();
+    
     LHTouchMgr::sharedInstance()->removeTouchBeginObserver(cocosLayer);
 //    [[LHCuttingEngineMgr sharedInstance] destroyAllPrevioslyCutSprites];
     
     parallaxesInLevel.removeAllObjects();
     jointsInLevel.removeAllObjects();
     removeMainLayer();
-    physicBoundariesInLevel.removeAllObjects();
     
 
-    delete lhNodes;
-    delete lhJoints;
-    delete lhParallax;
-    delete wb;
+    if(NULL != contactNode){
+        contactNode->removeFromParentAndCleanup(true);
+    }
+
 }
 b2World* LevelHelperLoader::getPhysicsWorld(){
     return box2dWorld;
