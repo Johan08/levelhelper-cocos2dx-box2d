@@ -47,10 +47,12 @@ static int untitledSpritesCount = 0;
 ////////////////////////////////////////////////////////////////////////////////
 LHSprite::~LHSprite(void){
 
-    CCLog("LH SPRITE %s dealloc", uniqueName.c_str());
+//    CCLog("LH SPRITE %s dealloc", uniqueName.c_str());
     
-    if(fixturesInfo)
+    if(fixturesInfo){
         delete fixturesInfo;
+        fixturesInfo = NULL;
+    }
     
     
     unscheduleAllSelectors();
@@ -88,13 +90,16 @@ void LHSprite::removeSelf(){
     removeFromParentAndCleanup(true);
 }
 void LHSprite::onExit(){
-    CCLog("LH SPrite %s onExit", uniqueName.c_str()); 
+//    CCLog("LH SPrite %s onExit", uniqueName.c_str()); 
     removeTouchObserver();
 }
 //------------------------------------------------------------------------------
 LHSprite::LHSprite(){
 
     //CCLog("LHSprite init");
+    fixturesInfo = NULL;
+    fixturesObj = NULL;
+    userCustomInfo = NULL;
     body = NULL;
     parentLoader = NULL;
     animation = NULL;
@@ -476,6 +481,31 @@ LHSprite* LHSprite::batchSpriteWithDictionary(LHDictionary* dictionary, LHBatch*
 LHSprite* LHSprite::spriteWithDictionary(LHDictionary* dictionary){
     LHSprite *pobNode = new LHSprite();
 	if (pobNode && pobNode->initWithDictionary(dictionary))
+    {
+	    pobNode->autorelease();
+        return pobNode;
+    }
+    CC_SAFE_DELETE(pobNode);
+	return NULL;
+}
+
+//bool LHSprite::initUsingTexture(CCTexture2D* texture){
+//    
+////    LHDictionary* texDict = dictionary->dictForKey("TextureProperties");
+////    CCRect rect = texDict->rectForKey("Frame");
+//    
+////    rect = LHSettings::sharedInstance()->transformedTextureRect(rect, batch->getImagePath());
+//    
+//    if(initWithTexture(texture))
+//    {
+//        return true;
+//    }
+//    return false;
+//}
+LHSprite* LHSprite::spriteWithTexture(CCTexture2D* texture)
+{
+    LHSprite *pobNode = new LHSprite();
+	if (pobNode && pobNode->initWithTexture(texture))
     {
 	    pobNode->autorelease();
         return pobNode;

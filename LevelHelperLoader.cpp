@@ -746,7 +746,7 @@ LevelHelperLoader::~LevelHelperLoader()
     physicBoundariesInLevel.removeAllObjects();
     
     LHTouchMgr::sharedInstance()->removeTouchBeginObserver(cocosLayer);
-//    [[LHCuttingEngineMgr sharedInstance] destroyAllPrevioslyCutSprites];
+    LHCuttingEngineMgr::sharedInstance()->destroyAllPrevioslyCutSprites();
     
     parallaxesInLevel.removeAllObjects();
     jointsInLevel.removeAllObjects();

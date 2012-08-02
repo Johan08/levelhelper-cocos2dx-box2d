@@ -56,6 +56,9 @@
 #include "Nodes/LHPathNode.h"
 
 #include "CustomClasses/LHCustomClasses.h"
+
+#include "Nodes/LHCuttingEngineMgr.h"
+
 using namespace cocos2d;
 
 enum LevelHelper_TAG;
@@ -324,7 +327,7 @@ private:
     friend class LHSprite;
     friend class LHBezier;
     friend class LHLayer;
-    
+    friend class LHCuttingEngineMgr;
 
     
     void createAllNodes();
