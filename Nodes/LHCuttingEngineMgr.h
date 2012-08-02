@@ -98,7 +98,13 @@ private:
   
     std::vector<CCPoint> explosionLines;
     
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary* spritesPreviouslyCut;
+    CCGLProgram *mShaderProgram;
+	GLint		mColorLocation;
+#else
     CCMutableDictionary<std::string>* spritesPreviouslyCut;
+#endif
     
     LHSprite * spriteWithVertices(CCPoint* vertices,
                                   int count,
