@@ -53,15 +53,26 @@ public:
 
     LHSprite();    
     
-    virtual bool initBatchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch);
+    virtual bool initBatchSpriteWithDictionary(LHDictionary* dictionary,
+                                               LHBatch* batch);
     virtual bool initWithDictionary(LHDictionary* dictionary);
     
     //functions to be used by the user
-    static LHSprite* batchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch);//render by batch node
+    static LHSprite* batchSpriteWithDictionary(LHDictionary* dictionary,
+                                               LHBatch* batch);//render by batch node
+    
     static LHSprite* spriteWithDictionary(LHDictionary* dictionary);//self render
     
-    static LHSprite* spriteWithName(const std::string& spriteName, const std::string& sheetName, const std::string& spriteHelperFile);
-    static LHSprite* batchSpriteWithName(const std::string& spriteName, LHBatch* batch);
+    static LHSprite* spriteWithName(const std::string& spriteName,
+                                    const std::string& sheetName,
+                                    const std::string& spriteHelperFile);
+    
+    static LHSprite* batchSpriteWithName(const std::string& spriteName,
+                                         LHBatch* batch);
+    
+//    virtual bool initUsingTexture(CCTexture2D* texture);
+    static LHSprite* spriteWithTexture(CCTexture2D* texture);
+    
     virtual void postInit(void){}; 
     
 protected:
