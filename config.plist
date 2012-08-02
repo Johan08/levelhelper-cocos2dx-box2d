@@ -39,6 +39,8 @@
 		<string>LHContactNode.cpp</string>	
 		<string>LHCustomSpriteMgr.h</string>
 		<string>LHCustomSpriteMgr.cpp</string>
+		<string>LHCuttingEngineMgr.h</string>
+		<string>LHCuttingEngineMgr.cpp</string>
 		<string>LHFixture.h</string>		
 		<string>LHFixture.cpp</string>		
 		<string>LHJoint.h</string>
@@ -94,6 +96,10 @@
 		<key>LHCustomSpriteMgr.h</key>
 		<string>Nodes</string>
 		<key>LHCustomSpriteMgr.cpp</key>
+		<string>Nodes</string>
+		<key>LHCuttingEngineMgr.h</key>
+		<string>Nodes</string>
+		<key>LHCuttingEngineMgr.cpp</key>
 		<string>Nodes</string>
 		<key>LHFixture.h</key>
 		<string>Nodes</string>
