@@ -297,12 +297,33 @@ LHCuttingEngineMgr::~LHCuttingEngineMgr()
 //------------------------------------------------------------------------------
 LHCuttingEngineMgr::LHCuttingEngineMgr()
 {
+    
+    
+#if COCOS2D_VERSION >= 0x00020000
+    spritesPreviouslyCut = new CCDictionary();
+    
+    mShaderProgram = CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTexture);
+    mColorLocation = glGetUniformLocation( mShaderProgram->getProgram(), "u_color");
+#else
     spritesPreviouslyCut = new CCMutableDictionary<std::string>();
+#endif
 }
 
 void LHCuttingEngineMgr::destroyAllPrevioslyCutSprites(){
-    
+#if COCOS2D_VERSION >= 0x00020000
 
+    CCArray* keys = spritesPreviouslyCut->allKeys();
+    if(keys){
+        for(int i = 0; i < keys->count(); ++i){
+            LHSprite* spr = (LHSprite*)spritesPreviouslyCut->objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+            if(spr)
+                spr->removeSelf();
+        }
+    }
+    spritesPreviouslyCut->removeAllObjects();
+    
+#else
+    
     std::vector<std::string> keys = spritesPreviouslyCut->allKeys();
     
     for(int i = 0; i< keys.size(); ++i)
@@ -312,14 +333,35 @@ void LHCuttingEngineMgr::destroyAllPrevioslyCutSprites(){
             spr->removeSelf();
     }
     spritesPreviouslyCut->removeAllObjects();
+    
+#endif
 }
 //------------------------------------------------------------------------------
 CCArray* LHCuttingEngineMgr::getSprites(){
+
+
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* array = CCArray::create();
+    CCArray* keys = spritesPreviouslyCut->allKeys();
+    if(keys){
+        for(int i = 0; i < keys->count(); ++i){
+            LHSprite* spr = (LHSprite*)spritesPreviouslyCut->objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+            if(spr){
+                array->addObject(spr);
+            }
+        }
+    }
+#else
     CCArray* array = CCArray::array();
     std::vector<std::string> keys = spritesPreviouslyCut->allKeys();
     for(size_t i = 0; i< keys.size(); ++i){
-        array->addObject(spritesPreviouslyCut->objectForKey(keys[i]));
+        LHSprite* spr = (LHSprite*)spritesPreviouslyCut->objectForKey(keys[i]);
+        if(spr)
+            array->addObject(spr);
     }
+#endif
+    
     spritesPreviouslyCut->removeAllObjects();
     return array;
 }
@@ -373,26 +415,66 @@ LHSprite * LHCuttingEngineMgr::spriteWithVertices(CCPoint* vertices,
     
 
 #if COCOS2D_VERSION >= 0x00020000
-    //NSLog("Debug draw for cutting engine is disabled on Cocos2d 2.0");
-    //XXX GLES 2.0 draw call here
-#else
-    glDisableClientState(GL_COLOR_ARRAY);
+
+
+//    ccGLEnable( glServerState_ );
+    mShaderProgram->use();
+    mShaderProgram->setUniformForModelViewProjectionMatrix();
     
+	ccVertex2F* verts = new ccVertex2F[count];
+	for( int i=0;i<count;i++) {
+		verts[i].x = vertices[i].x;//*CC_CONTENT_SCALE_FACTOR();
+		verts[i].y = vertices[i].y;//*CC_CONTENT_SCALE_FACTOR();
+	}
+    
+    ccTex2F* uvs = new ccTex2F[count];
+	for( int i=0;i<count;i++) {
+		uvs[i].u = (vertices[i].x/(float)justSprTx->getSprite()->getTexture()->getPixelsWide())*CC_CONTENT_SCALE_FACTOR();
+		uvs[i].v = (vertices[i].y/(float)justSprTx->getSprite()->getTexture()->getPixelsHigh())*CC_CONTENT_SCALE_FACTOR();
+	}
+    
+    ccGLBindTexture2D( justSprTx->getSprite()->getTexture()->getName() );
+    
+	mShaderProgram->setUniformLocationWith4f(mColorLocation,1.0f, 1.0f, 1.0f, 1.0f);
+    
+    glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, 0, uvs);
+	glVertexAttribPointer(kCCVertexAttrib_Position, 2, GL_FLOAT, GL_FALSE, 0, verts);
+	glDrawArrays(GL_TRIANGLES, 0, count);
+    
+	CC_INCREMENT_GL_DRAWS(1);
+    delete[] uvs;
+    delete[] verts;
+    
+#else
     glEnable(GL_TEXTURE_2D);		
     glBindTexture(GL_TEXTURE_2D, justSprTx->getSprite()->getTexture()->getName());
     
-    CCPoint* uv = new CCPoint[count];
+    ccVertex2F* verts = new ccVertex2F[count];
+	for( int i=0;i<count;++i) {
+		verts[i].x = vertices[i].x*CC_CONTENT_SCALE_FACTOR();
+		verts[i].y = vertices[i].y*CC_CONTENT_SCALE_FACTOR();
+	}
+    
+    ccColor4F* clr = new ccColor4F[count];
+    for(int i = 0; i<count; ++i)
+    {
+        clr[i] = (ccColor4F){1.0f, 1.0f, 1.0f, 1.0f};
+    }
+    
+    ccTex2F* uv = new ccTex2F[count];
     for(int k = 0; k < count; ++k){
         
-        uv[k].x = vertices[k].x/(float)justSprTx->getSprite()->getTexture()->getPixelsWide();
-        uv[k].y = vertices[k].y/(float)justSprTx->getSprite()->getTexture()->getPixelsHigh();
+        uv[k].u = (vertices[k].x/(float)justSprTx->getSprite()->getTexture()->getPixelsWide())*CC_CONTENT_SCALE_FACTOR();
+        uv[k].v = (vertices[k].y/(float)justSprTx->getSprite()->getTexture()->getPixelsHigh())*CC_CONTENT_SCALE_FACTOR();
     }
     
     glTexCoordPointer(2, GL_FLOAT, 0, uv);
-    glVertexPointer(2, GL_FLOAT, 0, vertices);
+    glColorPointer(4, GL_FLOAT, 0, clr);
+    glVertexPointer(2, GL_FLOAT, 0, verts);
     glDrawArrays(GL_TRIANGLES, 0, count);
-    glDrawArrays(GL_LINES, 0, count);
     delete[] uv;
+    delete[] clr;
+    delete[] verts;
     
 #endif
 
@@ -1143,7 +1225,6 @@ void LHCuttingEngineMgr::splitBody(b2Body* splitBody, b2Vec2 origA, b2Vec2 origB
     if(LHSprite::isLHSprite(oldSprite)){
         
         spritesPreviouslyCut->removeObjectForKey(oldSprite->getUniqueName());
-//        spritesPreviouslyCut->removeObject(oldSprite);
         ((LHSprite*)oldSprite)->removeBodyFromWorld();//we force because of race condition
         ((LHSprite*)oldSprite)->removeSelf();
     }
@@ -1482,6 +1563,7 @@ void LHCuttingEngineMgr::debugDrawing(){
         //XXX - GLES 2.0 draw call here
 #else
         
+        glPushMatrix();
         glDisable(GL_TEXTURE_2D);		
         glColor4f(1, 0, 0, 1);
         CCPoint vertices[2];
@@ -1491,6 +1573,9 @@ void LHCuttingEngineMgr::debugDrawing(){
         
         glVertexPointer(2, GL_FLOAT, 0, &vertices);
         glDrawArrays(GL_LINES, 0, 2);
+        
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        glPopMatrix();
 #endif
     }
 }
