@@ -495,6 +495,7 @@ LHSprite * LHCuttingEngineMgr::spriteWithVertices(CCPoint* vertices,
         
         sprCut->setScaleX(oldSprite->getScaleX());
         sprCut->setScaleY(oldSprite->getScaleY());
+        sprCut->setUsePhysicsForTouches(true);
         
         static long long createdSprites = 0;
         sprCut->setUniqueName(stringFromInt(createdSprites));

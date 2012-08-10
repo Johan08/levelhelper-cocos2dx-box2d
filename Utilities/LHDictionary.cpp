@@ -361,6 +361,9 @@ int LHDictionary::intForKey(const std::string& key){
     
     if(obj){
         if(obj->type() != LHObject::INT_TYPE){
+            if(obj->type() == LHObject::FLOAT_TYPE){
+                return (int)obj->floatValue();
+            }
             printf("intForKey %s is not a int\n", key.c_str());
         }
         else {

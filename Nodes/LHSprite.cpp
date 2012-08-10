@@ -472,6 +472,7 @@ LHSprite* LHSprite::batchSpriteWithDictionary(LHDictionary* dictionary, LHBatch*
 	if (pobNode && pobNode->initBatchSpriteWithDictionary(dictionary, batch))
     {
 	    pobNode->autorelease();
+        pobNode->postInit();
         return pobNode;
     }
     CC_SAFE_DELETE(pobNode);
@@ -483,31 +484,19 @@ LHSprite* LHSprite::spriteWithDictionary(LHDictionary* dictionary){
 	if (pobNode && pobNode->initWithDictionary(dictionary))
     {
 	    pobNode->autorelease();
+        pobNode->postInit();
         return pobNode;
     }
     CC_SAFE_DELETE(pobNode);
 	return NULL;
 }
-
-//bool LHSprite::initUsingTexture(CCTexture2D* texture){
-//    
-////    LHDictionary* texDict = dictionary->dictForKey("TextureProperties");
-////    CCRect rect = texDict->rectForKey("Frame");
-//    
-////    rect = LHSettings::sharedInstance()->transformedTextureRect(rect, batch->getImagePath());
-//    
-//    if(initWithTexture(texture))
-//    {
-//        return true;
-//    }
-//    return false;
-//}
 LHSprite* LHSprite::spriteWithTexture(CCTexture2D* texture)
 {
     LHSprite *pobNode = new LHSprite();
 	if (pobNode && pobNode->initWithTexture(texture))
     {
 	    pobNode->autorelease();
+        pobNode->postInit();
         return pobNode;
     }
     CC_SAFE_DELETE(pobNode);
@@ -522,6 +511,7 @@ LHSprite* LHSprite::spriteWithName(const std::string& spriteName, const std::str
 
     if(sprite){      
         sprite->setShSceneName(spriteHelperFile);
+        sprite->postInit();
     }
     return sprite;
 }
@@ -535,6 +525,7 @@ LHSprite* LHSprite::batchSpriteWithName(const std::string& spriteName, LHBatch* 
 
     if(sprite){
         sprite->setShSceneName(batch->getSHFile());
+        sprite->postInit();
     }
     return sprite;
 }
