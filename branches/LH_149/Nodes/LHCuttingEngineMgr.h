@@ -9,7 +9,7 @@
 #ifndef __LH_CUTTING_ENGINE_MGR__
 #define __LH_CUTTING_ENGINE_MGR__
 #include "Box2D.h"
-#include "Cocos2d.h"
+#include "cocos2d.h"
 #include <vector>
 class LHSprite;
 using namespace cocos2d;

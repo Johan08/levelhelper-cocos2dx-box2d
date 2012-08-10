@@ -86,7 +86,7 @@ bool LHParallaxNode::initWithDictionary(LHDictionary* parallaxDict, LevelHelperL
     isContinuous = parallaxDict->objectForKey("ContinuousScrolling")->boolValue();
     direction = parallaxDict->objectForKey("Direction")->intValue();
     speed = parallaxDict->objectForKey("Speed")->floatValue();
-    lastPosition = CCPointMake(-100,-100);
+    lastPosition = CCPointMake(0,0);
     paused = false;
     winSize = CCDirector::sharedDirector()->getWinSize();
     screenNumberOnTheRight = 1;
