@@ -735,7 +735,7 @@ LevelHelperLoader::~LevelHelperLoader()
 //        contactNode->removeFromParentAndCleanup(true);
 //    }
 
-    CCLog("LH DEALLOC");
+//    CCLog("LH DEALLOC");
 
     delete lhNodes;
     delete lhJoints;

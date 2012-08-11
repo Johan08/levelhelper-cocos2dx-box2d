@@ -95,7 +95,7 @@ bool LHBatch::initWithDictionary(LHDictionary* dictionary,  LHLayer* layer){
 }
 //------------------------------------------------------------------------------
 LHBatch::~LHBatch(void){
-    printf("LH Batch Dealloc %s\n", uniqueName.c_str());
+//    printf("LH Batch Dealloc %s\n", uniqueName.c_str());
 }
 //------------------------------------------------------------------------------
 LHBatch::LHBatch(){
