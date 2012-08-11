@@ -40,7 +40,7 @@ bool LHLayer::initWithDictionary(LHDictionary* dictionary){
 }
 //------------------------------------------------------------------------------
 LHLayer::~LHLayer(void){
-   printf("LH Layer Dealloc %s\n", uniqueName.c_str());
+//   printf("LH Layer Dealloc %s\n", uniqueName.c_str());
 }
 //------------------------------------------------------------------------------
 LHLayer::LHLayer(){

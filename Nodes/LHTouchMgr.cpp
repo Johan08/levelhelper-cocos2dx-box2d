@@ -106,6 +106,7 @@ void LHTouchMgr::registerTouchBeginObserverForTag(CCObject* observer,
                                                   SEL_CallFuncO selector, 
                                                   int tag){
 
+    onTouchBeginOnSpriteOfTag.removeObjectForKey(tag);
     LHObserverPair* pair = LHObserverPair::observerPair();
     pair->object = observer;
     pair->selector = selector;
@@ -116,6 +117,7 @@ void LHTouchMgr::registerTouchMovedObserverForTag(CCObject* observer,
                                                   SEL_CallFuncO selector, 
                                                   int tag){
     
+    onTouchMovedOnSpriteOfTag.removeObjectForKey(tag);
     LHObserverPair* pair = LHObserverPair::observerPair();
     pair->object = observer;
     pair->selector = selector;
@@ -125,7 +127,8 @@ void LHTouchMgr::registerTouchMovedObserverForTag(CCObject* observer,
 void LHTouchMgr::registerTouchEndedObserverForTag(CCObject* observer, 
                                                   SEL_CallFuncO selector, 
                                                   int tag){
-    
+ 
+    onTouchEndedOnSpriteOfTag.removeObjectForKey(tag);
     LHObserverPair* pair = LHObserverPair::observerPair();
     pair->object = observer;
     pair->selector = selector;
