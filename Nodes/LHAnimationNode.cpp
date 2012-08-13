@@ -26,7 +26,7 @@
 #include "LHAnimationNode.h"
 #include "LevelHelperLoader.h"
 #include "LHSettings.h"
-#include "LHDictionary.h"
+#include "../Utilities/LHDictionary.h"
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 bool LHAnimationFrameInfo::initWithDictionary(LHDictionary* dictionary, LHSprite* sprite){

@@ -7,8 +7,8 @@
 //
 
 #include "LHObject.h"
-#include "LHDictionary.h"
-#include "LHArray.h"
+#include "../Utilities/LHDictionary.h"
+#include "../Utilities/LHArray.h"
 #include "../Nodes/LHBatch.h"
 
 #include <iostream>
