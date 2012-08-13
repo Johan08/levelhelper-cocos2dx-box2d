@@ -36,10 +36,10 @@
 
 #include "LHBatch.h"
 #include "LHJoint.h"
-#include "LHDictionary.h"
+#include "../Utilities/LHDictionary.h"
 #include "LHFixture.h"
 
-#include "LHCustomClasses.h"
+#include "../CustomClasses/LHCustomClasses.h"
 #include "SHDocumentLoader.h"
 //int LHSprite::numberOfSprites = 0;
 static int untitledSpritesCount = 0;
@@ -769,95 +769,6 @@ void* LHSprite::userInfo(){
     return userCustomInfo;
 }
 //------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //------------------------------------------------------------------------------
 bool  LHSprite::removeBodyFromWorld(void){
     
@@ -1117,68 +1028,6 @@ void LHSprite::transformScaleY(float scaleY){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-
-//scale not working
-//#if COCOS2D_VERSION >= 0x00020000
-//// this method will only get called if the sprite is batched.
-//// return YES if the physics values (angles, position ) changed
-//// If you return NO, then nodeToParentTransform won't be called.
-//bool LHSprite::isDirty(){
-//    return true;
-//}
-//
-//// returns the transform matrix according the Chipmunk Body values
-//CCAffineTransform LHSprite::nodeToParentTransform(void)
-//{
-//    if(!body)
-//        return CCSprite::nodeToParentTransform();
-//        
-//    b2Vec2 pos  = body->GetPosition();
-//    
-//    float x = pos.x * LevelHelperLoader::pointsToMeterRatio();
-//    float y = pos.y * LevelHelperLoader::pointsToMeterRatio();
-//    
-//    m_tTransform = CCAffineTransformMakeIdentity();
-//
-////    CC_DLL CCAffineTransform CCAffineTransformMakeIdentity();
-////    CC_DLL CCRect CCRectApplyAffineTransform(const CCRect& rect, const CCAffineTransform& anAffineTransform);
-////    
-////    CC_DLL CCAffineTransform CCAffineTransformTranslate(const CCAffineTransform& t, float tx, float ty);
-////    CC_DLL CCAffineTransform CCAffineTransformRotate(const CCAffineTransform& aTransform, CCFloat anAngle);
-////    CC_DLL CCAffineTransform CCAffineTransformScale(const CCAffineTransform& t, CCFloat sx, CCFloat sy);
-//    
-//    m_tTransform = CCAffineTransformScale(m_tTransform, getScaleX(), getScaleY());
-//    
-//    
-//    if ( isIgnoreAnchorPointForPosition() ) {
-//        x += m_tAnchorPointInPoints.x;
-//        y += m_tAnchorPointInPoints.y;
-//    }    
-//
-//    m_tTransform = CCAffineTransformTranslate(m_tTransform, x, y);
-//    
-//    // Make matrix
-//    float radians = body->GetAngle();
-//    float c = cosf(radians);
-//    float s = sinf(radians);
-//
-//    if( ! CCPoint::CCPointEqualToPoint(m_tAnchorPointInPoints, CCPointZero) ){
-//        x += c*-m_tAnchorPointInPoints.x + -s*-m_tAnchorPointInPoints.y;
-//        y += s*-m_tAnchorPointInPoints.x + c*-m_tAnchorPointInPoints.y;
-//    }
-//    
-//    m_tTransform = CCAffineTransformRotate(m_tTransform, radians);
-//
-//    
-//    // Rot, Translate Matrix
-//    m_tTransform = CCAffineTransformMake( c,  s,
-//                                         -s,    c,
-//                                         x,    y );
-//    
-//    
-//    return m_tTransform;
-//}
-//#endif
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 bool LHSprite::isTouchedAtPoint(CCPoint point){
@@ -1257,7 +1106,7 @@ void LHSprite::registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO sele
 //------------------------------------------------------------------------------
 void LHSprite::registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector){
    
-    if(NULL == touchBeginObserver)
+    if(NULL == touchMovedObserver)
         touchMovedObserver = new LHObserverPair();
     
     if(touchMovedObserver){

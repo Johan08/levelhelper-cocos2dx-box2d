@@ -1484,7 +1484,7 @@ void LHCuttingEngineMgr::cutAllSpritesWithTag(int tag,
 //------------------------------------------------------------------------------
 float LHCuttingEngineMgr::randomFloatBetweenSmallAndBig(float smallNumber, float bigNumber) {
     float diff = bigNumber - smallNumber;
-    return (((float) (arc4random() % ((unsigned)RAND_MAX + 1)) / RAND_MAX) * diff) + smallNumber;
+    return (((float) (random() % ((unsigned)RAND_MAX + 1)) / RAND_MAX) * diff) + smallNumber;
 }
 //------------------------------------------------------------------------------
 void  LHCuttingEngineMgr::createExplosionWithCuts(int numberOfCuts,

@@ -2,9 +2,9 @@
 //on both website and Mac App Store. It will be removed after.
 
 #include "TemporaryDummyClass.h"
-#include "LHDictionary.h"
-#include "LHArray.h"
-#include "LHObject.h"
+#include "../Utilities/LHDictionary.h"
+#include "../Utilities/LHArray.h"
+#include "../Utilities/LHObject.h"
 
 TemporaryDummyClass::~TemporaryDummyClass(){
 

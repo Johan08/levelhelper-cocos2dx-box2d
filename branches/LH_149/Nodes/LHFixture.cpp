@@ -6,7 +6,7 @@
 //
 
 #include "LHFixture.h"
-#include "LHDictionary.h"
+#include "../Utilities/LHDictionary.h"
 #include "LHSettings.h"
 #include "LevelHelperLoader.h"
 #include "LHSprite.h"

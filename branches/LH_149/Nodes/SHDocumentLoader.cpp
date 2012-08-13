@@ -28,7 +28,7 @@
 #include "LevelHelperLoader.h"
 #include "LHSettings.h"
 
-#include "LHDictionary.h"
+#include "../Utilities/LHDictionary.h"
 
 #include "cocoa/CCNS.h"
 

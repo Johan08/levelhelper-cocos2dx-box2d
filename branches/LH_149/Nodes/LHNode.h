@@ -11,7 +11,7 @@
 
 
 #include "cocos2d.h"
-#include "Box2D.h"
+#include "Box2d/Box2D.h"
 
 using namespace cocos2d;
 

@@ -12,7 +12,7 @@
 #include "LHBezier.h"
 #include "LHSettings.h"
 #include "LevelHelperLoader.h"
-#include "LHDictionary.h"
+#include "../Utilities/LHDictionary.h"
 
 static int untitledLayersCount = 0;
 

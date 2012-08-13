@@ -29,7 +29,7 @@
 #include <fstream>
 
 #include "LHBatch.h"
-#include "LHDictionary.h"
+#include "../Utilities/LHDictionary.h"
 #include "LHSprite.h"
 
 
