@@ -31,7 +31,7 @@
 #include "../Utilities/LHDictionary.h"
 #include "../Utilities/LHObject.h"
 #include "../Utilities/LHArray.h"
-#include "Box2d/Box2D.h"
+#include "Box2D/Box2D.h"
 
 using namespace cocos2d;
 class LHSprite;

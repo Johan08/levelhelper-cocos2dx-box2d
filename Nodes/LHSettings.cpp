@@ -27,7 +27,7 @@
 #include "LHSettings.h"
 #include <iostream>
 #include <fstream>
-#include "Box2d/Box2D.h"
+#include "Box2D/Box2D.h"
 
 #include "LHLayer.h"
 #include "LHSprite.h"
