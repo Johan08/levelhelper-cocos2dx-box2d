@@ -29,7 +29,7 @@
 #define __LHSPRITE_NODE__
 
 #include "cocos2d.h"
-#include "Box2d/Box2D.h"
+#include "Box2D/Box2D.h"
 #include "LHTouchMgr.h"
 #include "LHPathNode.h"
 using namespace cocos2d;

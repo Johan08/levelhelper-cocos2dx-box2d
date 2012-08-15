@@ -8,7 +8,7 @@
 
 #ifndef __LH_CUTTING_ENGINE_MGR__
 #define __LH_CUTTING_ENGINE_MGR__
-#include "Box2d/Box2D.h"
+#include "Box2D/Box2D.h"
 #include "cocos2d.h"
 #include <vector>
 class LHSprite;
