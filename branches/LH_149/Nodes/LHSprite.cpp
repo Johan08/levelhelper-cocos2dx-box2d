@@ -90,8 +90,10 @@ void LHSprite::removeSelf(){
     removeFromParentAndCleanup(true);
 }
 void LHSprite::onExit(){
-//    CCLog("LH SPrite %s onExit", uniqueName.c_str()); 
-    removeTouchObserver();
+//    CCLog("LH SPrite %s onExit", uniqueName.c_str());
+    
+    if(!animationsIsPreparing)
+        removeTouchObserver();
 }
 //------------------------------------------------------------------------------
 LHSprite::LHSprite(){
@@ -544,21 +546,34 @@ void LHSprite::update(float dt){
 //------------------------------------------------------------------------------
 void LHSprite::prepareAnimationNamed(const std::string& animName, const std::string& shScene){
     
-    LHDictionary* animDict = SHDocumentLoader::sharedInstance()->dictionaryForAnimationNamed(animName,shScene);
-    if(animation){
-        delete animation;
-        animation = NULL;
+    
+    if(animation)
+    {
+        //if we already have the same animation active - reset it to frame 0
+        if(animation->getUniqueName() == animName &&
+           animation->getSHSceneName() == shScene){
+            animation->setFrame(0);
+            return;
+        }
+        
     }
     
+    
+    LHDictionary* animDict = SHDocumentLoader::sharedInstance()->dictionaryForAnimationNamed(animName,shScene);
+        
     if(!animDict) {
         CCLog("ERROR: SpriteHelper document %s for animation %s needs to be updated. Animation is canceled.", shScene.c_str(), animName.c_str());
         return;
     }
     
+    animationsIsPreparing = true;
+    
+    stopAnimation();
+
     std::string textureFile = animDict->stringForKey("SheetImage");
     std::string animSheet   = animDict->stringForKey("SheetName");
     
-    animation = new LHAnimationNode(animDict, this);
+    animation = new LHAnimationNode(animDict, this, shScene);
     
     if(shSheetName != animSheet)
     {
@@ -616,6 +631,7 @@ void LHSprite::prepareAnimationNamed(const std::string& animName, const std::str
         animation->setOldRect(originalRect);
         animation->prepare();
     }
+    animationsIsPreparing = false;
 }
 //------------------------------------------------------------------------------
 void LHSprite::playAnimation(){ if(animation)animation->play();}

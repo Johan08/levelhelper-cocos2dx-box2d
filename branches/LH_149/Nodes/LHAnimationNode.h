@@ -87,12 +87,12 @@ public:
     
 //    virtual bool initWithDictionary(LHDictionary* dictionary, LHSprite* sprite);
     virtual ~LHAnimationNode();
-    LHAnimationNode(LHDictionary* dic, LHSprite* sprite);
+    LHAnimationNode(LHDictionary* dic, LHSprite* sprite, std::string shScene);
     
 //    static LHAnimationNode* animationWithDictionary(LHDictionary* dic, LHSprite* sprite);
 
     
-    
+    const std::string& getSHSceneName(){return shSceneName;}
     const std::string& getUniqueName(){return uniqueName;}
     const std::string& getSheetName(){return sheetName;}
 
@@ -142,7 +142,8 @@ public:
     
 private:
     
-    std::string uniqueName;    
+    std::string shSceneName;
+    std::string uniqueName;
     std::string sheetName;
     
     float           delayPerUnit;

@@ -69,7 +69,7 @@ bool LHAnimationFrameInfo::initWithDictionary(LHDictionary* dictionary, LHSprite
 }
 //------------------------------------------------------------------------------
 LHAnimationFrameInfo::~LHAnimationFrameInfo(){
-    CCLog("LHSpriteFrame Dealloc %s\n", spriteframeName.c_str());
+    //CCLog("LHSpriteFrame Dealloc %s\n", spriteframeName.c_str());
     delete notifications;
 }
 //------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ LHAnimationFrameInfo* LHAnimationFrameInfo::frameWithDictionary(LHDictionary* di
 ////////////////////////////////////////////////////////////////////////////////
 LHAnimationNode::~LHAnimationNode()
 {
-    CCLog("LH Animation Dealloc %s %p", uniqueName.c_str(), this);
+    //CCLog("LH Animation Dealloc %s %p", uniqueName.c_str(), this);
     delete frames;
     activeFrame = NULL;
 }
@@ -132,7 +132,7 @@ LHAnimationNode::~LHAnimationNode()
 //    return true;
 //}
 
-LHAnimationNode::LHAnimationNode(LHDictionary* dictionary, LHSprite* spr){
+LHAnimationNode::LHAnimationNode(LHDictionary* dictionary, LHSprite* spr, std::string shScene){
     
     frames= NULL;
     sprite= NULL;
@@ -142,7 +142,7 @@ LHAnimationNode::LHAnimationNode(LHDictionary* dictionary, LHSprite* spr){
     
     //this info will be from the spritehelper document
     //the info from the level is loaded by LHSprite
-    
+    shSceneName = std::string(shScene);
     uniqueName  = std::string(dictionary->stringForKey("UniqueName"));
     sheetName   = std::string(dictionary->stringForKey("SheetName"));
     restoreOriginalFrame = dictionary->boolForKey("RestoreOriginalFrame");
@@ -262,13 +262,17 @@ void LHAnimationNode::update(float dt)
     
     if(endedNotif){
         
+        if(endedRep){
+            setPaused(true);
+            restoreFrame();
+        }
+            
 #if COCOS2D_VERSION >= 0x00020000
         cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
 #else
         CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
 #endif
         if(endedRep){
-            sprite->stopAnimation();
 #if COCOS2D_VERSION >= 0x00020000
             cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
 #else

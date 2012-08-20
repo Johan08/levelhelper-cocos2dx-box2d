@@ -91,6 +91,7 @@ protected:
     CCRect originalRect;
     
     LHAnimationNode* animation;
+    bool animationsIsPreparing; //we use this so cocos2d does not remove the touch handling when preparing an anim
     LHPathNode* pathNode;
     LH_PATH_DEFAULTS pathDefaults;
     
