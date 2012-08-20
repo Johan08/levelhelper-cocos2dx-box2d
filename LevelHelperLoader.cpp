@@ -311,11 +311,14 @@ CCArray* LevelHelperLoader::allJoints(){
     
 #if COCOS2D_VERSION >= 0x00020000
     CCArray* keys = jointsInLevel.allKeys();
-    CCArray* array = CCArray::create();    
-    for(int i = 0; i < (int)keys->count(); ++i){
-        array->addObject((LHJoint*)jointsInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString()));
+    CCArray* array = CCArray::create();
+    if(keys)
+    {
+        for(int i = 0; i < (int)keys->count(); ++i){
+            array->addObject((LHJoint*)jointsInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString()));
+        }
     }
-    return array;    
+    return array;
 #else
     std::vector<std::string> keys = jointsInLevel.allKeys();
     CCArray* array = CCArray::array();    
