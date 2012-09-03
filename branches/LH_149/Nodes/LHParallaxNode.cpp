@@ -130,7 +130,13 @@ void LHParallaxNode::addSprite(LHSprite* sprite, CCPoint ratio)
 }
 ////////////////////////////////////////////////////////////////////////////////
 void LHParallaxNode::addNode(CCNode* node, CCPoint ratio){
-    createParallaxPointObject(node, ratio);
+  
+    if(LHSprite::isLHSprite(node)){
+        addSprite((LHSprite*)node, ratio);
+    }
+    else{
+        createParallaxPointObject(node, ratio);
+    }
 }
 ////////////////////////////////////////////////////////////////////////////////
 LHParallaxPointObject* LHParallaxNode::createParallaxPointObject(CCNode* node, CCPoint ratio){
