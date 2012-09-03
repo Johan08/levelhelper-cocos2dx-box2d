@@ -27,6 +27,16 @@
 #include "../LevelHelperLoader.h"
 #include "LHSettings.h"
 
+void lhContact_CallBeginEndSolveMethod(void* object,
+                                       b2Contact* contact, bool isBegin);
+void lhContact_CallPreSolveMethod(void* object,
+                                  b2Contact* contact,
+                                  const b2Manifold* oldManifold);
+
+void lhContact_CallPostSolveMethod(void* object,
+                                   b2Contact* contact,
+                                   const b2ContactImpulse* impulse);
+
 class LHContactNodeInfo : public CCObject
 {
 	int tagB;

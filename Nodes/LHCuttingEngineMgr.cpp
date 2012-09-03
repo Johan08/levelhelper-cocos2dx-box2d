@@ -17,6 +17,9 @@
 #include <string.h>
 #include <assert.h>
 
+bool isLeft(b2Vec2 a, b2Vec2 b, b2Vec2 c);
+int comparator(const void *a, const void *b);
+
 // Typedef an STL vector of vertices which are used to represent
 // a polygon/contour and a series of triangles.
 typedef std::vector< b2Vec2 > Vector2dVector;

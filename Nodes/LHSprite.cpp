@@ -1111,8 +1111,9 @@ void LHSprite::registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO sele
         }
     }
         
-    if(NULL == touchBeginObserver)
+    if(NULL == touchBeginObserver){
         touchBeginObserver = new LHObserverPair();
+    }
     
     if(touchBeginObserver){
         touchBeginObserver->object = observer;
@@ -1170,7 +1171,7 @@ void LHSprite::removeTouchObserver()
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
-{    
+{
     if(touchIsDisabled)
         return false;
 
