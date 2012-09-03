@@ -62,6 +62,7 @@ protected:
 	bool isVisible;
 	bool isLine;
 	bool isPath;
+    bool drawBorder;
     float opacity;
     std::string uniqueName;
 	b2Body* body; //can be 0
