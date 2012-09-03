@@ -361,10 +361,14 @@ bool LHSettings::isHDImage(const std::string& image)
 
 const std::string LHSettings::imagePath(const std::string& image){
     
+   // CCLog("IMAGE FILE PATH %s", image.c_str());
+    
     
     std::string computedFile = image;
     if(isIpad())
-    {   
+    {
+       // CCLog("IS IPAD");
+        
         if(device != 1 && device != 3)//if ipad only then we dont need to apply transformations
         {
             if(CC_CONTENT_SCALE_FACTOR() == 2)
@@ -395,6 +399,8 @@ const std::string LHSettings::imagePath(const std::string& image){
             return std::string(fullpath);
         }
     }
+    
+   // CCLog("RETURNING %s", image.c_str());
     return image;
     
 //    return [NSString stringWithFormat:@"%@%@",activeFolder, file];
@@ -442,8 +448,8 @@ bool LHSettings::isIpad(void){
         
     CCSize wSize = CCDirector::sharedDirector()->getWinSizeInPixels();
     
-    if((wSize.width == 1024 || wSize.width == 768) && 
-       (wSize.height == 1024 || wSize.height == 768))
+    if((wSize.width >= 1024 || wSize.width >= 768) &&
+       (wSize.height >= 1024 || wSize.height >= 768))
     {
         return true;
     }

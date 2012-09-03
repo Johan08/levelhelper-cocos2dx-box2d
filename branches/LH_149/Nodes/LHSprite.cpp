@@ -315,15 +315,20 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     
     CCRect rectInPixels = shTexDict->rectForKey("Frame");
     
-    // [[LHSettings sharedInstance] transformedTextureRect:self.textureRect forImage:[self imageFile]];
+    rectInPixels = LHSettings::sharedInstance()->transformedTextureRect(rectInPixels, getImageFile());
+    rectInPixels = CC_RECT_POINTS_TO_PIXELS(rectInPixels);
     
-    rectInPixels = CC_RECT_POINTS_TO_PIXELS(getTextureRect());    
     
     CCSize contentSize = shTexDict->sizeForKey("SpriteSize");
     
     contentSize = LHSettings::sharedInstance()->transformedSize(contentSize,getImageFile());
     contentSize.width *= CC_CONTENT_SCALE_FACTOR();
     contentSize.height*= CC_CONTENT_SCALE_FACTOR();
+    
+    //CCLog("RETINA CONTENCT SCALE %f", CC_CONTENT_SCALE_FACTOR());
+    
+    //CCLog("IMAGE FILE %s", getImageFile().c_str());
+    
     
     CCPoint originalTextureOffset = shTexDict->pointForKey("TextureOffset");
     CCSize texOffsetSize = LHSettings::sharedInstance()->transformedSize(CCSizeMake(originalTextureOffset.x, 
@@ -333,6 +338,9 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     originalTextureOffset.y = texOffsetSize.height;
     originalTextureOffset.x *= CC_CONTENT_SCALE_FACTOR();
     originalTextureOffset.y *= CC_CONTENT_SCALE_FACTOR();
+    
+    //CCLog("RECT %f %f %f %f", rectInPixels.origin.x, rectInPixels.origin.y, rectInPixels.size.width, rectInPixels.size.height);
+   // CCLog("CONTENT SIZE %f %f", contentSize.width, contentSize.height);
     
 #if COCOS2D_VERSION >= 0x00020000
     CCSpriteFrame* sprFrame = CCSpriteFrame::create(getTexture(),
