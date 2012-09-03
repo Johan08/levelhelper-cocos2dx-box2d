@@ -14,7 +14,7 @@
 static int untitledNodesCount = 0;
 //------------------------------------------------------------------------------
 LHNode::~LHNode(){
-    printf("LHNode dealloc %s\n", uniqueName.c_str());
+    //printf("LHNode dealloc %s\n", uniqueName.c_str());
     removeBodyFromWorld();
 }
 //------------------------------------------------------------------------------
