@@ -546,8 +546,11 @@ LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name,
                 lh_spriteCreationMethods methods = LHCustomSpriteMgr::sharedInstance()->customSpriteClassForTag(tag);
                 LHSprite* spr =  (*methods.first)(spriteInfo);
 
-                if(spr && parent)
-                    parent->addChild(spr, spr->getZOrder());
+                if(spr){
+                    spr->postInit();
+                    if(parent)
+                        parent->addChild(spr, spr->getZOrder());
+                }
                 return spr;
             }
         }
@@ -576,6 +579,7 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithUniqueName(const std::string& 
                     LHSprite* sprite = (*methods.second)(spriteInfo, batch);
                     if(sprite){
                         batch->addChild(sprite, sprite->getZOrder());
+                        sprite->postInit();
                     }
                     return sprite;
                 }
@@ -599,8 +603,11 @@ LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
                                                   const std::string& shFileNoExt,
                                                   CCNode* parent){
     LHSprite* sprite = LHSprite::spriteWithName(name, shSheetName, shFileNoExt);
-    if(sprite && parent)
-        parent->addChild(sprite);
+    if(sprite){
+        if(parent)
+            parent->addChild(sprite);
+        sprite->postInit();
+    }
     return sprite;
 }
 
@@ -635,6 +642,7 @@ LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
             if(parent){
                 parent->addChild(sprite);
             }
+            sprite->postInit();
         }
         return sprite;
     }
@@ -658,6 +666,7 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
             LHSprite* sprite = LHSprite::batchSpriteWithDictionary(dictionary, batch);
             if(sprite){
                 batch->addChild(sprite, sprite->getZOrder());
+                sprite->postInit();
             }
             return sprite;
         }
@@ -689,6 +698,7 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
             if(sprite){
                 sprite->setTag(tag);
                 batch->addChild(sprite, sprite->getZOrder());
+                sprite->postInit();
             }
             return sprite;
         }
