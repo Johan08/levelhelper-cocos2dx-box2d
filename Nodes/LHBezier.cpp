@@ -131,6 +131,10 @@ bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     isLine		= textureDict->boolForKey("IsSimpleLine");
     isPath		= textureDict->boolForKey("IsPath");
     opacity     = textureDict->floatForKey("Opacity");
+    if(textureDict->objectForKey("DrawBorder"))
+        drawBorder = textureDict->boolForKey("DrawBorder");
+    else
+        drawBorder = true;
     
     uniqueName  = std::string(textureDict->stringForKey("UniqueName"));
     
@@ -231,7 +235,7 @@ CCPoint LHBezier::pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, f
 void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
                                               LHArray* fixtures)
 {
-    float scale = CCDirector::sharedDirector()->getContentScaleFactor();
+//    float scale = CCDirector::sharedDirector()->getContentScaleFactor();
     
 	CCPoint convert = LHSettings::sharedInstance()->convertRatio();    
     if(NULL != fixtures)
@@ -297,11 +301,6 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 						CCPoint pt2 = CCPointMake(vPoint.x*convert.x, 
 												  winSize.height - vPoint.y*convert.y);
 						
-                        pt1.x *=scale;
-                        pt1.y *=scale;
-                        
-                        pt2.x *=scale;
-                        pt2.y *=scale;
                         
                         pt1.x += pos_offset.x;
                         pt1.y -= pos_offset.y;
@@ -311,6 +310,7 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
                         
                         linesHolder.push_back(pt1);
                         linesHolder.push_back(pt2);
+                        
 					}
 					prevPoint = vPoint;
 					firstPt = false;					
@@ -324,11 +324,6 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 				CCPoint pos2 = CCPointMake(endPt.x*convert.x, 
 										   winSize.height - endPt.y*convert.y);
 				
-                pos1.x*=scale;
-                pos1.y*=scale;
-                
-                pos2.x*=scale;
-                pos2.y*=scale;
                 
                 pos1.x += pos_offset.x;
                 pos1.y -= pos_offset.y;
@@ -525,7 +520,7 @@ void LHBezier::draw(void)
     
     CC_NODE_DRAW_SETUP();
     
-    float scale = 1;
+//    float scale = 1;
     
     int size = (int)trianglesHolder.size();
     
@@ -544,8 +539,8 @@ void LHBezier::draw(void)
         {
             CCPoint pt = fix[j];
             
-            pt.x *=scale;
-            pt.y *=scale;
+//            pt.x *=scale;
+//            pt.y *=scale;
             
             ccVertex3F vert = {pt.x, pt.y, 0};
             ccTex2F tex = { (pt.x/imageSize.width),
@@ -633,59 +628,63 @@ void LHBezier::draw(void)
     if(!wasBlend)
         glDisable(GL_BLEND);
     
-    float oldLineWidth = 1.0f;
-    glGetFloatv(GL_LINE_WIDTH, &oldLineWidth);
-    
-    glLineWidth(lineWidth);
-    
-//    int linesNo = (int)linesHolder.size();
-        
-    mShaderProgram->use();
-	mShaderProgram->setUniformForModelViewProjectionMatrix();
-	mShaderProgram->setUniformLocationWith4f(mColorLocation,
-                                             lineColor.origin.x,
-                                             lineColor.origin.y,
-                                             lineColor.size.width,
-                                             opacity);
-    
-    
-    ccColor4B lineColorVert = { (GLubyte)(lineColor.origin.x*255.0f),
-                                (GLubyte)(lineColor.origin.y*255.0f),
-                                (GLubyte)(lineColor.size.width*255.0f),
-                                (GLubyte)(opacity*255.0f)};
-    
-
-    lhV3F_Line lines_verts[linesHolder.size()];
-    int l = 0;
-    for(int i = 0; i < (int)linesHolder.size(); i+=2)
+    if(drawBorder)
     {
-        CCPoint pt1 = linesHolder[i];
-        CCPoint pt2 = linesHolder[i+1];
+        float oldLineWidth = 1.0f;
+        glGetFloatv(GL_LINE_WIDTH, &oldLineWidth);
+        
+        glLineWidth(lineWidth);
+        
+    //    int linesNo = (int)linesHolder.size();
+            
+        mShaderProgram->use();
+        mShaderProgram->setUniformForModelViewProjectionMatrix();
+        mShaderProgram->setUniformLocationWith4f(mColorLocation,
+                                                 lineColor.origin.x,
+                                                 lineColor.origin.y,
+                                                 lineColor.size.width,
+                                                 opacity);
+        
+        
+        ccColor4B lineColorVert = { (GLubyte)(lineColor.origin.x*255.0f),
+                                    (GLubyte)(lineColor.origin.y*255.0f),
+                                    (GLubyte)(lineColor.size.width*255.0f),
+                                    (GLubyte)(opacity*255.0f)};
+        
 
-        lines_verts[l].A.point = (ccVertex3F){pt1.x, pt1.y, 0};
-        lines_verts[l].A.color = lineColorVert;
+        lhV3F_Line lines_verts[linesHolder.size()];
+        int l = 0;
+        for(int i = 0; i < (int)linesHolder.size(); i+=2)
+        {
+            CCPoint pt1 = linesHolder[i];
+            CCPoint pt2 = linesHolder[i+1];
+
+            lines_verts[l].A.point = (ccVertex3F){pt1.x, pt1.y, 0};
+            lines_verts[l].A.color = lineColorVert;
+            
+            lines_verts[l].B.point = (ccVertex3F){pt2.x, pt2.y, 0};
+            lines_verts[l].B.color = lineColorVert;
+            
+            l++;
+        }
         
-        lines_verts[l].B.point = (ccVertex3F){pt2.x, pt2.y, 0};
-        lines_verts[l].B.color = lineColorVert;
+        ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position | kCCVertexAttribFlag_Color );
+            
+    #define line_kPointSize sizeof(lhV3F_C4B)
+        long line_offset = (long)&lines_verts;
         
-        l++;
+        // vertex
+        int line_diff = offsetof( lhV3F_C4B, point);
+        glVertexAttribPointer(kCCVertexAttrib_Position, 3, GL_FLOAT, GL_FALSE, line_kPointSize, (void*) (line_offset + line_diff));
+        
+        // color
+        line_diff = offsetof( lhV3F_C4B, color);
+        glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, line_kPointSize, (void*)(line_offset + line_diff));
+        
+        glDrawArrays(GL_LINES, 0, linesHolder.size());
+            
     }
     
-    ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position | kCCVertexAttribFlag_Color );
-        
-#define line_kPointSize sizeof(lhV3F_C4B)
-    long line_offset = (long)&lines_verts;
-    
-    // vertex
-    int line_diff = offsetof( lhV3F_C4B, point);
-    glVertexAttribPointer(kCCVertexAttrib_Position, 3, GL_FLOAT, GL_FALSE, line_kPointSize, (void*) (line_offset + line_diff));
-    
-    // color
-    line_diff = offsetof( lhV3F_C4B, color);
-    glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, line_kPointSize, (void*)(line_offset + line_diff));
-    
-    glDrawArrays(GL_LINES, 0, linesHolder.size());
-    	
 	CC_INCREMENT_GL_DRAWS(1);
     
 	CHECK_GL_ERROR_DEBUG();
@@ -797,37 +796,40 @@ void LHBezier::draw(void)
             delete [] texcoords;
 //		}
         
-		float oldLineWidth = 1.0f;
-		glGetFloatv(GL_LINE_WIDTH, &oldLineWidth); 
-		
-		glLineWidth(lineWidth);
-		
-		glDisable(GL_TEXTURE_2D);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glColor4f(lineColor.origin.x, 
-				  lineColor.origin.y, 
-				  lineColor.size.width, 
-				  lineColor.size.height*LHSettings::sharedInstance()->customAlpha());
-		
-        CCPoint* line_verts = new CCPoint[linesHolder.size()];
-        for(int i = 0; i < (int)linesHolder.size(); i+=2)
-		{
-			CCPoint pt1 = linesHolder[i];
-			CCPoint pt2 = linesHolder[i+1];
-            line_verts[i] = pt1;
-            line_verts[i+1] = pt2;            
-		}
-        
-        glVertexPointer(2, GL_FLOAT, 0, line_verts);
-        glDrawArrays(GL_LINES, 0, linesHolder.size());
-        delete[] line_verts;
-        
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glEnableClientState(GL_COLOR_ARRAY);
-		glLineWidth(oldLineWidth);
-		glEnable(GL_TEXTURE_2D);	
-		glPopMatrix();
-	}	
+        if(drawBorder)
+        {
+            float oldLineWidth = 1.0f;
+            glGetFloatv(GL_LINE_WIDTH, &oldLineWidth); 
+            
+            glLineWidth(lineWidth);
+            
+            glDisable(GL_TEXTURE_2D);
+            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+            glColor4f(lineColor.origin.x, 
+                      lineColor.origin.y, 
+                      lineColor.size.width, 
+                      lineColor.size.height*LHSettings::sharedInstance()->customAlpha());
+            
+            CCPoint* line_verts = new CCPoint[linesHolder.size()];
+            for(int i = 0; i < (int)linesHolder.size(); i+=2)
+            {
+                CCPoint pt1 = linesHolder[i];
+                CCPoint pt2 = linesHolder[i+1];
+                line_verts[i] = pt1;
+                line_verts[i+1] = pt2;            
+            }
+            
+            glVertexPointer(2, GL_FLOAT, 0, line_verts);
+            glDrawArrays(GL_LINES, 0, linesHolder.size());
+            delete[] line_verts;
+            
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+            glEnableClientState(GL_COLOR_ARRAY);
+            glLineWidth(oldLineWidth);
+            glEnable(GL_TEXTURE_2D);	
+            glPopMatrix();
+        }
+	}
 }
 #endif
 ////////////////////////////////////////////////////////////////////////////////
