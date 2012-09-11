@@ -140,19 +140,6 @@ bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     
     setTag(textureDict->intForKey("Tag"));
     setVertexZ(textureDict->intForKey("ZOrder"));
-    
-//    std::string img = textureDict->stringForKey("ImageFile");
-//    imageSize = CCSizeZero;
-//    texture = NULL;
-//    
-//    if(img != "" && img != "No Image")
-//    {
-//        std::string path = LHSettings::sharedInstance()->imagePath(img.c_str());
-//        texture = CCTextureCache::sharedTextureCache()->addImage(path.c_str());
-//        if( texture ) {
-//            imageSize = texture->getContentSize();
-//        }
-//    }
 
     std::string img = textureDict->stringForKey("ImageFile");
     imageSize = CCSizeZero;
@@ -525,6 +512,10 @@ void LHBezier::draw(void)
     int size = (int)trianglesHolder.size();
     
     lhV3F_C4B_T2F_Triangle* points = new lhV3F_C4B_T2F_Triangle[size];
+
+    //visual studio does not like this
+//    lhV3F_C4B_T2F_Triangle points[size];
+
     
     ccColor4B colorVert = { (GLubyte)(color.origin.x*255.0f),
         (GLubyte)(color.origin.y*255.0f),
@@ -538,9 +529,6 @@ void LHBezier::draw(void)
         for(int j = 0; j < 3; ++j)
         {
             CCPoint pt = fix[j];
-            
-//            pt.x *=scale;
-//            pt.y *=scale;
             
             ccVertex3F vert = {pt.x, pt.y, 0};
             ccTex2F tex = { (pt.x/imageSize.width),
@@ -586,7 +574,7 @@ void LHBezier::draw(void)
     }
     
 #define kPointSize sizeof(ccV3F_C4B_T2F)
-    long offset = (long)&points;
+    long offset = (long)points;
     
     // vertex
     int diff = offsetof( ccV3F_C4B_T2F, vertices);
@@ -655,6 +643,9 @@ void LHBezier::draw(void)
         
 
         lhV3F_Line* lines_verts = new lhV3F_Line[linesHolder.size()];
+        //visual studio does not like this
+//        lhV3F_Line lines_verts[linesHolder.size()];
+        
         int l = 0;
         for(int i = 0; i < (int)linesHolder.size(); i+=2)
         {
@@ -678,7 +669,7 @@ void LHBezier::draw(void)
         ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position | kCCVertexAttribFlag_Color );
             
     #define line_kPointSize sizeof(lhV3F_C4B)
-        long line_offset = (long)&lines_verts;
+        long line_offset = (long)lines_verts;
         
         // vertex
         int line_diff = offsetof( lhV3F_C4B, point);
