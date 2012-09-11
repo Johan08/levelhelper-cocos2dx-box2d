@@ -108,7 +108,10 @@ void LHPathNode::update(float dt)
             }
             
 #if COCOS2D_VERSION >= 0x00020000
-            cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHPathMovementHasEndedNotification, sprite);
+//
+//            
+            CCNotificationCenter::sharedNotificationCenter()->postNotification(LHPathMovementHasEndedNotification, sprite);
+//            cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHPathMovementHasEndedNotification, sprite);
 #else
             CCNotificationCenter::sharedNotifCenter()->postNotification(LHPathMovementHasEndedNotification, sprite);
 #endif       
@@ -188,7 +191,8 @@ void LHPathNode::update(float dt)
 			currentPoint += 1;    
             
 #if COCOS2D_VERSION >= 0x00020000
-            cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHPathMovementHasChangedPointNotification, sprite);
+            CCNotificationCenter::sharedNotificationCenter()->postNotification(LHPathMovementHasChangedPointNotification, sprite);
+//            cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHPathMovementHasChangedPointNotification, sprite);
 #else
             CCNotificationCenter::sharedNotifCenter()->postNotification(LHPathMovementHasChangedPointNotification, sprite);
 #endif       

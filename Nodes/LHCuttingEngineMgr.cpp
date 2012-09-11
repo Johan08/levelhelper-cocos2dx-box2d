@@ -8,7 +8,7 @@
 
 #include "LHCuttingEngineMgr.h"
 #include "LHSprite.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 
 // Include STL vector class.
 #include <map>
@@ -390,7 +390,7 @@ LHSprite * LHCuttingEngineMgr::spriteWithVertices(CCPoint* vertices,
     CCTexture2D* oldTexture = CCTextureCache::sharedTextureCache()->addImage(oldSprite->getImageFile().c_str());
     
 #if COCOS2D_VERSION >= 0x00020000
-    CCSprite* tempOrigSprite = CCSprite::create(oldTexture, oldRect);
+    CCSprite* tempOrigSprite = CCSprite::createWithTexture(oldTexture, oldRect);
 #else
     CCSprite* tempOrigSprite = CCSprite::spriteWithTexture(oldTexture, oldRect);
 #endif
@@ -1487,7 +1487,9 @@ void LHCuttingEngineMgr::cutAllSpritesWithTag(int tag,
 //------------------------------------------------------------------------------
 float LHCuttingEngineMgr::randomFloatBetweenSmallAndBig(float smallNumber, float bigNumber) {
     float diff = bigNumber - smallNumber;
-    return (((float) (random() % ((unsigned)RAND_MAX + 1)) / RAND_MAX) * diff) + smallNumber;
+
+	srand ( time(NULL) );
+    return (((float) (rand() % ((unsigned)RAND_MAX + 1)) / RAND_MAX) * diff) + smallNumber;
 }
 //------------------------------------------------------------------------------
 void  LHCuttingEngineMgr::createExplosionWithCuts(int numberOfCuts,

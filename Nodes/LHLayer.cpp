@@ -11,7 +11,7 @@
 #include "LHSprite.h"
 #include "LHBezier.h"
 #include "LHSettings.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "../Utilities/LHDictionary.h"
 
 static int untitledLayersCount = 0;

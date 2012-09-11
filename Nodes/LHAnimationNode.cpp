@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHAnimationNode.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHSettings.h"
 #include "../Utilities/LHDictionary.h"
 ////////////////////////////////////////////////////////////////////////////////
@@ -190,7 +190,7 @@ void LHAnimationNode::setActiveFrameTexture()
     if(NULL == activeFrame) return;
     
 #if COCOS2D_VERSION >= 0x00020000
-    CCSpriteFrame* sprFrame = CCSpriteFrame::create(sprite->getTexture(), 
+    CCSpriteFrame* sprFrame = CCSpriteFrame::createWithTexture(sprite->getTexture(),
                                                    activeFrame->getRect(),
                                                    activeFrame->getRectIsRotated(),
                                                    activeFrame->getOffset(),
@@ -268,13 +268,18 @@ void LHAnimationNode::update(float dt)
         }
             
 #if COCOS2D_VERSION >= 0x00020000
-        cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
+        
+        CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
+//        cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
 #else
         CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
 #endif
         if(endedRep){
 #if COCOS2D_VERSION >= 0x00020000
-            cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
+            
+            CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
+            
+//            cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
 #else
             
             CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
@@ -293,7 +298,9 @@ void LHAnimationNode::update(float dt)
         {
             
 #if COCOS2D_VERSION >= 0x00020000
-        cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationFrameNotification, sprite);
+            
+            CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationFrameNotification, sprite);
+//        cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationFrameNotification, sprite);
 #else
         CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationFrameNotification, sprite);
 #endif       

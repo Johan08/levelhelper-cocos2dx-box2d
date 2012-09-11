@@ -524,7 +524,7 @@ void LHBezier::draw(void)
     
     int size = (int)trianglesHolder.size();
     
-    lhV3F_C4B_T2F_Triangle points[size];
+    lhV3F_C4B_T2F_Triangle* points = new lhV3F_C4B_T2F_Triangle[size];
     
     ccColor4B colorVert = { (GLubyte)(color.origin.x*255.0f),
         (GLubyte)(color.origin.y*255.0f),
@@ -603,6 +603,8 @@ void LHBezier::draw(void)
     glDrawArrays(GL_TRIANGLES, 0, 3*size);
     
     
+    delete[] points;
+    
     bool wasBlend = glIsEnabled(GL_BLEND);
     glEnable(GL_BLEND);
     
@@ -652,17 +654,22 @@ void LHBezier::draw(void)
                                     (GLubyte)(opacity*255.0f)};
         
 
-        lhV3F_Line lines_verts[linesHolder.size()];
+        lhV3F_Line* lines_verts = new lhV3F_Line[linesHolder.size()];
         int l = 0;
         for(int i = 0; i < (int)linesHolder.size(); i+=2)
         {
             CCPoint pt1 = linesHolder[i];
             CCPoint pt2 = linesHolder[i+1];
 
-            lines_verts[l].A.point = (ccVertex3F){pt1.x, pt1.y, 0};
+            lines_verts[l].A.point.x = pt1.x;
+			lines_verts[l].A.point.y = pt1.y;
+			lines_verts[l].A.point.z = 0.0f;
+
             lines_verts[l].A.color = lineColorVert;
             
-            lines_verts[l].B.point = (ccVertex3F){pt2.x, pt2.y, 0};
+			lines_verts[l].B.point.x = pt2.x;
+			lines_verts[l].B.point.y = pt2.y;
+			lines_verts[l].B.point.z = 0.0f;
             lines_verts[l].B.color = lineColorVert;
             
             l++;
@@ -682,7 +689,8 @@ void LHBezier::draw(void)
         glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, line_kPointSize, (void*)(line_offset + line_diff));
         
         glDrawArrays(GL_LINES, 0, linesHolder.size());
-            
+         
+		delete[] lines_verts;
     }
     
 	CC_INCREMENT_GL_DRAWS(1);
@@ -938,7 +946,13 @@ bool LHBezier::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
     if(NULL == touchBeginObserver && NULL == tagTouchBeginObserver)
         return false;
     
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint touchPoint =     pTouch->getLocationInView();
+#else
     CCPoint touchPoint =     pTouch->locationInView();
+#endif
+    
+    
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
     if(isTouchedAtPoint(touchPoint))
@@ -977,10 +991,23 @@ void LHBezier::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
     if(NULL == touchMovedObserver && NULL == tagTouchMovedObserver)
         return;
     
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint touchPoint =     pTouch->getLocationInView();
+#else
     CCPoint touchPoint =     pTouch->locationInView();
+#endif
+
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
+
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint prevLocation = pTouch->getPreviousLocationInView();
+#else
     CCPoint prevLocation = pTouch->previousLocationInView();
+#endif
+
+    
+    
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
@@ -1016,10 +1043,22 @@ void LHBezier::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
         return;
 
     
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint touchPoint =     pTouch->getLocationInView();
+#else
     CCPoint touchPoint =     pTouch->locationInView();
+#endif
+    
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint prevLocation = pTouch->getPreviousLocationInView();
+#else
     CCPoint prevLocation = pTouch->previousLocationInView();
+#endif
+
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();

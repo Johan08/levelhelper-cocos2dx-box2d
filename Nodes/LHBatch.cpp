@@ -31,7 +31,7 @@
 #include "SHDocumentLoader.h"
 
 #include "LHSettings.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 
 #include "LHSettings.h"
 

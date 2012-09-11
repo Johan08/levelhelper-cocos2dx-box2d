@@ -164,7 +164,7 @@ void LHContactNode::registerBeginOrEndCollisionCallbackBetweenTagA(int tagA,
         LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
         
         CCDictionary tempDict;
-        CCDictionary* map = CCDictionary::create(&tempDict);
+        CCDictionary* map = CCDictionary::createWithDictionary(&tempDict);
         map->setObject(info, tagB);
         beginEndCollisionMap.setObject(map, tagA);
     }
@@ -216,7 +216,7 @@ void LHContactNode::registerPreCollisionCallbackBetweenTagA(int tagA,
         LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
         
         CCDictionary tempDict;
-        CCDictionary* map = CCDictionary::create(&tempDict);
+        CCDictionary* map = CCDictionary::createWithDictionary(&tempDict);
         map->setObject(info, tagB);
         preCollisionMap.setObject(map, tagA);
     }
@@ -266,7 +266,7 @@ void LHContactNode::registerPostCollisionCallbackBetweenTagA(int tagA,
         LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
         
         CCDictionary tempDict;
-        CCDictionary* map = CCDictionary::create(&tempDict);
+        CCDictionary* map = CCDictionary::createWithDictionary(&tempDict);
         map->setObject(info, tagB);
         postCollisionMap.setObject(map, tagA);
     }
