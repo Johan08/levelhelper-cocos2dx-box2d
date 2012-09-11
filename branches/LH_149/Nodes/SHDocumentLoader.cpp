@@ -25,7 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "SHDocumentLoader.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHSettings.h"
 
 #include "../Utilities/LHDictionary.h"

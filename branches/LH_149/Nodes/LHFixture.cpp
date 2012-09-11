@@ -8,7 +8,7 @@
 #include "LHFixture.h"
 #include "../Utilities/LHDictionary.h"
 #include "LHSettings.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 #include "LHSprite.h"
 
 //------------------------------------------------------------------------------

@@ -8,7 +8,7 @@
 
 #include "LHNode.h"
 #include "../Utilities/LHDictionary.h"
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 
 //------------------------------------------------------------------------------
 static int untitledNodesCount = 0;

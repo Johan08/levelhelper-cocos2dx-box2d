@@ -20,7 +20,7 @@
 #include <map>
 #include <stdlib.h>
 
-#include "LevelHelperLoader.h"
+#include "../LevelHelperLoader.h"
 
 int LHDictionary::numberOfDicts = 0;
 //------------------------------------------------------------------------------
