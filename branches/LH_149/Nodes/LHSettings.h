@@ -92,20 +92,8 @@ public:
     
     void markNodeForRemoval(CCObject* node);
     void removeMarkedNodes();
-    
-//    void markLayerForRemoval(LHLayer* layer);
-//    void markBatchForRemoval(LHBatch* batch);
-//    void markSpriteForRemoval(LHSprite* sprite);
-//    void markBezierForRemoval(LHBezier* node); 
-//    void markJointForRemoval(LHJoint* jt);
-//    
-//    void removeMarkedLayers();
-//    void removeMarkedBatches();
-//    void removeMarkedSprites();
-//    void removeMarkedBeziers();
-//    void removeMarkedJoints();
-    
-    
+
+
     CCPoint transformedScalePointToCocos2d(CCPoint point);
     CCPoint transformedPointToCocos2d(CCPoint point);
     CCPoint transformedPoint(CCPoint point, const std::string& image);
@@ -123,6 +111,7 @@ public:
     
 //    bool shouldScaleImageOnRetina(const std::string& image);
     bool isIpad(void);
+    bool isIphone5(void);
     
     void setStretchArt(const bool& value);
     bool getStretchArt(void);

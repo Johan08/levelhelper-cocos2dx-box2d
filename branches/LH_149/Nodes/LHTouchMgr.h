@@ -28,11 +28,9 @@
 
 #ifndef __LH_TOUCH_MGR_SINGLETON
 #define __LH_TOUCH_MGR_SINGLETON
+
+#include "../lhConfig.h"
 #include "cocos2d.h"
-//#include "include/CCMutableDictionary.h"
-//#include "LHSprite.h"
-//#include "LHBezierNode.h"
-//#include "LevelHelperLoader.h"
 
 class LHBezier;
 class LHSprite;
@@ -90,7 +88,9 @@ public:
     //sprite will be the LHSprite* instance on which the touch was performed that has the registered tag
     //for specific touch on a certain sprite use the observer from LHSprite
     
-    void registerTouchBeginObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
+    LH_DEPRECATED_ATTRIBUTE void registerTouchBeginObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
+    
+    void registerTouchBeganObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
     void registerTouchMovedObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
     void registerTouchEndedObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
         

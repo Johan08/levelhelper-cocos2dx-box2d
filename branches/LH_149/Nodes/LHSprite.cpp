@@ -89,11 +89,28 @@ void LHSprite::removeSelf(){
     }
     removeFromParentAndCleanup(true);
 }
+
+LevelHelperLoader* LHSprite::parentLoader(){
+    
+    CCNode* layerParent = this->getParent();
+    
+    while (layerParent && !LHLayer::isLHLayer(layerParent)){
+        layerParent = layerParent->getParent();
+    }
+    
+    if(layerParent && LHLayer::isLHLayer(layerParent)) {
+        return ((LHLayer*)layerParent)->parentLoader();
+    }
+    return NULL;
+}
+
 void LHSprite::onExit(){
 //    CCLog("LH SPrite %s onExit", uniqueName.c_str());
     
-    if(!animationsIsPreparing)
+    if(!prepareAnimInProgress){
+        
         removeTouchObserver();
+    }
 }
 //------------------------------------------------------------------------------
 LHSprite::LHSprite(){
@@ -103,7 +120,6 @@ LHSprite::LHSprite(){
     fixturesObj = NULL;
     userCustomInfo = NULL;
     body = NULL;
-    parentLoader = NULL;
     animation = NULL;
     pathNode = NULL;
     spriteIsInParallax = NULL;
@@ -169,6 +185,19 @@ void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
     if(world == NULL)
         return;
     
+    bDefaultFixRotation =dictionary->boolForKey("FixedRot");
+    bDefaultGravityScale = dictionary->floatForKey("GravityScale");
+    bDefaultCanSleep = dictionary->boolForKey("CanSleep");
+    bDefaultIsBullet = dictionary->boolForKey("IsBullet");
+    
+    CCPoint linearVelocity = dictionary->pointForKey("LinearVelocity");
+    bDefaultLinearVelocity = b2Vec2(linearVelocity.x, linearVelocity.y);
+    bDefaultAngularVelocity = dictionary->floatForKey("AngularVelocity");
+    bDefaultLinearDamping = dictionary->floatForKey("LinearDamping");
+    bDefaultAngularDamping = dictionary->floatForKey("AngularDamping");
+    
+    
+    
     b2BodyDef bodyDef;	
 	
     int pType = dictionary->intForKey("Type");//LH
@@ -176,32 +205,11 @@ void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
 	if(pType == 3) //"NO_PHYSIC"
         return;
     
-	bodyDef.type = (b2BodyType)pType;
+    
+    usePhysicsForTouches = true;
+    
+    this->createBodyFromDefaultValuesWithType((b2BodyType)pType);
 	
-	CCPoint pos = getPosition();	
-	bodyDef.position.Set(pos.x/LHSettings::sharedInstance()->lhPtmRatio(),
-                         pos.y/LHSettings::sharedInstance()->lhPtmRatio());
-    
-	bodyDef.angle = CC_DEGREES_TO_RADIANS(-1*getRotation());
-
-    
-    bodyDef.userData = this;
-    
-    
-    body = world->CreateBody(&bodyDef);
-	body->SetFixedRotation(dictionary->boolForKey("FixedRot"));
-    
-    body->SetGravityScale(dictionary->floatForKey("GravityScale"));
-	body->SetSleepingAllowed(dictionary->boolForKey("CanSleep"));    
-    body->SetBullet(dictionary->boolForKey("IsBullet"));
-    
-    CCPoint linearVelocity = dictionary->pointForKey("LinearVelocity");
-    body->SetLinearVelocity(b2Vec2(linearVelocity.x, linearVelocity.y));
-    
-    body->SetAngularVelocity(dictionary->floatForKey("AngularVelocity"));
-    body->SetLinearDamping(dictionary->floatForKey("LinearDamping"));
-    body->SetAngularDamping(dictionary->floatForKey("AngularDamping"));
-    
     
     LHArray* fixInfo = dictionary->arrayForKey("SH_ComplexShapes");
     fixturesInfo = new LHArray(fixInfo);
@@ -215,6 +223,45 @@ void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
     
     createFixturesFromInfoOnBody();
 }
+
+void LHSprite::createBodyFromDefaultValuesWithType(b2BodyType bDefaultType)
+{    
+    b2BodyDef bodyDef;
+    
+	bodyDef.type = bDefaultType;
+	
+	CCPoint pos = this->getPosition();
+	bodyDef.position.Set(pos.x/LHSettings::sharedInstance()->lhPtmRatio(),
+                         pos.y/LHSettings::sharedInstance()->lhPtmRatio());
+    
+	bodyDef.angle = CC_DEGREES_TO_RADIANS(-1*this->getRotation());
+    
+    bodyDef.userData = this;
+    
+    b2World* world = LHSettings::sharedInstance()->getActiveBox2dWorld();
+    
+    if(world == NULL)
+        return;
+    
+    body = world->CreateBody(&bodyDef);
+	body->SetFixedRotation(bDefaultFixRotation);
+    
+    //we use this define to figure out which version of Box2d the user has
+    //its not nice that box2d does not have a compile time versioning just like cocos2d
+#ifdef B2_EDGE_SHAPE_H
+    body->SetGravityScale(bDefaultGravityScale);
+#endif
+	body->SetSleepingAllowed(bDefaultCanSleep);
+    body->SetBullet(bDefaultIsBullet);
+    
+    body->SetLinearVelocity(bDefaultLinearVelocity);
+    
+    body->SetAngularVelocity(bDefaultAngularVelocity);
+    body->SetLinearDamping(bDefaultLinearDamping);
+    body->SetAngularDamping(bDefaultAngularDamping);
+}
+
+
 //------------------------------------------------------------------------------
 void LHSprite::loadAnimationsInformationFromDictionary(LHDictionary* dictionary){
     
@@ -274,7 +321,7 @@ void LHSprite::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
     LHDictionary* dict = dictionary->dictForKey("ClassRepresentation");
     
     if(dict){
-        CCLog("SETTING PROPERTIES FROM DICT");
+//        CCLog("SETTING PROPERTIES FROM DICT");
         ((LHAbstractClass*)userCustomInfo)->setPropertiesFromDictionary(dict);
     }
 }
@@ -317,15 +364,14 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     
     rectInPixels = LHSettings::sharedInstance()->transformedTextureRect(rectInPixels, getImageFile());
     rectInPixels = CC_RECT_POINTS_TO_PIXELS(rectInPixels);
-    
-    
+        
     CCSize contentSize = shTexDict->sizeForKey("SpriteSize");
     
     contentSize = LHSettings::sharedInstance()->transformedSize(contentSize,getImageFile());
     contentSize.width *= CC_CONTENT_SCALE_FACTOR();
     contentSize.height*= CC_CONTENT_SCALE_FACTOR();
     
-    //CCLog("RETINA CONTENCT SCALE %f", CC_CONTENT_SCALE_FACTOR());
+//    CCLog("RETINA CONTENCT SCALE %f", CC_CONTENT_SCALE_FACTOR());
     
     //CCLog("IMAGE FILE %s", getImageFile().c_str());
     
@@ -339,8 +385,8 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     originalTextureOffset.x *= CC_CONTENT_SCALE_FACTOR();
     originalTextureOffset.y *= CC_CONTENT_SCALE_FACTOR();
     
-    //CCLog("RECT %f %f %f %f", rectInPixels.origin.x, rectInPixels.origin.y, rectInPixels.size.width, rectInPixels.size.height);
-   // CCLog("CONTENT SIZE %f %f", contentSize.width, contentSize.height);
+//    CCLog("RECT %f %f %f %f", rectInPixels.origin.x, rectInPixels.origin.y, rectInPixels.size.width, rectInPixels.size.height);
+//    CCLog("CONTENT SIZE %f %f", contentSize.width, contentSize.height);
     
 #if COCOS2D_VERSION >= 0x00020000
     CCSpriteFrame* sprFrame = CCSpriteFrame::createWithTexture(getTexture(),
@@ -367,6 +413,7 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     CCPoint scale = LHSettings::sharedInstance()->transformedScalePointToCocos2d(texDict->pointForKey("Scale"));    
     setScaleX(scale.x);
     setScaleY(scale.y);
+    
     
     realScale = CCSizeMake(scale.x*LHSettings::sharedInstance()->convertRatio().x,
                            scale.y*LHSettings::sharedInstance()->convertRatio().y);
@@ -430,7 +477,7 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     tagTouchEndedObserver = NULL;
     
     usesOverloadedTransformations = false;
-    usePhysicsForTouches = true;
+
     
     LevelHelperLoader::setTouchDispatcherForSpriteWithTag(this, getTag());
     
@@ -481,7 +528,7 @@ LHSprite* LHSprite::batchSpriteWithDictionary(LHDictionary* dictionary, LHBatch*
     LHSprite *pobNode = new LHSprite();
 	if (pobNode && pobNode->initBatchSpriteWithDictionary(dictionary, batch))
     {
-	    pobNode->autorelease();
+        pobNode->autorelease();
         pobNode->postInit();
         return pobNode;
     }
@@ -574,28 +621,31 @@ void LHSprite::prepareAnimationNamed(const std::string& animName, const std::str
         return;
     }
     
-    animationsIsPreparing = true;
-    
     stopAnimation();
 
+    //very important that prepareAnimInProgress is after stopAnimation or else touches will be removed
+    prepareAnimInProgress = true;
+    
     std::string textureFile = animDict->stringForKey("SheetImage");
     std::string animSheet   = animDict->stringForKey("SheetName");
     
     animation = new LHAnimationNode(animDict, this, shScene);
     
-    if(shSheetName != animSheet)
-    {
+//    if(shSheetName != animSheet)
+//    {
         if(textureFile != "")
         {
-#if COCOS2D_VERSION >= 0x00020000
-            const char* filePath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(textureFile.c_str());
-#else
-            const char* filePath = CCFileUtils::fullPathFromRelativePath(textureFile.c_str());
-#endif
+//#if COCOS2D_VERSION >= 0x00020000
+//            const char* filePath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(textureFile.c_str());
+//#else
+            std::string filePath = LHSettings::sharedInstance()->imagePath(textureFile);
+            
+            //const char* filePath = CCFileUtils::fullPathFromRelativePath(textureFile.c_str());
+//#endif
     
             
-            if(filePath){
-                CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath);
+//            if(filePath){
+                CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath.c_str());
                 
                 if(newTexture){
                     //if sprite is render by a batch node we need to remove if from the batch and 
@@ -625,7 +675,7 @@ void LHSprite::prepareAnimationNamed(const std::string& animName, const std::str
                     setTexture(newTexture);
                     shSheetName = animSheet;
                 }
-            }
+//            }
         }
         else{
             if(animation)
@@ -633,13 +683,13 @@ void LHSprite::prepareAnimationNamed(const std::string& animName, const std::str
 
             CCLog("ERROR: Image file %s could not be found. Please add it in the resource folder.", textureFile.c_str());
         }
-    }
+//    }
     
     if(animation){
-        animation->setOldRect(originalRect);
+//        animation->setOldRect(originalRect);
         animation->prepare();
     }
-    animationsIsPreparing = false;
+    prepareAnimInProgress = false;
 }
 //------------------------------------------------------------------------------
 void LHSprite::playAnimation(){ if(animation)animation->play();}
@@ -803,7 +853,7 @@ bool  LHSprite::removeBodyFromWorld(void){
 		if(0 != _world)
 		{
             CCArray* list = jointList();
-            if(list && parentLoader){
+            if(list){
                 for(int i = 0; i < (int)list->count(); ++i){
                     LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
                     if(jt){
@@ -813,10 +863,7 @@ bool  LHSprite::removeBodyFromWorld(void){
                 }
                 list->removeAllObjects();
             }
-            
-            if(_world->IsLocked())
-                CCLog("WORLD IS LOCKED");
-            
+                        
 			_world->DestroyBody(body);
 			body = NULL;
             return true;
@@ -1056,31 +1103,16 @@ void LHSprite::transformScaleY(float scaleY){
 ////////////////////////////////////////////////////////////////////////////////
 bool LHSprite::isTouchedAtPoint(CCPoint point){
     
-    if(body == NULL)
+    if(body == NULL || !usePhysicsForTouches)
     {
-        float x = point.x;
-        float y = point.y;
+        CCRect bbox = CCRectMake( 0.0f, 0.0f, this->getContentSize().width, this->getContentSize().height );
+        bbox = CCRectApplyAffineTransform(bbox, this->nodeToWorldTransform());
         
-        float ax = m_sQuad.tl.vertices.x;
-        float ay = m_sQuad.tl.vertices.y;
-        
-        float bx = m_sQuad.tr.vertices.x;
-        float by = m_sQuad.tr.vertices.y;
-        
-        float dx = m_sQuad.bl.vertices.x;
-        float dy = m_sQuad.bl.vertices.y;
-        
-        float bax=bx-ax;
-        float bay=by-ay;
-        float dax=dx-ax;
-        float day=dy-ay;
-        
-        if ((x-ax)*bax+(y-ay)*bay<0.0) return false;
-        if ((x-bx)*bax+(y-by)*bay>0.0) return false;
-        if ((x-ax)*dax+(y-ay)*day<0.0) return false;
-        if ((x-dx)*dax+(y-dy)*day>0.0) return false;
-        
-        return true;
+#if COCOS2D_VERSION >= 0x00020000
+        return bbox.containsPoint(point);
+#else
+        return CCRect::CCRectContainsPoint(bbox, point);
+#endif
         
     }
     else{
@@ -1098,7 +1130,11 @@ bool LHSprite::isTouchedAtPoint(CCPoint point){
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void LHSprite::registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector){
-    
+    this->registerTouchBeganObserver(observer, selector);
+}
+
+void LHSprite::registerTouchBeganObserver(CCObject* observer, SEL_CallFuncO selector){
+
     removeTouchObserver();
         
     CCTouchDispatcher* touchDispatcher = NULL;
@@ -1152,6 +1188,7 @@ void LHSprite::registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO sele
 
 void LHSprite::removeTouchObserver()
 {
+//    CCLog("REMOVE TOUCH OBSERVER");
     if(touchBeginObserver)
         delete touchBeginObserver;
 
@@ -1440,19 +1477,118 @@ void LHSprite::setCollisionFilterGroup(int group){
 void LHSprite::makeDynamic(){
     
     if(body == NULL)
+    {
+        this->createBodyFromDefaultValuesWithType(b2_dynamicBody);
+        this->createFixturesFromInfoOnBody();
         return;
+    }
     
     body->SetType(b2_dynamicBody);    
 }
 void LHSprite::makeStatic(){
-    if(body == NULL)
+    if(body == NULL){
+        this->createBodyFromDefaultValuesWithType(b2_staticBody);
+        this->createFixturesFromInfoOnBody();
         return;
+    }
     
     body->SetType(b2_staticBody);
 }
 void LHSprite::makeKinematic(){
-    if(body == NULL)
+    if(body == NULL){
+        this->createBodyFromDefaultValuesWithType(b2_kinematicBody);
+        this->createFixturesFromInfoOnBody();
+        
         return;
+    }
     
     body->SetType(b2_kinematicBody);
 }
+
+
+void LHSprite::makeNoPhysics(){
+    if(body == NULL)
+        return;
+    
+    this->removeBodyFromWorld();
+}
+
+bool LHSprite::hasContacts(){
+    if(body == NULL)
+        return false;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL != edge){
+        return true;
+    }
+    return false;
+}
+
+CCArray* LHSprite::contactSprites(){
+    
+    if(body == NULL)
+        return NULL;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL != edge){
+        return NULL;
+    }
+    
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* array = CCArray::create();
+#else
+    CCArray* array = CCArray::array();
+#endif
+    
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHSprite* spr = LHSprite::spriteForBody(contact_body);
+            if(spr){
+                array->addObject(spr);
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return array;
+}
+
+CCArray* LHSprite::contactBeziers(){
+    
+    if(body == NULL)
+        return NULL;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL != edge){
+        return NULL;
+    }
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* array = CCArray::create();
+#else
+    CCArray* array = CCArray::array();
+#endif
+
+
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHBezier* bez = LHBezier::bezierForBody(contact_body);
+            if(bez){
+                array->addObject(bez);
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return array;
+}
+

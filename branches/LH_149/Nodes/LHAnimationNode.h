@@ -164,6 +164,7 @@ private:
     LHBatch*        oldBatch;
     CCTexture2D*    oldTexture;
     CCRect          oldRect;
+    CCSpriteFrame*  oldSpriteFrame;
     
     void setActiveFrameTexture();
 };

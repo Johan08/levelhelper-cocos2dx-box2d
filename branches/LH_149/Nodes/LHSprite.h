@@ -28,6 +28,7 @@
 #ifndef __LHSPRITE_NODE__
 #define __LHSPRITE_NODE__
 
+#include "../lhConfig.h"
 #include "cocos2d.h"
 #include "Box2D/Box2D.h"
 #include "LHTouchMgr.h"
@@ -50,7 +51,8 @@ class LHSprite : public CCSprite, public CCStandardTouchDelegate
 public:
     virtual ~LHSprite(void);
 	virtual void removeSelf();
-
+    LevelHelperLoader* parentLoader();
+    
     LHSprite();    
     
     virtual bool initBatchSpriteWithDictionary(LHDictionary* dictionary,
@@ -79,6 +81,16 @@ protected:
 	friend class LevelHelperLoader;
     
     b2Body* body; //week ptr
+    
+    bool bDefaultFixRotation;
+    float bDefaultGravityScale;
+    bool bDefaultCanSleep;
+    bool bDefaultIsBullet;
+    b2Vec2 bDefaultLinearVelocity;
+    float bDefaultAngularVelocity;
+    float bDefaultLinearDamping;
+    float bDefaultAngularDamping;
+    
     CCArray* fixturesObj;
     LHArray* fixturesInfo;
     
@@ -91,12 +103,10 @@ protected:
     CCRect originalRect;
     
     LHAnimationNode* animation;
-    bool animationsIsPreparing; //we use this so cocos2d does not remove the touch handling when preparing an anim
+    
     LHPathNode* pathNode;
     LH_PATH_DEFAULTS pathDefaults;
-    
-    LevelHelperLoader* parentLoader;
-    
+        
     CCSize realScale;
     
     LHParallaxNode* parallaxFollowingThisSprite;
@@ -280,7 +290,9 @@ public:
     //you must set swallow touches before you register for a touch event
     //touch begin observer should always be registered
     //touch moved and touch ended dont work without touch begin
-    void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
+    LH_DEPRECATED_ATTRIBUTE void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
+
+    void registerTouchBeganObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector);
     void removeTouchObserver(); //once removed it cannot be added back - (error in Cocos2d) - use -(void)setTouchedDisabled:(bool)val;
@@ -313,8 +325,11 @@ public:
     void makeDynamic();
     void makeStatic();
     void makeKinematic();
-
-        
+    void makeNoPhysics();
+    
+    bool hasContacts();
+    CCArray* contactSprites();
+    CCArray* contactBeziers();
     
     
     virtual bool ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent);
@@ -331,8 +346,14 @@ private:
     friend class LHBatch;
     friend class LHLayer;
     friend class LHParallaxNode;
+    friend class LHAnimationNode;
 
+    bool prepareAnimInProgress; //we use this so cocos2d does not remove the touch handling when preparing an anim
+    void setPrepareAnimInProgress(bool val){prepareAnimInProgress = val;}
+    
     void createFixturesFromInfoOnBody();
+    void createBodyFromDefaultValuesWithType(b2BodyType bDefaultType);
+    
     void loadPhysicalInformationFromDictionary(LHDictionary* dictionary);
     void loadAnimationsInformationFromDictionary(LHDictionary* dictionary);
     void loadPathMovementFromDictionary(LHDictionary* dictionary);
@@ -350,8 +371,6 @@ private:
     void setTagTouchBeginObserver(LHObserverPair* pair);
     void setTagTouchMovedObserver(LHObserverPair* pair);
     void setTagTouchEndedObserver(LHObserverPair* pair);
-    
-    void setParentLoader(LevelHelperLoader* p){parentLoader = p;}
 };
 ////////////////////////////////////////////////////////////////////////////////
 

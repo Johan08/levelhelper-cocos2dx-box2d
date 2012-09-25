@@ -1026,19 +1026,19 @@ void LHCuttingEngineMgr::splitBody(b2Body* splitBody, b2Vec2 origA, b2Vec2 origB
     if(oldSprite->getImageFile() == "")
         return;
     
-    if((LHSprite*)oldSprite->isTouchedAtPoint(A))
-    {
-        CCLog("We dont't cut old sprite because A is inside");
-        //if point is inside the sprite we need to cancel touch or else we will have noise
-        return;
-    }
-
-    if((LHSprite*)oldSprite->isTouchedAtPoint(B))
-    {
-        CCLog("We don't cut old sprite because B is inside");
-        //if point is inside the sprite we need to cancel touch or else we will have noise
-        return;
-    }
+//    if((LHSprite*)oldSprite->isTouchedAtPoint(A))
+//    {
+//        CCLog("We dont't cut old sprite because A is inside");
+//        //if point is inside the sprite we need to cancel touch or else we will have noise
+//        return;
+//    }
+//
+//    if((LHSprite*)oldSprite->isTouchedAtPoint(B))
+//    {
+//        CCLog("We don't cut old sprite because B is inside");
+//        //if point is inside the sprite we need to cancel touch or else we will have noise
+//        return;
+//    }
     
     b2World* world = splitBody->GetWorld();
     

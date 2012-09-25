@@ -41,6 +41,19 @@ static int untitledBatchCount = 0;
 void LHBatch::removeSelf(){
     removeFromParentAndCleanup(true);
 }
+LevelHelperLoader* LHBatch::parentLoader(){
+    
+    CCNode* layerParent = this->getParent();
+    
+    while (layerParent && !LHLayer::isLHLayer(layerParent)){
+        layerParent = layerParent->getParent();
+    }
+    
+    if(layerParent && LHLayer::isLHLayer(layerParent)) {
+        return ((LHLayer*)layerParent)->parentLoader();
+    }
+    return NULL;
+}
 //------------------------------------------------------------------------------
 bool LHBatch::initWithDictionary(LHDictionary* dictionary,  LHLayer* layer){
     
@@ -49,7 +62,6 @@ bool LHBatch::initWithDictionary(LHDictionary* dictionary,  LHLayer* layer){
     
     if(imgPath == "")
         return false;
-    
     
     if(!initWithFile(imgPath.c_str(), 29))
         return false;
@@ -189,9 +201,6 @@ void LHBatch::setSHFile(const std::string& file){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void LHBatch::setParentLoader(LevelHelperLoader* p){
-    parentLoader = p;
-}
 //------------------------------------------------------------------------------
 bool LHBatch::isLHBatch(CCNode* node){
     if( 0 != dynamic_cast<LHBatch*>(node))
@@ -210,8 +219,8 @@ void LHBatch::addChildFromDictionary(LHDictionary* childDict)
         lh_spriteCreationMethods methods = LHCustomSpriteMgr::sharedInstance()->customSpriteClassForTag(sprTag);
         
         LHSprite* sprite =  (*methods.second)(childDict, this); //spriteWithDictionary
+                
         addChild(sprite);
-        sprite->setParentLoader(parentLoader);//FIXME at this point parentLoader is NULL        
         sprite->postInit();
     }
     else if(childDict->stringForKey("NodeType") == "LHLayer"){

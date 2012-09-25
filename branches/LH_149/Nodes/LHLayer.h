@@ -29,6 +29,8 @@ public:
     static LHLayer* layerWithDictionary(LHDictionary* dict);
     void removeSelf(); //will also remove all children
     
+    LevelHelperLoader* parentLoader();
+    
     const std::string& getUniqueName(void){return uniqueName;}
 
     bool getIsMainLayer(void){return isMainLayer;}
@@ -57,9 +59,9 @@ private:
     
     bool isMainLayer;
     std::string uniqueName;
-    LevelHelperLoader* parentLoader;
+    LevelHelperLoader* m_parentLoader;
     
-    void setParentLoader(LevelHelperLoader* p){parentLoader = p;}
+    void setParentLoader(LevelHelperLoader* p){m_parentLoader = p;}
 
     void addChildFromDictionary(LHDictionary* childDict);
 };

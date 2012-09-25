@@ -33,6 +33,8 @@
 #ifndef __LEVEL_HELPER_LOADER__
 #define __LEVEL_HELPER_LOADER__
 
+
+#include "lhConfig.h"
 #include "cocos2d.h"
 #include "cocoa/CCNS.h"
 #include "Box2D/Box2D.h"
@@ -161,7 +163,8 @@ public:
     
 //    void addSpritesToLayer(CCLayer* cocosLayer); //NO PHYSICS
     //------------------------------------------------------------------------------
-    static void dontStretchArtOnIpad(void);
+    LH_DEPRECATED_ATTRIBUTE static void dontStretchArtOnIpad(void);
+    static void dontStretchArt(void);
 
     //------------------------------------------------------------------------------
     //PAUSING THE GAME
@@ -368,6 +371,7 @@ private:
 };
 
 #endif
+
 
 
 
