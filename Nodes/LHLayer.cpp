@@ -66,15 +66,18 @@ void LHLayer::removeSelf(){
         return;
     }
 
-    if(parentLoader->getPhysicsWorld()){
-        if(parentLoader->getPhysicsWorld()->IsLocked()){
+    if(m_parentLoader->getPhysicsWorld()){
+        if(m_parentLoader->getPhysicsWorld()->IsLocked()){
             LHSettings::sharedInstance()->markNodeForRemoval(this);
             return;
         }
     }
 
-    parentLoader->removeMainLayer();
+    m_parentLoader->removeMainLayer();
     removeFromParentAndCleanup(true);
+}
+LevelHelperLoader* LHLayer::parentLoader(){
+    return m_parentLoader;
 }
 //------------------------------------------------------------------------------
 bool LHLayer::isLHLayer(CCNode* node){
@@ -344,7 +347,6 @@ void LHLayer::addChildFromDictionary(LHDictionary* childDict)
         
         LHSprite* sprite =  (*methods.first)(childDict); //spriteWithDictionary
         addChild(sprite);
-        sprite->setParentLoader(parentLoader);//FIXME at this point parentLoader is NULL        
         sprite->postInit();
     }
     else if(childDict->stringForKey("NodeType") == "LHBezier")
@@ -353,21 +355,14 @@ void LHLayer::addChildFromDictionary(LHDictionary* childDict)
         addChild(bezier);
         //we use the selector protocol so that we dont get warnings since this method is 
         //hidden from the user
-        bezier->setParentLoader(parentLoader);//FIXME at this point parentLoader is NULL        
     }
     else if(childDict->stringForKey("NodeType") == "LHBatch"){
-        LHBatch* batch = LHBatch::batchWithDictionary(childDict, this);
+       /* LHBatch* batch =*/ LHBatch::batchWithDictionary(childDict, this);
         //it adds self in the layer //this is needed for animations
         //we need to have the layer parent before creating the sprites
-        //we use the selector protocol so that we dont get warnings since this method is 
-        //hidden from the user
-        batch->setParentLoader(parentLoader);//FIXME at this point parentLoader is NULL        
     }
     else if(childDict->stringForKey("NodeType") == "LHLayer"){
         LHLayer* layer = LHLayer::layerWithDictionary(childDict);
         addChild(layer, layer->getZOrder());
-        //we use the selector protocol so that we dont get warnings since this method is 
-        //hidden from the user
-        layer->setParentLoader(parentLoader);//FIXME at this point parentLoader is NULL        
     }
 }

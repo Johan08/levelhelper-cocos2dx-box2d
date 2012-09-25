@@ -96,41 +96,10 @@ LHAnimationFrameInfo* LHAnimationFrameInfo::frameWithDictionary(LHDictionary* di
 LHAnimationNode::~LHAnimationNode()
 {
     //CCLog("LH Animation Dealloc %s %p", uniqueName.c_str(), this);
+    oldSpriteFrame->release();
     delete frames;
     activeFrame = NULL;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-//bool LHAnimationNode::initWithDictionary(LHDictionary* dictionary, LHSprite* spr)
-//{    
-//    //this info will be from the spritehelper document
-//    //the info from the level is loaded by LHSprite
-//        
-//    uniqueName  = std::string(dictionary->stringForKey("UniqueName"));
-//    sheetName   = std::string(dictionary->stringForKey("SheetName"));
-//    restoreOriginalFrame = dictionary->boolForKey("RestoreOriginalFrame");
-//    repetitions = dictionary->intForKey("Repetitions");
-//    delayPerUnit= dictionary->floatForKey("DelayPerUnit");
-//    loop = dictionary->boolForKey("Loop");
-//    sprite = spr;
-//    oldRect = sprite->getTextureRect();
-//    repetitionsPerformed = 0;
-//    currentFrame = 0;
-//    elapsedFrameTime = 0.0f;
-//    LHArray* framesInfo = dictionary->arrayForKey("Frames");
-//    
-//    frames = CCArray::array();
-//    
-//    for(int i = 0; i< framesInfo->count(); ++i){
-//        
-//        LHDictionary* frmInfo = framesInfo->dictAtIndex(i);
-//        frames->addObject(LHAnimationFrameInfo::frameWithDictionary(frmInfo, sprite));
-//    }
-//
-//    paused = true;
-//    
-//    return true;
-//}
 
 LHAnimationNode::LHAnimationNode(LHDictionary* dictionary, LHSprite* spr, std::string shScene){
     
@@ -151,6 +120,14 @@ LHAnimationNode::LHAnimationNode(LHDictionary* dictionary, LHSprite* spr, std::s
     loop = dictionary->boolForKey("Loop");
     sprite = spr;
     oldRect = sprite->getTextureRect();
+
+#if COCOS2D_VERSION >= 0x00020000
+    oldSpriteFrame = sprite->displayFrame();
+#else
+    oldSpriteFrame = sprite->displayedFrame();
+#endif
+    oldSpriteFrame->retain();
+    
     repetitionsPerformed = 0;
     currentFrame = 0;
     elapsedFrameTime = 0.0f;
@@ -412,15 +389,23 @@ void LHAnimationNode::restoreFrame(){
         return;
     }
     
+    //we do this so that we dont lose touches
+    sprite->setPrepareAnimInProgress(true);
+    
     if(oldBatch){
         sprite->removeFromParentAndCleanup(false);
         sprite->setTexture(oldTexture);
         oldBatch->addChild(sprite,sprite->getZOrder());
     }
-    else if(oldTexture){
-        sprite->setTexture(oldTexture);
+//    else if(oldTexture){
+//        sprite->setTexture(oldTexture);
+//    }
+    
+    if(oldSpriteFrame){
+        sprite->setDisplayFrame(oldSpriteFrame);
     }
-    sprite->setTextureRect(oldRect);
+    //we do this so that we dont lose touches
+    sprite->setPrepareAnimInProgress(false);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------

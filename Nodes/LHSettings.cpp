@@ -164,98 +164,6 @@ void LHSettings::removeMarkedNodes(){
 #endif
 }
 
-
-
-//
-//void LHSettings::markSpriteForRemoval(LHSprite* sprite){
-//    if(NULL !=sprite){
-//        markedSprites.setObject(sprite, sprite->getUniqueName());
-//    }
-//}
-//void LHSettings::markBezierForRemoval(LHBezier* node){
-//    if(NULL !=node){
-//        markedBeziers.setObject(node, node->getUniqueName());
-//    }
-//}
-//void LHSettings::markJointForRemoval(LHJoint* jt){
-//    if(NULL !=jt){
-//        markedJoints.setObject(jt, jt->getUniqueName());
-//    }    
-//}
-//
-//void LHSettings::removeMarkedSprites(){
-//
-//#if COCOS2D_VERSION >= 0x00020000
-//
-//    CCArray* keys = markedSprites.allKeys();
-//    if(keys){
-//        for(int i = 0; i < keys->count(); ++i){
-//            LHSprite* spr = (LHSprite*)markedSprites.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-//            spr->removeSelf();
-//        }
-//    }
-//    markedSprites.removeAllObjects();
-//
-//#else
-//    
-//    std::vector<std::string> keys = markedSprites.allKeys();
-//    for(int i = 0; i < keys.size(); ++i){
-//        LHSprite* spr = (LHSprite*)markedSprites.objectForKey(keys[i]);
-//        spr->removeSelf();
-//    }
-//    markedSprites.removeAllObjects();
-//    
-//#endif
-//}
-//void LHSettings::removeMarkedBeziers(){
-//
-//#if COCOS2D_VERSION >= 0x00020000
-//    
-//    CCArray* keys = markedBeziers.allKeys();
-//    if(keys){
-//        for(int i = 0; i < keys->count(); ++i){
-//            LHBezier* node = (LHBezier*)markedBeziers.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-//            node->removeSelf();
-//        }
-//    }
-//    markedBeziers.removeAllObjects();    
-//    
-//#else
-//    
-//    std::vector<std::string> keys = markedBeziers.allKeys();
-//    for(int i = 0; i < keys.size(); ++i){
-//        LHBezier* node = (LHBezier*)markedBeziers.objectForKey(keys[i]);
-//        node->removeSelf();
-//    }
-//    markedBeziers.removeAllObjects();    
-//    
-//#endif
-//}
-//void LHSettings::removeMarkedJoints(){
-//#if COCOS2D_VERSION >= 0x00020000
-//    CCArray* keys = markedJoints.allKeys();
-//    if(keys){
-//        for(int i = 0; i < keys->count(); ++i){
-//            LHJoint* node = (LHJoint*)markedJoints.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-//            node->removeSelf();
-//        }
-//    }
-//    markedJoints.removeAllObjects();
-//
-//#else
-//    
-//    std::vector<std::string> keys = markedJoints.allKeys();
-//    for(int i = 0; i < keys.size(); ++i){
-//        LHJoint* node = (LHJoint*)markedJoints.objectForKey(keys[i]);
-//        node->removeSelf();
-//    }
-//    markedJoints.removeAllObjects();
-//    
-//#endif
-//}
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 int LHSettings::newBodyId(void)
 {
@@ -277,7 +185,7 @@ CCPoint LHSettings::transformedScalePointToCocos2d(CCPoint point){
     
     CCPoint ratio = convertRatio();
     if(isIpad() && device != 1 && device != 3) //and device is not ipad only
-    {
+    {        
         ratio.x /= 2.0f;
         ratio.y /= 2.0f;
     }
@@ -307,9 +215,15 @@ CCPoint LHSettings::transformedPoint(CCPoint point, const std::string& image){
     {
         point.x *= convertRatio().x;
         point.y *= convertRatio().y;
-        
+  
         if (std::string::npos != image.find(hdSuffix) ||
-            std::string::npos != image.find(hd2xSuffix)) {
+            std::string::npos != image.find(hd2xSuffix)
+            
+#if COCOS2D_VERSION >= 0x00020000
+            || isIpad()
+#endif
+
+            ) {
             point.x /=2.0f;
             point.y /=2.0f;        
         }
@@ -321,9 +235,15 @@ CCRect LHSettings::transformedTextureRect(CCRect rect, const std::string& image)
 {
     if(device != 0 && device != 1 && device != 3) //iphone //ipad
     {
+//        CCLog("transformedTextureRect");
         if (std::string::npos != image.find(hdSuffix) ||
-            std::string::npos != image.find(hd2xSuffix)){
-            rect = CCRectMake(rect.origin.x*2.0f, rect.origin.y*2.0f, 
+            std::string::npos != image.find(hd2xSuffix)
+
+#if COCOS2D_VERSION >= 0x00020000
+            || isIpad()
+#endif            
+            ){
+            rect = CCRectMake(rect.origin.x*2.0f, rect.origin.y*2.0f,
                               rect.size.width*2.0f, rect.size.height*2.0f);
         }
     }
@@ -336,8 +256,13 @@ CCSize LHSettings::transformedSize(CCSize size, const std::string& image)
     if(device != 0 && device != 1 && device != 3) //iphone //ipad
     {
         if (std::string::npos != image.find(hdSuffix) ||
-            std::string::npos != image.find(hd2xSuffix)){
-            
+            std::string::npos != image.find(hd2xSuffix)
+                                            
+#if COCOS2D_VERSION >= 0x00020000
+            || isIpad()
+#endif
+            )
+        {
             size = CCSizeMake(size.width*2.0f, size.height*2.0f);
         }
     }
@@ -351,6 +276,12 @@ bool LHSettings::isHDImage(const std::string& image)
     if(device == 0 || device == 1 || device == 3) //iphone //ipad
         return false;
     
+#if COCOS2D_VERSION >= 0x00020000
+    if(isIpad()){
+        return true;
+    }
+#endif
+    
     if (std::string::npos == image.find(hdSuffix) &&
         std::string::npos == image.find(hd2xSuffix)){
         return false;
@@ -360,10 +291,7 @@ bool LHSettings::isHDImage(const std::string& image)
 
 
 const std::string LHSettings::imagePath(const std::string& image){
-    
-   // CCLog("IMAGE FILE PATH %s", image.c_str());
-    
-    
+        
     std::string computedFile = image;
     if(isIpad())
     {
@@ -376,14 +304,19 @@ const std::string LHSettings::imagePath(const std::string& image){
                 //we have ipad retina
                 size_t found;
                 found=computedFile.find_last_of(".");
-                computedFile.insert(found, hd2xSuffix);   
+                
+                #if COCOS2D_VERSION < 0x00020000
+                computedFile.insert(found, hd2xSuffix);
+                #endif
             }
             else {
                 //we have normal ipad - lets use the HD image
                 
                 size_t found;
                 found=computedFile.find_last_of(".");
-                computedFile.insert(found, hdSuffix);   
+                #if COCOS2D_VERSION < 0x00020000
+                computedFile.insert(found, hdSuffix);
+                #endif
             }
         }
 #if COCOS2D_VERSION >= 0x00020000
@@ -400,49 +333,10 @@ const std::string LHSettings::imagePath(const std::string& image){
         }
     }
     
-   // CCLog("RETURNING %s", image.c_str());
+//    CCLog("RETURNING %s", image.c_str());
+    
     return image;
-    
-//    return [NSString stringWithFormat:@"%@%@",activeFolder, file];
-    
-    /*
-    //CCLog("Implement getImagePath()");
-
-    if(isIpad())
-    {   
-        std::string file(image);
-        
-        size_t found;
-        found=file.find_last_of(".");
-        
-        file.insert(found,"-hd");   
-        
-        const char* path = CCFileUtils::fullPathFromRelativePath(file.c_str());
-        
-        
-        std::ifstream infile;
-        infile.open (path);
-        
-        if(true == infile.is_open()) //IF THIS FAILS IT MEANS WE HAVE NO -hd file
-        {
-            infile.close();
-            return std::string(path);
-        }
-        
-        return image;
-    }
-    
-    return image;*/
 }
-//bool LHSettings::shouldScaleImageOnRetina(const std::string& image)
-//{
-//    //if it contains -hd return true - else return false
-//    if(std::string::npos != image.find("-hd")){
-//        return true; 
-//    }
-//        
-//    return false;
-//}
 
 bool LHSettings::isIpad(void){
         
@@ -457,11 +351,19 @@ bool LHSettings::isIpad(void){
     return false;
 }
 
+bool LHSettings::isIphone5(void){
+    
+    CCSize wSize = CCDirector::sharedDirector()->getWinSizeInPixels();
+    if(wSize.width == 1136 ||
+       wSize.height == 1136)
+        return true;
+    
+    return false;
+}
+
 
 void LHSettings::setStretchArt(const bool& value){
     m_stretchArt = value;
-//    m_possitionOffset.x =0.0f;
-//    m_possitionOffset.y =0.0f;   
 }
 
 bool LHSettings::getStretchArt(void)
@@ -500,6 +402,26 @@ void LHSettings::setConvertRatio(CCPoint val){
             {
                 m_convertRatio.x = 1.0f;
                 m_convertRatio.y = 1.0f;
+            }
+        }
+        
+        if(isIphone5()){
+            
+            if(m_convertRatio.x > 1.0 || m_convertRatio.y > 1.0f)
+            {
+                m_convertRatio.x = 1.0f;
+                m_convertRatio.y = 1.0f;
+                
+                if(CCDirector::sharedDirector()->getWinSize().width == 1136.0f)
+                {
+                    m_possitionOffset.x = 88.0f;
+                    m_possitionOffset.y = 0.0f;
+                }
+                else {
+                    m_possitionOffset.x = 0.0f;
+                    m_possitionOffset.y = 88.0f;
+                }
+                
             }
         }
     }

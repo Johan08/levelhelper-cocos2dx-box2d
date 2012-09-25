@@ -105,6 +105,10 @@ void LHTouchMgr::swallowTouchesForTag(int tag){
 void LHTouchMgr::registerTouchBeginObserverForTag(CCObject* observer, 
                                                   SEL_CallFuncO selector, 
                                                   int tag){
+    this->registerTouchBeganObserverForTag(observer, selector, tag);
+}
+
+void LHTouchMgr::registerTouchBeganObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag){
 
     onTouchBeginOnSpriteOfTag.removeObjectForKey(tag);
     LHObserverPair* pair = LHObserverPair::observerPair();

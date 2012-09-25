@@ -92,8 +92,23 @@ void LHBezier::removeSelf()
     }
     removeFromParentAndCleanup(true);
 }
+
+LevelHelperLoader* LHBezier::parentLoader(){
+    
+    CCNode* layerParent = this->getParent();
+    
+    while (layerParent && !LHLayer::isLHLayer(layerParent)){
+        layerParent = layerParent->getParent();
+    }
+    
+    if(layerParent && LHLayer::isLHLayer(layerParent)) {
+        return ((LHLayer*)layerParent)->parentLoader();
+    }
+    return NULL;
+}
+
 void LHBezier::onExit(){
-    CCLog("LH BEZIER %s onExit", uniqueName.c_str());
+//    CCLog("LH BEZIER %s onExit", uniqueName.c_str());
     removeTouchObserver();
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -839,6 +854,49 @@ bool LHBezier::isLHBezier(CCNode* obj){
     
     return false;    
 }
+
+std::string LHBezier::uniqueNameForBody(b2Body* body){
+    
+    CCNode* spr = (CCNode*)body->GetUserData();
+    
+    if(LHSprite::isLHSprite(spr))
+        return ((LHSprite*)spr)->getUniqueName();
+    
+    if(LHBezier::isLHBezier(spr))
+        return ((LHBezier*)spr)->getUniqueName();
+    
+    return NULL;
+}
+//------------------------------------------------------------------------------
+LHBezier* LHBezier::bezierForBody(b2Body* body){
+    
+    if(0 == body)
+        return 0;
+    
+    CCNode* spr = (CCNode*)body->GetUserData();
+    
+    if(LHBezier::isLHBezier(spr))
+    {
+        return (LHBezier*)spr;
+    }
+    
+    return 0;
+}
+//------------------------------------------------------------------------------
+int LHBezier::tagForBody(b2Body* body){
+    if(0 != body)
+    {
+        CCNode* spr = (CCNode*)body->GetUserData();
+        if(NULL != spr)
+        {
+            return spr->getTag();
+        }
+    }
+    return -1;
+}
+//------------------------------------------------------------------------------
+
+
 //------------------------------------------------------------------------------
 bool LHBezier::isTouchedAtPoint(CCPoint point){
     
@@ -858,6 +916,10 @@ bool LHBezier::isTouchedAtPoint(CCPoint point){
 //------------------------------------------------------------------------------
 void LHBezier::registerTouchBeginObserver(CCObject* observer, 
                                         SEL_CallFuncO selector){
+    this->registerTouchBeganObserver(observer, selector);
+}
+
+void LHBezier::registerTouchBeganObserver(CCObject* observer, SEL_CallFuncO selector){
 
     removeTouchObserver();
     
@@ -1087,4 +1149,3 @@ void LHBezier::setTagTouchMovedObserver(LHObserverPair* pair){
 void LHBezier::setTagTouchEndedObserver(LHObserverPair* pair){
     tagTouchEndedObserver = pair;
 }
-

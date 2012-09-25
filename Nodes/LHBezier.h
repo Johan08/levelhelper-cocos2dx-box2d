@@ -28,6 +28,7 @@
 #ifndef __LH_BEZIER_NODE__
 #define __LH_BEZIER_NODE__
 
+#include "../lhConfig.h"
 #include "cocos2d.h"
 #include "Box2D/Box2D.h"
 #include "../Utilities/LHDictionary.h"
@@ -84,7 +85,6 @@ protected:
     
     //static int numberOfBezierNodes;
     
-    LevelHelperLoader* parentLoader;
     friend class LevelHelperLoader;    
     
     LHObserverPair* touchBeginObserver;
@@ -122,6 +122,9 @@ public:
                                   GLenum blendDestination = GL_ZERO);
     
     static bool isLHBezier(CCNode* obj);
+    static std::string uniqueNameForBody(b2Body* body);
+    static LHBezier* bezierForBody(b2Body* body);
+    static int tagForBody(b2Body* body);
     
     virtual void init(void);
     virtual ~LHBezier(void);
@@ -129,6 +132,7 @@ public:
     
     
     void removeSelf();//use this to remove the bezier node entirely;
+    LevelHelperLoader* parentLoader();
     
     bool initWithDictionary(LHDictionary* properties);
     
@@ -136,8 +140,6 @@ public:
         
     virtual void draw(void);
     
-    void setParentLoader(LevelHelperLoader* p){ parentLoader = p;}
-
     
     //TOUCH METHODS
     //------------------------------------------------------------------------------
@@ -151,7 +153,9 @@ public:
     //because compiler doesn't know how to cast
     //info will have all information regarding the touch (see API Documentation or top of this file)
     //for generic touch on sprites with tag use the observers from LevelHelperLoader
-    void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
+    LH_DEPRECATED_ATTRIBUTE void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
+
+    void registerTouchBeganObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector);
 

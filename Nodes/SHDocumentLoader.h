@@ -76,6 +76,26 @@ public:
                                               const std::string& spriteHelperDocument);
 private:
 
+    //we use this because almost 90% of the time the user (or levelhelperloader)
+    //will ask for the same exact info - so we dont want to search everytime for
+    //the same info - we give it back faster this way
+    LHDictionary* lastSheetDictionary;//week ptr
+    LHDictionary* lastAnimationDictionary;//week ptr
+    LHDictionary* lastSpriteDictionary;//week ptr
+    
+    std::string lastSprSpriteName;
+    std::string lastSprSheetName;
+    std::string lastSprDocumentName;
+    
+    std::string lastSheetSheetName;
+    std::string lastSheetDocumentName;
+    
+    std::string lastAnimName;
+    std::string lastAnimDocumentName;
+
+    
+    
+    
     SHSceneNode* sceneNodeForSHDocument(const std::string& shDocument);
     
     SHDocumentLoader();

@@ -142,12 +142,12 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
         //------------------------------------------------------------------            
             
         CCPoint origin = ccp(offset.x*scale.x*flipx,  -offset.y*scale.y*flipy);
-        if(LHSettings::sharedInstance()->isHDImage(sprite->getImageFile()))
-        {
-            origin.x *=2.0f;
-            origin.y *=2.0f;
-        }
-            
+//        if(LHSettings::sharedInstance()->isHDImage(sprite->getImageFile()))
+//        {
+//            origin.x *=2.0f;
+//            origin.y *=2.0f;
+//        }
+        
         if(isCircle)
         {
             if(LHSettings::sharedInstance()->convertLevel()){
@@ -185,12 +185,12 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
             float boxWidth = width*scale.x/2.f;
             float boxHeight= height*scale.y/2.f;
                 
-            if(LHSettings::sharedInstance()->isHDImage(sprite->getImageFile()))
-            {
-                boxWidth *=2.0f;
-                boxHeight *=2.0f;
-            }
-                
+//            if(LHSettings::sharedInstance()->isHDImage(sprite->getImageFile()))
+//            {
+//                boxWidth *=2.0f;
+//                boxHeight *=2.0f;
+//            }
+            
             shape.SetAsBox( boxWidth/ptm, 
                             boxHeight/ptm);
                                 

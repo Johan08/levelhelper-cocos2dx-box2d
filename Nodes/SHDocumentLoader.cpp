@@ -137,6 +137,9 @@ SHDocumentLoader::~SHDocumentLoader()
 //------------------------------------------------------------------------------
 SHDocumentLoader::SHDocumentLoader(){
     
+    lastSheetDictionary = NULL;
+    lastAnimationDictionary= NULL;
+    lastSpriteDictionary = NULL;
 }
 //------------------------------------------------------------------------------
 SHSceneNode* SHDocumentLoader::sceneNodeForSHDocument(const std::string& shDocument)
@@ -154,10 +157,23 @@ SHSceneNode* SHDocumentLoader::sceneNodeForSHDocument(const std::string& shDocum
 //------------------------------------------------------------------------------
 LHDictionary* SHDocumentLoader::dictionaryForSpriteNamed(const std::string& spriteName, const std::string& sheetName, const std::string& spriteHelperDocument)
 {
+    if(lastSprSpriteName == spriteName &&
+       lastSprSheetName == sheetName &&
+       lastSprDocumentName == spriteHelperDocument &&
+       lastSpriteDictionary != NULL){
+        return lastSpriteDictionary;
+    }
+
+    
     SHSceneNode* shNode = sceneNodeForSHDocument(spriteHelperDocument);
     if(NULL != shNode){
         LHDictionary* info = shNode->infoForSpriteNamed(spriteName, sheetName);
         if(info){
+            lastSpriteDictionary = info;
+            lastSprSpriteName = spriteName;
+            lastSprSheetName = sheetName;
+            lastSprDocumentName = spriteHelperDocument;
+            
             return info;
         }
         else {
@@ -169,11 +185,22 @@ LHDictionary* SHDocumentLoader::dictionaryForSpriteNamed(const std::string& spri
 //------------------------------------------------------------------------------
 LHDictionary* SHDocumentLoader::dictionaryForSheetNamed(const std::string& sheetName,const std::string& spriteHelperDocument)
 {
+    if(lastSheetSheetName == sheetName &&
+       lastSheetDocumentName == spriteHelperDocument &&
+       lastSheetDictionary != NULL){
+        return lastSheetDictionary;
+    }
+    
     SHSceneNode* shNode = sceneNodeForSHDocument(spriteHelperDocument);
     if(NULL != shNode)
     {
         LHDictionary* info = shNode->infoForSheetNamed(sheetName);
         if(info){
+            
+            lastSheetDictionary = info;
+            lastSheetSheetName = sheetName;
+            lastSheetDocumentName = spriteHelperDocument;
+
             return info;
         }
         else {
@@ -185,11 +212,21 @@ LHDictionary* SHDocumentLoader::dictionaryForSheetNamed(const std::string& sheet
 
 LHDictionary* SHDocumentLoader::dictionaryForAnimationNamed(const std::string& animName,const std::string& spriteHelperDocument)
 {
+    if(lastAnimName == animName &&
+       lastAnimDocumentName == spriteHelperDocument &&
+       lastAnimationDictionary != NULL){
+        return lastAnimationDictionary;
+    }
+    
     SHSceneNode* shNode = sceneNodeForSHDocument(spriteHelperDocument);
     if(NULL != shNode)
     {
         LHDictionary* info = shNode->infoForAnimationNamed(animName);
         if(info){
+            lastAnimationDictionary = info;
+            lastAnimName = animName;
+            lastAnimDocumentName = spriteHelperDocument;
+            
             return info;
         }
         else {

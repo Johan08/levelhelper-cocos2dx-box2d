@@ -354,12 +354,14 @@ CCArray* LevelHelperLoader::jointsWithTag(enum LevelHelper_TAG tag){
 #if COCOS2D_VERSION >= 0x00020000
     
     CCArray* keys = jointsInLevel.allKeys();
-    CCArray* array = CCArray::create();    
-    for(int i = 0; i < (int)keys->count(); ++i){
-        LHJoint* jt = (LHJoint*)jointsInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-        
-        if(jt && jt->getTag() == tag){
-            array->addObject(jt);
+    CCArray* array = CCArray::create();
+    if(keys){
+        for(int i = 0; i < (int)keys->count(); ++i){
+            LHJoint* jt = (LHJoint*)jointsInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+            
+            if(jt && jt->getTag() == tag){
+                array->addObject(jt);
+            }
         }
     }
     return array;
@@ -402,6 +404,9 @@ void LevelHelperLoader::setPaused(bool value){
 }
 ////------------------------------------------------------------------------------
 void LevelHelperLoader::dontStretchArtOnIpad(){
+    LHSettings::sharedInstance()->setStretchArt(false);
+}
+void LevelHelperLoader::dontStretchArt(void){
     LHSettings::sharedInstance()->setStretchArt(false);
 }
 //------------------------------------------------------------------------------
@@ -531,6 +536,8 @@ LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name)
 //method will create custom sprite if one is register for the tag of this sprite
 LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name, CCNode* parent){
     
+    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
+    
     for(int i = 0; i< lhNodes->count(); ++i){
         
         LHDictionary* dictionary = lhNodes->dictAtIndex(i);
@@ -563,6 +570,7 @@ LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name,
 //method will create custom sprite if one is register for the tag of this sprite
 LHSprite* LevelHelperLoader::createBatchSpriteWithUniqueName(const std::string& name){
 
+    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     for(int i = 0; i< lhNodes->count(); ++i){
         LHDictionary* dictionary = lhNodes->dictAtIndex(i);
         LHDictionary* spriteInfo = dictionaryInfoForSpriteNodeNamed(name,dictionary);
@@ -602,6 +610,7 @@ LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
                                                   const std::string& shSheetName,
                                                   const std::string& shFileNoExt,
                                                   CCNode* parent){
+    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     LHSprite* sprite = LHSprite::spriteWithName(name, shSheetName, shFileNoExt);
     if(sprite){
         if(parent)
@@ -628,6 +637,7 @@ LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
                                                   LevelHelper_TAG tag,
                                                   CCNode* parent){
 
+    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
                                                                                             shSheetName,
                                                                                             shFileNoExt);
@@ -653,6 +663,7 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
                                                        const std::string& shSheetName,
                                                        const std::string& shFileNoExt){
     
+    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
                                                                                             shSheetName,
                                                                                             shFileNoExt);
@@ -680,7 +691,7 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
                                                        const std::string& shFileNoExt,
                                                        LevelHelper_TAG tag){
   
-    
+    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
                                                                                             shSheetName,
                                                                                             shFileNoExt);

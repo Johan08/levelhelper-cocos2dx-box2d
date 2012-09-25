@@ -42,7 +42,8 @@ class LHBatch : public CCSpriteBatchNode
 {
 public:
     void removeSelf();
-
+    LevelHelperLoader* parentLoader();
+    
     virtual bool initWithDictionary(LHDictionary* dictionary,  LHLayer* layer);
     
     virtual ~LHBatch(void);
@@ -70,11 +71,9 @@ private:
     std::string uniqueName;
     std::string imagePath;
     std::string shFile;
-    LevelHelperLoader* parentLoader;
     
     friend class LHLayer;
     
-    void setParentLoader(LevelHelperLoader* p);
     void addChildFromDictionary(LHDictionary* childDict);
 };
 
