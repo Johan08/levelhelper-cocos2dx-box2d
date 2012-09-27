@@ -829,13 +829,6 @@ void LHBezier::draw(void)
             {
                 CCPoint pt1 = linesHolder[i];
                 CCPoint pt2 = linesHolder[i+1];
-                
-                pt1.x *= scale;
-                pt1.y *= scale;
-
-                pt2.x *= scale;
-                pt2.y *= scale;
-
                 line_verts[i] = pt1;
                 line_verts[i+1] = pt2;            
             }
@@ -900,60 +893,6 @@ int LHBezier::tagForBody(b2Body* body){
         }
     }
     return -1;
-}
-
-void LHBezier::setCollisionFilterCategory(int category){
-    if(body == NULL)
-        return;
-    
-    b2Fixture* curFix = body->GetFixtureList();
-    while (curFix) {
-        
-        b2Filter curFilter = curFix->GetFilterData();
-        
-        b2Filter filter;
-        filter.categoryBits = (uint16)category;
-        filter.maskBits     = curFilter.maskBits;
-        filter.groupIndex   = curFilter.groupIndex;
-        
-        curFix->SetFilterData(filter);
-        curFix = curFix->GetNext();
-    }
-}
-void LHBezier::setCollisionFilterMask(int mask){
-    if(body == NULL)
-        return;
-    
-    b2Fixture* curFix = body->GetFixtureList();
-    while (curFix) {
-        
-        b2Filter curFilter = curFix->GetFilterData();
-        
-        b2Filter filter;
-        filter.categoryBits = curFilter.categoryBits;
-        filter.maskBits     = (uint16)mask;
-        filter.groupIndex   = curFilter.groupIndex;
-        
-        curFix->SetFilterData(filter);
-        curFix = curFix->GetNext();
-    }
-}
-void LHBezier::setCollisionFilterGroup(int group){
-    if(body == NULL)
-        return;
-    b2Fixture* curFix = body->GetFixtureList();
-    while (curFix) {
-        
-        b2Filter curFilter = curFix->GetFilterData();
-        
-        b2Filter filter;
-        filter.categoryBits = curFilter.categoryBits;
-        filter.maskBits     = curFilter.maskBits;
-        filter.groupIndex   = (int16)group;
-        
-        curFix->SetFilterData(filter);
-        curFix = curFix->GetNext();
-    }
 }
 //------------------------------------------------------------------------------
 

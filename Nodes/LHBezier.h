@@ -126,12 +126,6 @@ public:
     static LHBezier* bezierForBody(b2Body* body);
     static int tagForBody(b2Body* body);
     
-    void setCollisionFilterCategory(int category);
-    void setCollisionFilterMask(int mask);
-    void setCollisionFilterGroup(int group);
-
-    
-    
     virtual void init(void);
     virtual ~LHBezier(void);
     LHBezier(void);

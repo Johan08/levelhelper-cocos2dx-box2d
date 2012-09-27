@@ -135,6 +135,13 @@ LHSprite::LHSprite(){
     swallowTouches = false;
     touchIsDisabled = false;
     touchPriority = 0;
+    
+    animHasEndedObserver = NULL;
+    animHasChangedFrameObserver = NULL;
+    animHasEndedRepObserver = NULL;
+    
+    pathMoveChangedPointObserver = NULL;
+    pathMoveHasEndedObserver = NULL;
 
    // ++numberOfSprites;
    // CCLog("LHSprite Constructor %d", numberOfSprites);
@@ -491,8 +498,6 @@ bool LHSprite::initBatchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* 
     
     rect = LHSettings::sharedInstance()->transformedTextureRect(rect, batch->getImagePath());
     
-    CCLog("BATCH SPRITE WITH DICTIONARY");
-    
     if(initWithTexture(batch->getTexture(), rect))
     {    
         setImageFile(batch->getImagePath());        
@@ -694,6 +699,155 @@ void LHSprite::prepareAnimationNamed(const std::string& animName, const std::str
     prepareAnimInProgress = false;
 }
 //------------------------------------------------------------------------------
+//use this methods when you want to get notification about animation on a per sprite basis
+void LHSprite::setAnimationHasEndedObserver(CCObject *target, SEL_CallFuncO selector){
+    
+    animHasEndedObserver = target;
+   
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedNotification,
+                                                                  this);
+#else
+     CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedNotification,
+                                                                  this);
+#endif
+    
+}
+void LHSprite::setAnimationHasChangedFrameObserver(CCObject *target, SEL_CallFuncO selector){
+    animHasChangedFrameObserver = target;
+
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationFrameNotification,
+                                                                  this);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                           selector,
+                                                           LHAnimationFrameNotification,
+                                                           this);
+#endif
+}
+
+void LHSprite::setAnimationHasEndedAllRepetitionsObserver(CCObject *target, SEL_CallFuncO selector){
+    animHasEndedRepObserver = target;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedAllRepetitionsNotification,
+                                                                  this);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedAllRepetitionsNotification,
+                                                                  this);
+#endif
+
+}
+void LHSprite::removeAnimationHasEndedObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(animHasEndedObserver, LHAnimationHasEndedNotification);
+
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(animHasEndedObserver, LHAnimationHasEndedNotification);
+
+#endif
+    animHasEndedObserver = NULL;
+}
+
+void LHSprite::removeAnimationHasChangedFrameObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(animHasChangedFrameObserver, LHAnimationFrameNotification);
+
+#else
+   CCNotificationCenter::sharedNotifCenter()->removeObserver(animHasChangedFrameObserver, LHAnimationFrameNotification);
+#endif
+    animHasChangedFrameObserver = NULL;
+}
+void LHSprite::removeAnimationHasEndedAllRepetitionsObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(animHasEndedRepObserver, LHAnimationHasEndedAllRepetitionsNotification);
+
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(animHasEndedRepObserver, LHAnimationHasEndedAllRepetitionsNotification);
+
+#endif
+    animHasEndedRepObserver = NULL;
+}
+
+//use this methods when you want to get notification about animations for all sprites
+void LHSprite::setGlobalAnimationHasEndedObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedNotification,
+                                                                  NULL);
+#endif
+
+}
+void LHSprite::setGlobalAnimationHasChangedFrameObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationFrameNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationFrameNotification,
+                                                                  NULL);
+#endif
+
+}
+void LHSprite::setGlobalAnimationHasEndedAllRepertitionsObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedAllRepetitionsNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedAllRepetitionsNotification,
+                                                                  NULL);
+
+#endif
+
+}
+void LHSprite::removeGlobalAnimationHasEndedObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHAnimationHasEndedNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHAnimationHasEndedNotification);
+#endif
+
+}
+void LHSprite::removeGlobalAnimationHasChangedFrameObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHAnimationFrameNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHAnimationFrameNotification);
+#endif
+
+}
+void LHSprite::removeGlobalAnimationHasEndedAllRepetitionsObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHAnimationHasEndedAllRepetitionsNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHAnimationHasEndedAllRepetitionsNotification);
+#endif
+}
+//------------------------------------------------------------------------------
 void LHSprite::playAnimation(){ if(animation)animation->play();}
 //------------------------------------------------------------------------------
 void LHSprite::pauseAnimation(){ if(animation)animation->setPaused(true);}
@@ -711,6 +865,9 @@ void LHSprite::stopAnimation(){
     animation->setPaused(true);
     animation->restoreFrame();
 
+    this->removeAnimationHasChangedFrameObserver();
+    this->removeAnimationHasEndedAllRepetitionsObserver();
+    this->removeAnimationHasEndedObserver();
     delete animation;
     animation = NULL;
 }
@@ -961,6 +1118,104 @@ void LHSprite::prepareMovementOnPathWithUniqueName(const std::string& pathName){
 const std::string& LHSprite::pathUniqueName(){
     return pathDefaults.name;
 }
+
+void LHSprite::setPathMovementHasEndedObserver(CCObject *target, SEL_CallFuncO selector){
+    pathMoveHasEndedObserver = target;
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasEndedNotification,
+                                                                  this);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasEndedNotification,
+                                                                  this);
+
+#endif
+}
+void LHSprite::setPathMovementHasChangedPointObserver(CCObject *target, SEL_CallFuncO selector){
+    pathMoveChangedPointObserver = target;
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasChangedPointNotification,
+                                                                  this);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasChangedPointNotification,
+                                                                  this);
+#endif
+
+}
+void LHSprite::removePathMovementHasEndedObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(pathMoveHasEndedObserver, LHPathMovementHasEndedNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(pathMoveHasEndedObserver, LHPathMovementHasEndedNotification);
+#endif
+
+    pathMoveHasEndedObserver = NULL;
+}
+void LHSprite::removePathMovementHasChangedPointObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(pathMoveChangedPointObserver, LHPathMovementHasChangedPointNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(pathMoveChangedPointObserver, LHPathMovementHasChangedPointNotification);
+#endif
+
+    pathMoveChangedPointObserver = NULL;
+}
+
+
+//use this methods when you want to get notification about path movement for all sprites
+void LHSprite::setGlobalPathMovementHasEndedObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasEndedNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasEndedNotification,
+                                                                  NULL);
+
+#endif
+
+}
+void LHSprite::setGlobalPathMovementHasChangedPointObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasChangedPointNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasChangedPointNotification,
+                                                                  NULL);
+#endif
+
+}
+void LHSprite::removeGlobalPathMovementHasEndedObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHPathMovementHasEndedNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHPathMovementHasEndedNotification);
+#endif
+
+}
+void LHSprite::removeGlobalPathMovementHasChangedPointObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHPathMovementHasChangedPointNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHPathMovementHasChangedPointNotification);
+#endif
+
+}
+
 //------------------------------------------------------------------------------
 void LHSprite::startPathMovement(){
     if(pathNode)pathNode->setPaused(false);
@@ -976,6 +1231,8 @@ void LHSprite::restartPathMovement(){
 //------------------------------------------------------------------------------
 void LHSprite::stopPathMovement(){
     if(pathNode){
+        this->removePathMovementHasChangedPointObserver();
+        this->removePathMovementHasEndedObserver();
         delete pathNode;
         pathNode = NULL;
     }
