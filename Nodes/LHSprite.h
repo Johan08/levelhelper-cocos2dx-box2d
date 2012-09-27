@@ -44,6 +44,7 @@ class LHBezier;
 class LHDictionary;
 class LHArray;
 class LHAbstractClass;
+class LHFixture;
 
 class LHSprite : public CCSprite, public CCStandardTouchDelegate
 {
@@ -320,6 +321,12 @@ public:
     void setCollisionFilterMask(int mask);
     void setCollisionFilterGroup(int group);
 
+    //you can use this methods to get the LHFixture object. From LHFixture object
+    //you can take the box2d fixture and other info - check LHFixture.h
+    LHFixture* getFixtureWithName(const std::string& fixName);
+    CCArray* getFixturesWithID(int fixID);
+    CCArray* getAllFixtures();
+    
     //Box2d BODY TYPE TRANSFORMATION
     //--------------------------------------------------------------------------                
     void makeDynamic();

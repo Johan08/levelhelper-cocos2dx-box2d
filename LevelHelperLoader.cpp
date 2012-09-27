@@ -1376,17 +1376,20 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
     LHDictionary* scenePref = dictionary->dictForKey("ScenePreference");
     safeFrame       = scenePref->pointForKey("SafeFrame");
     gameWorldRect   = scenePref->rectForKey("GameWorld");
-        
+    
+    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
+    if(safeFrame.x == 0 || safeFrame.y == 0)
+        safeFrame = CCPointMake(winSize.width, winSize.height);
+
+    
     LHSettings::sharedInstance()->setHDSuffix(scenePref->stringForKey("HDSuffix"));
     LHSettings::sharedInstance()->setHD2xSuffix(scenePref->stringForKey("2HDSuffix"));
     LHSettings::sharedInstance()->setDevice(scenePref->intForKey("Device"));
-
+    
         
     CCRect color = scenePref->rectForKey("BackgroundColor");
     glClearColor(color.origin.x, color.origin.y, color.size.width, 1);
-        
-    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
-    
+            
     LHSettings::sharedInstance()->setConvertRatio(CCPointMake(winSize.width/safeFrame.x,
                                                                  winSize.height/safeFrame.y));
     
@@ -1397,7 +1400,9 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
     LevelHelperLoader::setMeterRatio(LHSettings::sharedInstance()->lhPtmRatio()*PTM_conversion);
     
     
-    if(LHSettings::sharedInstance()->isIpad()){
+    if(LHSettings::sharedInstance()->isIpad() ||
+       LHSettings::sharedInstance()->isIphone5())
+    {
         if(!LHSettings::sharedInstance()->getStretchArt()){
             LevelHelperLoader::setMeterRatio(32.0f*2.0f);         
         }
