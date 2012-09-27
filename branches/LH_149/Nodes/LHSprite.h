@@ -104,8 +104,14 @@ protected:
     CCRect originalRect;
     
     LHAnimationNode* animation;
+    CCObject *animHasEndedObserver;
+    CCObject *animHasChangedFrameObserver;
+    CCObject *animHasEndedRepObserver;
     
     LHPathNode* pathNode;
+    CCObject *pathMoveHasEndedObserver;
+    CCObject *pathMoveChangedPointObserver;
+    
     LH_PATH_DEFAULTS pathDefaults;
         
     CCSize realScale;
@@ -180,6 +186,22 @@ public:
     //ANIMATIONS
     //--------------------------------------------------------------------------    
     void prepareAnimationNamed(const std::string& animName, const std::string& shScene);
+
+    //use this methods when you want to get notification about animation on a per sprite basis
+    void setAnimationHasEndedObserver(CCObject *target, SEL_CallFuncO selector);
+    void setAnimationHasChangedFrameObserver(CCObject *target, SEL_CallFuncO selector);
+    void setAnimationHasEndedAllRepetitionsObserver(CCObject *target, SEL_CallFuncO selector);
+    void removeAnimationHasEndedObserver();
+    void removeAnimationHasChangedFrameObserver();
+    void removeAnimationHasEndedAllRepetitionsObserver();
+    
+    //use this methods when you want to get notification about animations for all sprites
+    static void setGlobalAnimationHasEndedObserver(CCObject *target, SEL_CallFuncO selector);
+    static void setGlobalAnimationHasChangedFrameObserver(CCObject *target, SEL_CallFuncO selector);
+    static void setGlobalAnimationHasEndedAllRepertitionsObserver(CCObject *target, SEL_CallFuncO selector);
+    static void removeGlobalAnimationHasEndedObserver(CCObject *target);
+    static void removeGlobalAnimationHasChangedFrameObserver(CCObject *target);
+    static void removeGlobalAnimationHasEndedAllRepetitionsObserver(CCObject *target);
     
     void playAnimation();
     void pauseAnimation();
@@ -244,6 +266,20 @@ public:
     
     const std::string& pathUniqueName();
     
+    //use this methods when you want to get notification about path movement on a per sprite basis
+    void setPathMovementHasEndedObserver(CCObject *target, SEL_CallFuncO selector);
+    void setPathMovementHasChangedPointObserver(CCObject *target, SEL_CallFuncO selector);
+    void removePathMovementHasEndedObserver();
+    void removePathMovementHasChangedPointObserver();
+    
+    
+    //use this methods when you want to get notification about path movement for all sprites
+    static void setGlobalPathMovementHasEndedObserver(CCObject *target, SEL_CallFuncO selector);
+    static void setGlobalPathMovementHasChangedPointObserver(CCObject *target, SEL_CallFuncO selector);
+    static void removeGlobalPathMovementHasEndedObserver(CCObject *target);
+    static void removeGlobalPathMovementHasChangedPointObserver(CCObject *target);
+    
+
     void startPathMovement();
     void pausePathMovement();
     void restartPathMovement();
@@ -321,11 +357,6 @@ public:
     void setCollisionFilterMask(int mask);
     void setCollisionFilterGroup(int group);
 
-    //you can use this methods to get the LHFixture object. From LHFixture object
-    //you can take the box2d fixture and other info - check LHFixture.h
-    LHFixture* getFixtureWithName(const std::string& fixName);
-    CCArray* getFixturesWithID(int fixID);
-    CCArray* getAllFixtures();
     
     //Box2d BODY TYPE TRANSFORMATION
     //--------------------------------------------------------------------------                
