@@ -31,10 +31,13 @@ public:
     
     const std::string& getFixtureName(){return fixtureName;}
     const int getFixtureID(){return fixtureID;}
+
+    b2Fixture* box2dFixture(){return m_box2dFixture;}
     
 private:
     std::string fixtureName;
     int fixtureID;
+    b2Fixture* m_box2dFixture; //week ptr
     
     b2Vec2 transformPoint(CCPoint point, LHSprite* sprite, CCPoint offset, CCPoint scale);
 };

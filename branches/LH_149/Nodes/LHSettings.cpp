@@ -355,7 +355,9 @@ bool LHSettings::isIphone5(void){
     
     CCSize wSize = CCDirector::sharedDirector()->getWinSizeInPixels();
     if(wSize.width == 1136 ||
-       wSize.height == 1136)
+       wSize.height == 1136 ||
+       wSize.width == 568 || //may be reported wrong
+       wSize.height == 568)
         return true;
     
     return false;
