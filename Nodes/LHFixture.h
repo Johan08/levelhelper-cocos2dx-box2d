@@ -34,6 +34,8 @@ public:
 
     b2Fixture* box2dFixture(){return m_box2dFixture;}
     
+    static bool isLHFixture(CCObject* obj);
+    
 private:
     std::string fixtureName;
     int fixtureID;

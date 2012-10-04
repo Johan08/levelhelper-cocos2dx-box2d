@@ -365,6 +365,11 @@ public:
     void makeKinematic();
     void makeNoPhysics();
     
+    void setSensor(bool val, const std::string fixtureName); //makes only the fixture with this name a sensor
+    void setSensor(bool val, int fixtureID); //makes all the fixtures with the id sensors
+    void setSensor(bool val); //makes the entire body a sensor
+
+    
     bool hasContacts();
     CCArray* contactSprites();
     CCArray* contactBeziers();

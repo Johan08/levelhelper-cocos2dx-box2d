@@ -554,7 +554,9 @@ LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name,
                 LHSprite* spr =  (*methods.first)(spriteInfo);
 
                 if(spr){
+                    LevelHelperLoader::setTouchDispatcherForSpriteWithTag(spr, spr->getTag());
                     spr->postInit();
+
                     if(parent)
                         parent->addChild(spr, spr->getZOrder());
                 }
@@ -587,6 +589,7 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithUniqueName(const std::string& 
                     LHSprite* sprite = (*methods.second)(spriteInfo, batch);
                     if(sprite){
                         batch->addChild(sprite, sprite->getZOrder());
+                        LevelHelperLoader::setTouchDispatcherForSpriteWithTag(sprite, sprite->getTag());
                         sprite->postInit();
                     }
                     return sprite;
@@ -649,6 +652,8 @@ LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
                 
         if(sprite){
             sprite->setTag(tag);
+            LevelHelperLoader::setTouchDispatcherForSpriteWithTag(sprite, sprite->getTag());
+            
             if(parent){
                 parent->addChild(sprite);
             }
@@ -708,6 +713,7 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
         
             if(sprite){
                 sprite->setTag(tag);
+                LevelHelperLoader::setTouchDispatcherForSpriteWithTag(sprite, sprite->getTag());
                 batch->addChild(sprite, sprite->getZOrder());
                 sprite->postInit();
             }
@@ -1400,11 +1406,17 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
     LevelHelperLoader::setMeterRatio(LHSettings::sharedInstance()->lhPtmRatio()*PTM_conversion);
     
     
-    if(LHSettings::sharedInstance()->isIpad() ||
-       LHSettings::sharedInstance()->isIphone5())
+    if(LHSettings::sharedInstance()->isIpad())
     {
         if(!LHSettings::sharedInstance()->getStretchArt()){
-            LevelHelperLoader::setMeterRatio(32.0f*2.0f);         
+            LevelHelperLoader::setMeterRatio(64.0f);
+        }
+    }
+    
+    if(LHSettings::sharedInstance()->isIphone5())
+    {
+        if(!LHSettings::sharedInstance()->getStretchArt()){
+            LevelHelperLoader::setMeterRatio(32.0f);
         }
     }
     

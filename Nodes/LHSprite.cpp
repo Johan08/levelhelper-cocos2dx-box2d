@@ -642,17 +642,9 @@ void LHSprite::prepareAnimationNamed(const std::string& animName, const std::str
 //    {
         if(textureFile != "")
         {
-//#if COCOS2D_VERSION >= 0x00020000
-//            const char* filePath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(textureFile.c_str());
-//#else
             std::string filePath = LHSettings::sharedInstance()->imagePath(textureFile);
-            
-            //const char* filePath = CCFileUtils::fullPathFromRelativePath(textureFile.c_str());
-//#endif
-    
-            
-//            if(filePath){
-                CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath.c_str());
+
+            CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath.c_str());
                 
                 if(newTexture){
                     //if sprite is render by a batch node we need to remove if from the batch and 
@@ -1770,6 +1762,53 @@ void LHSprite::makeNoPhysics(){
         return;
     
     this->removeBodyFromWorld();
+}
+
+void LHSprite::setSensor(bool val, const std::string fixtureName){
+   
+    if(body == NULL)return;
+    
+    b2Fixture* fix = body->GetFixtureList();
+    
+    while (fix) {
+        LHFixture* lhFix = (LHFixture*)(fix->GetUserData());
+        if(LHFixture::isLHFixture(lhFix))
+        {
+            if(lhFix->getFixtureName() == fixtureName){
+                fix->SetSensor(val);
+                return;
+            }
+        }
+        fix = fix->GetNext();
+    }
+}
+
+void LHSprite::setSensor(bool val, int fixtureID){
+    
+    if(body == NULL)return;
+    
+    b2Fixture* fix = body->GetFixtureList();
+    
+    while (fix) {
+        LHFixture* lhFix = (LHFixture*)(fix->GetUserData());
+        
+        if(LHFixture::isLHFixture(lhFix))
+        {
+            if(lhFix->getFixtureID() == fixtureID){
+                fix->SetSensor(val);
+            }
+        }
+        fix = fix->GetNext();
+    }
+}
+
+void LHSprite::setSensor(bool val){
+    if(body == NULL)return;
+    b2Fixture* fix = body->GetFixtureList();
+    while (fix) {
+        fix->SetSensor(val);
+        fix = fix->GetNext();
+    }
 }
 
 bool LHSprite::hasContacts(){
