@@ -220,6 +220,15 @@ LHFixture* LHFixture::fixtureWithDictionary(LHDictionary* dictionary, b2Body* bo
     CC_SAFE_DELETE(pobNode);
 	return NULL;
 }
+
+bool LHFixture::isLHFixture(CCObject* obj){
+    
+    if( 0 != dynamic_cast<LHFixture*>(obj))
+        return true;
+    
+    return false;
+}
+
 //------------------------------------------------------------------------------
 LHFixture::~LHFixture()
 {

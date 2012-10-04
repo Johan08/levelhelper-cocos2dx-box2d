@@ -155,6 +155,8 @@ bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     
     setTag(textureDict->intForKey("Tag"));
     setVertexZ(textureDict->intForKey("ZOrder"));
+    
+//    setZOrder(textureDict->intForKey("ZOrder"));
 
     std::string img = textureDict->stringForKey("ImageFile");
     imageSize = CCSizeZero;
@@ -239,7 +241,9 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 {
 //    float scale = CCDirector::sharedDirector()->getContentScaleFactor();
     
-	CCPoint convert = LHSettings::sharedInstance()->convertRatio();    
+	CCPoint convert = LHSettings::sharedInstance()->convertRatio();
+    
+    CCLog("CONVERT %f %f", convert.x, convert.y);
     if(NULL != fixtures)
     {
         for(int i = 0; i < fixtures->count(); ++i)
@@ -252,13 +256,16 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
             {
                 CCPoint point = fix->pointAtIndex(j);
 			
-                CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
-            
-                point.x = point.x* convert.x;
-                point.y = winSize.height - point.y*convert.y;
-			
-                point.x += pos_offset.x;
-                point.y -= pos_offset.y;
+                point = LHSettings::sharedInstance()->transformedPointToCocos2d(point);
+                
+//                CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
+//            
+//                CCLog("POS OFFSET %f %f", pos_offset.x, pos_offset.y);
+//                point.x = point.x* convert.x;
+//                point.y = winSize.height - point.y*convert.y;
+//			
+//                point.x += pos_offset.x;
+//                point.y -= pos_offset.y;
 
                 triagle.push_back(point);
             }
@@ -298,17 +305,19 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 					
 					if(!firstPt)
 					{
-						CCPoint pt1 = CCPointMake(prevPoint.x*convert.x, 
-												  winSize.height - prevPoint.y*convert.y);
-						CCPoint pt2 = CCPointMake(vPoint.x*convert.x, 
-												  winSize.height - vPoint.y*convert.y);
-						
-                        
-                        pt1.x += pos_offset.x;
-                        pt1.y -= pos_offset.y;
-                        
-                        pt2.x += pos_offset.x;
-                        pt2.y -= pos_offset.y;
+                        CCPoint pt1 = LHSettings::sharedInstance()->transformedPointToCocos2d(prevPoint);
+                        CCPoint pt2 = LHSettings::sharedInstance()->transformedPointToCocos2d(vPoint);
+//						CCPoint pt1 = CCPointMake(prevPoint.x*convert.x, 
+//												  winSize.height - prevPoint.y*convert.y);
+//						CCPoint pt2 = CCPointMake(vPoint.x*convert.x, 
+//												  winSize.height - vPoint.y*convert.y);
+//						
+//                        
+//                        pt1.x += pos_offset.x;
+//                        pt1.y -= pos_offset.y;
+//                        
+//                        pt2.x += pos_offset.x;
+//                        pt2.y -= pos_offset.y;
                         
                         linesHolder.push_back(pt1);
                         linesHolder.push_back(pt2);
@@ -321,17 +330,20 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 			else
 			{
 				
-				CCPoint pos1 = CCPointMake(startPt.x*convert.x, 
-										   winSize.height - startPt.y*convert.y);
-				CCPoint pos2 = CCPointMake(endPt.x*convert.x, 
-										   winSize.height - endPt.y*convert.y);
+                CCPoint pos1 = LHSettings::sharedInstance()->transformedPointToCocos2d(startPt);
+                CCPoint pos2 = LHSettings::sharedInstance()->transformedPointToCocos2d(endPt);
+
+//				CCPoint pos1 = CCPointMake(startPt.x*convert.x,
+//										   winSize.height - startPt.y*convert.y);
+//				CCPoint pos2 = CCPointMake(endPt.x*convert.x, 
+//										   winSize.height - endPt.y*convert.y);
 				
                 
-                pos1.x += pos_offset.x;
-                pos1.y -= pos_offset.y;
-                
-                pos2.x += pos_offset.x;
-                pos2.y -= pos_offset.y;
+//                pos1.x += pos_offset.x;
+//                pos1.y -= pos_offset.y;
+//                
+//                pos2.x += pos_offset.x;
+//                pos2.y -= pos_offset.y;
                 
                 linesHolder.push_back(pos1);
                 linesHolder.push_back(pos2);				

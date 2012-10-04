@@ -340,7 +340,7 @@ const std::string LHSettings::imagePath(const std::string& image){
 
 bool LHSettings::isIpad(void){
         
-    CCSize wSize = CCDirector::sharedDirector()->getWinSizeInPixels();
+    CCSize wSize = CCDirector::sharedDirector()->getWinSize();
     
     if((wSize.width >= 1024 || wSize.width >= 768) &&
        (wSize.height >= 1024 || wSize.height >= 768))
@@ -354,6 +354,7 @@ bool LHSettings::isIpad(void){
 bool LHSettings::isIphone5(void){
     
     CCSize wSize = CCDirector::sharedDirector()->getWinSizeInPixels();
+    
     if(wSize.width == 1136 ||
        wSize.height == 1136 ||
        wSize.width == 568 || //may be reported wrong
@@ -413,15 +414,17 @@ void LHSettings::setConvertRatio(CCPoint val){
             {
                 m_convertRatio.x = 1.0f;
                 m_convertRatio.y = 1.0f;
-                
-                if(CCDirector::sharedDirector()->getWinSize().width == 1136.0f)
+            
+                if(CCDirector::sharedDirector()->getWinSizeInPixels().width == 1136.0f)
                 {
-                    m_possitionOffset.x = 88.0f;
+                    CCLog("POSITION OFFSET ON X");
+                    m_possitionOffset.x = 88.0f;//88.0f;
                     m_possitionOffset.y = 0.0f;
                 }
-                else {
+                else {//if(CCDirector::sharedDirector()->getWinSize().height == 1136.0f) {
+                    CCLog("POSITION OFFSET ON Y");
                     m_possitionOffset.x = 0.0f;
-                    m_possitionOffset.y = 88.0f;
+                    m_possitionOffset.y = 88.0f;//88.0f;
                 }
                 
             }

@@ -50,21 +50,33 @@ bool LHAnimationFrameInfo::initWithDictionary(LHDictionary* dictionary, LHSprite
     rect = LHSettings::sharedInstance()->transformedTextureRect(rect, sprite->getImageFile());
     
     spriteFrameOffset = dictionary->pointForKey("TextureOffset");
+    spriteFrameOffset.x *= CC_CONTENT_SCALE_FACTOR();
+    spriteFrameOffset.y *= CC_CONTENT_SCALE_FACTOR();
+
+    if(LHSettings::sharedInstance()->isHDImage(sprite->getImageFile())){
+        spriteFrameOffset.x *= 2.0f;
+        spriteFrameOffset.y *= 2.0f;
+    }
+
     
     CCPoint tempOffset = spriteFrameOffset;
     
     tempOffset.x += offset.x;
     tempOffset.y -= offset.y;
     
-    if(!LHSettings::sharedInstance()->isHDImage(sprite->getImageFile())){
-        tempOffset.x /= 2.0f;
-        tempOffset.y /= 2.0f;
-    }
     offset = tempOffset;
     
     rectIsRotated   = dictionary->boolForKey("IsRotated");
+
     spriteFrameSize = dictionary->sizeForKey("SpriteSize");
+    spriteFrameSize.width *= CC_CONTENT_SCALE_FACTOR();
+    spriteFrameSize.height*= CC_CONTENT_SCALE_FACTOR();
     
+    if(LHSettings::sharedInstance()->isHDImage(sprite->getImageFile())){
+        spriteFrameSize.width *= 2.0f;
+        spriteFrameSize.height*= 2.0f;
+    }
+
     return true;
 }
 //------------------------------------------------------------------------------
@@ -150,18 +162,6 @@ LHAnimationNode::LHAnimationNode(LHDictionary* dictionary, LHSprite* spr, std::s
     paused = true;
 }
 
-//LHAnimationNode* LHAnimationNode::animationWithDictionary(LHDictionary* dic, LHSprite* sprite){
-//    
-//    LHAnimationNode *pobNode = new LHAnimationNode();
-//	if (pobNode && pobNode->initWithDictionary(dic, sprite))
-//    {
-//	    pobNode->autorelease();
-//        return pobNode;
-//    }
-//    CC_SAFE_DELETE(pobNode);
-//	return NULL;
-//}
-
 void LHAnimationNode::setActiveFrameTexture()
 {
     if(NULL == activeFrame) return;
@@ -171,7 +171,7 @@ void LHAnimationNode::setActiveFrameTexture()
                                                    activeFrame->getRect(),
                                                    activeFrame->getRectIsRotated(),
                                                    activeFrame->getOffset(),
-                                                   sprite->getContentSize());        
+                                                   activeFrame->getSpriteFrameSize());
 #else
     CCSpriteFrame* sprFrame = CCSpriteFrame::frameWithTexture(sprite->getTexture(), 
                                                               activeFrame->getRect(),
@@ -190,7 +190,7 @@ void LHAnimationNode::update(float dt)
         return;
     }
     
-    if(paused)
+    if(paused || LHSettings::sharedInstance()->levelPaused())
         return;
     
     elapsedFrameTime += dt;

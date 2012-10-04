@@ -144,8 +144,18 @@ void LHJoint::createBox2dJointFromDictionary(LHDictionary* dictionary)
     CCPoint sprPosA = sprA->getPosition();
     CCPoint sprPosB = sprB->getPosition();
     
-    CCSize scaleA   = sprA->getRealScale();
-    CCSize scaleB   = sprB->getRealScale();
+//    CCSize scaleA   = sprA->getRealScale();
+//    CCSize scaleB   = sprB->getRealScale();
+    
+    CCSize scaleA   = CCSizeMake(sprA->getScaleX(), sprA->getScaleY());//[sprA realScale];
+    CCSize scaleB   = CCSizeMake(sprB->getScaleX(), sprB->getScaleY());//[sprB realScale];
+   
+    scaleA = LHSettings::sharedInstance()->transformedSize(scaleA, sprA->getImageFile());
+    scaleB = LHSettings::sharedInstance()->transformedSize(scaleB, sprB->getImageFile());
+    
+//    scaleA = [[LHSettings sharedInstance] transformedSize:scaleA forImage:[sprA imageFile]];
+//    scaleB = [[LHSettings sharedInstance] transformedSize:scaleB forImage:[sprB imageFile]];
+    
     
 	if(NULL == bodyA || NULL == bodyB ) return;
 	
