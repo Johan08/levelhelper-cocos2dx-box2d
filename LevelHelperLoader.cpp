@@ -41,6 +41,8 @@ void LevelHelperLoader::initObjects(void)
     contactNode = NULL;
     wb = NULL;
     
+    m_isPaused = false;
+    
 	loadingProgressId= NULL;
 	loadingProgressSel= NULL;
 
@@ -354,14 +356,12 @@ CCArray* LevelHelperLoader::jointsWithTag(enum LevelHelper_TAG tag){
 #if COCOS2D_VERSION >= 0x00020000
     
     CCArray* keys = jointsInLevel.allKeys();
-    CCArray* array = CCArray::create();
-    if(keys){
-        for(int i = 0; i < (int)keys->count(); ++i){
-            LHJoint* jt = (LHJoint*)jointsInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-            
-            if(jt && jt->getTag() == tag){
-                array->addObject(jt);
-            }
+    CCArray* array = CCArray::create();    
+    for(int i = 0; i < (int)keys->count(); ++i){
+        LHJoint* jt = (LHJoint*)jointsInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+        
+        if(jt && jt->getTag() == tag){
+            array->addObject(jt);
         }
     }
     return array;
@@ -402,11 +402,34 @@ bool LevelHelperLoader::isPaused(void){
 void LevelHelperLoader::setPaused(bool value){
     LHSettings::sharedInstance()->setLevelPaused(value);    
 }
+
+
+bool LevelHelperLoader::getIsPaused(void){
+    return m_isPaused;
+}
+void LevelHelperLoader::setIsPaused(bool value){
+    
+    m_isPaused = value;
+    
+    CCArray* allSprites = this->allSprites();
+    
+    CCArray* allParallaxes = this->allParallaxes();
+    
+    for(int i = 0; i < allSprites->count(); ++i){
+        
+        LHSprite* spr = (LHSprite*)allSprites->objectAtIndex(i);
+        spr->pauseAnimation();
+        spr->pausePathMovement();
+    }
+    
+    for(int i = 0; i < allParallaxes->count(); ++i){
+        LHParallaxNode* node = (LHParallaxNode*)allParallaxes->objectAtIndex(i);
+        node->setPaused(value);
+    }
+}
+
 ////------------------------------------------------------------------------------
 void LevelHelperLoader::dontStretchArtOnIpad(){
-    LHSettings::sharedInstance()->setStretchArt(false);
-}
-void LevelHelperLoader::dontStretchArt(void){
     LHSettings::sharedInstance()->setStretchArt(false);
 }
 //------------------------------------------------------------------------------
@@ -536,8 +559,6 @@ LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name)
 //method will create custom sprite if one is register for the tag of this sprite
 LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name, CCNode* parent){
     
-    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
-    
     for(int i = 0; i< lhNodes->count(); ++i){
         
         LHDictionary* dictionary = lhNodes->dictAtIndex(i);
@@ -554,9 +575,7 @@ LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name,
                 LHSprite* spr =  (*methods.first)(spriteInfo);
 
                 if(spr){
-                    LevelHelperLoader::setTouchDispatcherForSpriteWithTag(spr, spr->getTag());
                     spr->postInit();
-
                     if(parent)
                         parent->addChild(spr, spr->getZOrder());
                 }
@@ -572,7 +591,6 @@ LHSprite* LevelHelperLoader::createSpriteWithUniqueName(const std::string& name,
 //method will create custom sprite if one is register for the tag of this sprite
 LHSprite* LevelHelperLoader::createBatchSpriteWithUniqueName(const std::string& name){
 
-    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     for(int i = 0; i< lhNodes->count(); ++i){
         LHDictionary* dictionary = lhNodes->dictAtIndex(i);
         LHDictionary* spriteInfo = dictionaryInfoForSpriteNodeNamed(name,dictionary);
@@ -589,7 +607,6 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithUniqueName(const std::string& 
                     LHSprite* sprite = (*methods.second)(spriteInfo, batch);
                     if(sprite){
                         batch->addChild(sprite, sprite->getZOrder());
-                        LevelHelperLoader::setTouchDispatcherForSpriteWithTag(sprite, sprite->getTag());
                         sprite->postInit();
                     }
                     return sprite;
@@ -613,7 +630,6 @@ LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
                                                   const std::string& shSheetName,
                                                   const std::string& shFileNoExt,
                                                   CCNode* parent){
-    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     LHSprite* sprite = LHSprite::spriteWithName(name, shSheetName, shFileNoExt);
     if(sprite){
         if(parent)
@@ -640,7 +656,6 @@ LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
                                                   LevelHelper_TAG tag,
                                                   CCNode* parent){
 
-    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
                                                                                             shSheetName,
                                                                                             shFileNoExt);
@@ -652,8 +667,6 @@ LHSprite* LevelHelperLoader::createSpriteWithName(const std::string& name,
                 
         if(sprite){
             sprite->setTag(tag);
-            LevelHelperLoader::setTouchDispatcherForSpriteWithTag(sprite, sprite->getTag());
-            
             if(parent){
                 parent->addChild(sprite);
             }
@@ -668,7 +681,6 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
                                                        const std::string& shSheetName,
                                                        const std::string& shFileNoExt){
     
-    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
     LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
                                                                                             shSheetName,
                                                                                             shFileNoExt);
@@ -696,7 +708,7 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
                                                        const std::string& shFileNoExt,
                                                        LevelHelper_TAG tag){
   
-    LHSettings::sharedInstance()->setActiveBox2dWorld(box2dWorld);
+    
     LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(name,
                                                                                             shSheetName,
                                                                                             shFileNoExt);
@@ -713,7 +725,6 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
         
             if(sprite){
                 sprite->setTag(tag);
-                LevelHelperLoader::setTouchDispatcherForSpriteWithTag(sprite, sprite->getTag());
                 batch->addChild(sprite, sprite->getZOrder());
                 sprite->postInit();
             }
@@ -1382,20 +1393,17 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
     LHDictionary* scenePref = dictionary->dictForKey("ScenePreference");
     safeFrame       = scenePref->pointForKey("SafeFrame");
     gameWorldRect   = scenePref->rectForKey("GameWorld");
-    
-    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
-    if(safeFrame.x == 0 || safeFrame.y == 0)
-        safeFrame = CCPointMake(winSize.width, winSize.height);
-
-    
+        
     LHSettings::sharedInstance()->setHDSuffix(scenePref->stringForKey("HDSuffix"));
     LHSettings::sharedInstance()->setHD2xSuffix(scenePref->stringForKey("2HDSuffix"));
     LHSettings::sharedInstance()->setDevice(scenePref->intForKey("Device"));
-    
+
         
     CCRect color = scenePref->rectForKey("BackgroundColor");
     glClearColor(color.origin.x, color.origin.y, color.size.width, 1);
-            
+        
+    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
+    
     LHSettings::sharedInstance()->setConvertRatio(CCPointMake(winSize.width/safeFrame.x,
                                                                  winSize.height/safeFrame.y));
     
@@ -1406,17 +1414,9 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
     LevelHelperLoader::setMeterRatio(LHSettings::sharedInstance()->lhPtmRatio()*PTM_conversion);
     
     
-    if(LHSettings::sharedInstance()->isIpad())
-    {
+    if(LHSettings::sharedInstance()->isIpad()){
         if(!LHSettings::sharedInstance()->getStretchArt()){
-            LevelHelperLoader::setMeterRatio(64.0f);
-        }
-    }
-    
-    if(LHSettings::sharedInstance()->isIphone5())
-    {
-        if(!LHSettings::sharedInstance()->getStretchArt()){
-            LevelHelperLoader::setMeterRatio(32.0f);
+            LevelHelperLoader::setMeterRatio(32.0f*2.0f);         
         }
     }
     

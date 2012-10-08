@@ -33,8 +33,6 @@
 #ifndef __LEVEL_HELPER_LOADER__
 #define __LEVEL_HELPER_LOADER__
 
-
-#include "lhConfig.h"
 #include "cocos2d.h"
 #include "cocoa/CCNS.h"
 #include "Box2D/Box2D.h"
@@ -105,6 +103,7 @@ private:
     CCObject* loadingProgressId;
     SEL_CallFuncFloat loadingProgressSel;
     
+    bool m_isPaused;
 public:
 
     friend class LHSprite;
@@ -163,8 +162,7 @@ public:
     
 //    void addSpritesToLayer(CCLayer* cocosLayer); //NO PHYSICS
     //------------------------------------------------------------------------------
-    LH_DEPRECATED_ATTRIBUTE static void dontStretchArtOnIpad(void);
-    static void dontStretchArt(void);
+    static void dontStretchArtOnIpad(void);
 
     //------------------------------------------------------------------------------
     //PAUSING THE GAME
@@ -173,6 +171,10 @@ public:
     static bool isPaused(void);
     static void setPaused(bool value); //pass true to pause, false to unpause
 
+    //this will pause only the current loader instance and not all the instances like the static methods above
+    bool getIsPaused(void);
+    void setIsPaused(bool value);
+    
     
     //------------------------------------------------------------------------------
     //COLLISION HANDLING
@@ -371,8 +373,6 @@ private:
 };
 
 #endif
-
-
 
 
 
