@@ -638,54 +638,49 @@ void LHSprite::prepareAnimationNamed(const std::string& animName, const std::str
     
     animation = new LHAnimationNode(animDict, this, shScene);
     
-//    if(shSheetName != animSheet)
-//    {
-        if(textureFile != "")
-        {
-            std::string filePath = LHSettings::sharedInstance()->imagePath(textureFile);
+    if(textureFile != "")
+    {
+        std::string filePath = LHSettings::sharedInstance()->imagePath(textureFile);
 
-            CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath.c_str());
-                
-                if(newTexture){
-                    //if sprite is render by a batch node we need to remove if from the batch and 
-                    //move it on the layer that contains the batch
+        CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath.c_str());
+            
+        if(newTexture && newTexture->getName() != this->getTexture()->getName()){
+            //if sprite is render by a batch node we need to remove if from the batch and 
+            //move it on the layer that contains the batch
 #if COCOS2D_VERSION >= 0x00020000
-                    LHBatch* parentBatch = (LHBatch*)getBatchNode();
+            LHBatch* parentBatch = (LHBatch*)getBatchNode();
 #else
-                    LHBatch* parentBatch = (LHBatch*)getSpriteBatchNode();
+            LHBatch* parentBatch = (LHBatch*)getSpriteBatchNode();
 #endif
-                    
-                    if(parentBatch){                       
-                        removeFromParentAndCleanup(false);
-                        
-                        animation->setOldBatch(parentBatch);
-                        //we need to keep the z order so its batch z + sprite z 
-                        if(parentBatch->getParent()){                        
-                            parentBatch->getParent()->addChild(this, parentBatch->getZOrder() + getZOrder());
-                        }
-                        else {
-                            CCLog("ERROR: Sprite is render by batch node, but batch node has no parent.");
-                        }
-                    }   
-                    else {
-                        animation->setOldTexture(getTexture());
-                    }
-                    
-                    setTexture(newTexture);
-                    shSheetName = animSheet;
+            
+            if(parentBatch){                       
+                removeFromParentAndCleanup(false);
+                
+                animation->setOldBatch(parentBatch);
+                //we need to keep the z order so its batch z + sprite z 
+                if(parentBatch->getParent()){                        
+                    parentBatch->getParent()->addChild(this, parentBatch->getZOrder() + getZOrder());
                 }
-//            }
+                else {
+                    CCLog("ERROR: Sprite is render by batch node, but batch node has no parent.");
+                }
+            }   
+            else {
+                animation->setOldTexture(getTexture());
+            }
+            
+            setTexture(newTexture);
+            shSheetName = animSheet;
         }
-        else{
-            if(animation)
-                delete animation;
+    }
+    else{
+        if(animation)
+            delete animation;
 
-            CCLog("ERROR: Image file %s could not be found. Please add it in the resource folder.", textureFile.c_str());
-        }
-//    }
+        CCLog("ERROR: Image file %s could not be found. Please add it in the resource folder.", textureFile.c_str());
+    }
     
     if(animation){
-//        animation->setOldRect(originalRect);
         animation->prepare();
     }
     prepareAnimInProgress = false;
