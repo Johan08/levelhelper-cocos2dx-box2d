@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHSprite.h"
-
+#include "lhConfig.h"
 #include "LHAnimationNode.h"
 
 #include "../LevelHelperLoader.h"
@@ -644,41 +644,41 @@ void LHSprite::prepareAnimationNamed(const std::string& animName, const std::str
 
         CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath.c_str());
             
-        if(newTexture && newTexture->getName() != this->getTexture()->getName()){
-            //if sprite is render by a batch node we need to remove if from the batch and 
-            //move it on the layer that contains the batch
+            if(newTexture && newTexture->getName() != this->getTexture()->getName()){
+                    //if sprite is render by a batch node we need to remove if from the batch and
+                    //move it on the layer that contains the batch
 #if COCOS2D_VERSION >= 0x00020000
-            LHBatch* parentBatch = (LHBatch*)getBatchNode();
+                LHBatch* parentBatch = (LHBatch*)getBatchNode();
 #else
-            LHBatch* parentBatch = (LHBatch*)getSpriteBatchNode();
+                LHBatch* parentBatch = (LHBatch*)getSpriteBatchNode();
 #endif
-            
-            if(parentBatch){                       
-                removeFromParentAndCleanup(false);
-                
-                animation->setOldBatch(parentBatch);
-                //we need to keep the z order so its batch z + sprite z 
-                if(parentBatch->getParent()){                        
-                    parentBatch->getParent()->addChild(this, parentBatch->getZOrder() + getZOrder());
-                }
+                    
+                if(parentBatch){
+                    removeFromParentAndCleanup(false);
+                    
+                    animation->setOldBatch(parentBatch);
+                    //we need to keep the z order so its batch z + sprite z 
+                    if(parentBatch->getParent()){                        
+                        parentBatch->getParent()->addChild(this, parentBatch->getZOrder() + getZOrder());
+                    }
+                    else {
+                        CCLog("ERROR: Sprite is render by batch node, but batch node has no parent.");
+                    }
+                }   
                 else {
-                    CCLog("ERROR: Sprite is render by batch node, but batch node has no parent.");
+                    animation->setOldTexture(getTexture());
                 }
-            }   
-            else {
-                animation->setOldTexture(getTexture());
+                
+                setTexture(newTexture);
+                shSheetName = animSheet;
             }
-            
-            setTexture(newTexture);
-            shSheetName = animSheet;
         }
-    }
-    else{
-        if(animation)
-            delete animation;
+        else{
+            if(animation)
+                delete animation;
 
-        CCLog("ERROR: Image file %s could not be found. Please add it in the resource folder.", textureFile.c_str());
-    }
+            CCLog("ERROR: Image file %s could not be found. Please add it in the resource folder.", textureFile.c_str());
+        }
     
     if(animation){
         animation->prepare();
@@ -1472,7 +1472,15 @@ bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint touchPoint =     pTouch->getLocationInView();
 #else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
+    
 #endif
 
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -1515,7 +1523,15 @@ void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint touchPoint =     pTouch->getLocationInView();
 #else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
+
 #endif
 
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -1524,7 +1540,16 @@ void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint prevLocation = pTouch->getPreviousLocationInView();
 #else
-    CCPoint prevLocation = pTouch->previousLocationInView();
+    
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
+    CCPoint prevLocation =     pTouch->previousLocationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint prevLocation =     pTouch->previousLocationInView(pTouch->view());
+#endif
+    
 #endif
 
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
@@ -1563,7 +1588,15 @@ void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint touchPoint =     pTouch->getLocationInView();
 #else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
+
 #endif
     
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -1571,7 +1604,15 @@ void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint prevLocation = pTouch->getPreviousLocationInView();
 #else
-    CCPoint prevLocation = pTouch->previousLocationInView();
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
+    CCPoint prevLocation =     pTouch->previousLocationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint prevLocation =     pTouch->previousLocationInView(pTouch->view());
+#endif
+    
 #endif
 
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);

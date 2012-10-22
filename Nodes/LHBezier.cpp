@@ -27,7 +27,7 @@
 #include "LHPathNode.h"
 #include "LHSettings.h"
 #include "LHSprite.h"
-
+#include "lhConfig.h"
 
 typedef struct _ccV3F_C4B_T2F_Triangle
 {
@@ -288,8 +288,8 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 			CCPoint endPt       = curvDict->pointForKey("EndPoint");
 			CCPoint startPt     = curvDict->pointForKey("StartPoint");
 			
-            CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
-                        
+//            CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
+            
 			if(!isLine)
 			{
 				CCPoint prevPoint;
@@ -1014,7 +1014,16 @@ bool LHBezier::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint touchPoint =     pTouch->getLocationInView();
 #else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
+    
+    
 #endif
     
     
@@ -1059,7 +1068,14 @@ void LHBezier::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint touchPoint =     pTouch->getLocationInView();
 #else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
 #endif
 
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -1068,7 +1084,15 @@ void LHBezier::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint prevLocation = pTouch->getPreviousLocationInView();
 #else
-    CCPoint prevLocation = pTouch->previousLocationInView();
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
+    CCPoint prevLocation =     pTouch->previousLocationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint prevLocation =     pTouch->previousLocationInView(pTouch->view());
+#endif
+    
 #endif
 
     
@@ -1112,7 +1136,15 @@ void LHBezier::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint touchPoint =     pTouch->getLocationInView();
 #else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
+
 #endif
     
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
@@ -1121,7 +1153,16 @@ void LHBezier::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint prevLocation = pTouch->getPreviousLocationInView();
 #else
-    CCPoint prevLocation = pTouch->previousLocationInView();
+    
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
+    CCPoint prevLocation =     pTouch->previousLocationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint prevLocation =     pTouch->previousLocationInView(pTouch->view());
+#endif
+    
 #endif
 
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
