@@ -14,8 +14,28 @@
 #include "../LevelHelperLoader.h"
 #include "../Utilities/LHDictionary.h"
 
+#include "../CustomClasses/LHAbstractClass.h"
+#include "../CustomClasses/LHCustomClasses.h"
 static int untitledLayersCount = 0;
 
+void LHLayer::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
+    userCustomInfo = NULL;
+    
+    if(!dictionary)return;
+    
+    std::string className = dictionary->stringForKey("ClassName");
+    
+    userCustomInfo = LHCustomClassesMgr::customClassInstanceWithName(className);
+    
+    if(!userCustomInfo) return;
+    
+    LHDictionary* dict = dictionary->dictForKey("ClassRepresentation");
+    
+    if(dict){
+        //        CCLog("SETTING PROPERTIES FROM DICT");
+        ((LHAbstractClass*)userCustomInfo)->setPropertiesFromDictionary(dict);
+    }
+}
 bool LHLayer::initWithDictionary(LHDictionary* dictionary){
     
     isMainLayer = false;
@@ -30,6 +50,8 @@ bool LHLayer::initWithDictionary(LHDictionary* dictionary){
     setTag(dictionary->intForKey("Tag"));
     m_nZOrder = dictionary->intForKey("ZOrder");
     
+    loadUserCustomInfoFromDictionary(dictionary->dictForKey("CustomClassInfo"));
+    
     LHArray* childrenInfo = dictionary->arrayForKey("Children");
     for(int i = 0; i< childrenInfo->count(); ++i){
         LHDictionary* childDict = childrenInfo->dictAtIndex(i);
@@ -41,6 +63,10 @@ bool LHLayer::initWithDictionary(LHDictionary* dictionary){
 //------------------------------------------------------------------------------
 LHLayer::~LHLayer(void){
 //   printf("LH Layer Dealloc %s\n", uniqueName.c_str());
+    if(userCustomInfo){
+        delete userCustomInfo;
+        userCustomInfo = NULL;
+    }
 }
 //------------------------------------------------------------------------------
 LHLayer::LHLayer(){
@@ -85,6 +111,16 @@ bool LHLayer::isLHLayer(CCNode* node){
         return true;
     return false;
 }
+std::string LHLayer::userInfoClassName(){
+    if(userCustomInfo)
+        return ((LHAbstractClass*)userCustomInfo)->className();
+    return "No Class";
+}
+//------------------------------------------------------------------------------
+void* LHLayer::userInfo(){
+    return userCustomInfo;
+}
+
 //------------------------------------------------------------------------------
 LHLayer*    LHLayer::layerWithUniqueName(const std::string& name){
     CCArray* children = getChildren();

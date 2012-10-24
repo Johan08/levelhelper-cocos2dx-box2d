@@ -39,6 +39,7 @@ using namespace cocos2d;
 class LHSprite;
 class LHPathNode;
 class LevelHelperLoader;
+class LHAbstractClass;
 
 typedef struct __LHBezierBlendingInfo{
   
@@ -98,6 +99,7 @@ protected:
     LHObserverPair* tagTouchMovedObserver;
     LHObserverPair* tagTouchEndedObserver;
     
+     LHAbstractClass* userCustomInfo;
 public:
     
     const std::vector<CCPoint>& getPathPoints(){return pathPoints;}
@@ -141,6 +143,25 @@ public:
     virtual void draw(void);
     
     
+    //USER DATA
+    //--------------------------------------------------------------------------
+    //will return "No Class" if no class is defined
+    //will return the class name if a class is assigned to this sprite
+    std::string userInfoClassName();
+    
+    //this will return an instance of the class defined in LH under Custom Class Properties
+    //check for NULL to see if you have any info
+    //use the class properties to read all your info
+    //e.g MyClass* myInfo = (MyClass*)sprite->userInfo();  if(myInfo){ int life = myInfo.life); }
+    
+    //use the class properties to set new (other then the one set in LH) values
+    //e.g MyClass* myInfo = (MyClass*)sprite->userInfo(); if(myInfo){ myInfo.life = 40; } )
+    void* userInfo();
+    
+
+    
+    
+    
     //TOUCH METHODS
     //------------------------------------------------------------------------------
     //Touches are detected only on bezier tile shapes.
@@ -181,6 +202,9 @@ public:
     
 //    virtual void visit();
 private:
+    
+    
+    void loadUserCustomInfoFromDictionary(LHDictionary* dictionary);
     
     static CCPoint pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, float t);
     

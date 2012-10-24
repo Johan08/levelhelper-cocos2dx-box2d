@@ -156,12 +156,16 @@ public:
     
     virtual ~LHSettings(void);
     
+    void setUserOffset(CCPoint off){m_userOffset = off;}
+    CCPoint getUserOffset(){return m_userOffset;}
 private:
     
     int device;//0 iphone only; 1 ipad only; 2 universal; 3 mac - dont do any transformations
     std::string hdSuffix;
     std::string hd2xSuffix;
 
+    CCPoint m_userOffset;
+    
     void removeMarkedNode(CCObject* node);
     
     LHSettings();

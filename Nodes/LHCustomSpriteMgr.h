@@ -46,7 +46,16 @@ private:
     
     std::map<int, lh_spriteCreationMethods > classesDictionary;    
 
+    lh_spriteCreationMethods baseSpriteClass;
 public:
+    
+    
+    //when specified the base class of all sprites will be this
+    //base class needs to be a subclass of LHSprite
+    void registerBaseSpriteClass(pt2FileSprite fSprite,
+                                 pt2BatchSprite bSprite);
+    lh_spriteCreationMethods baseClass();
+
     
     void registerCustomSpriteClassForTag(pt2FileSprite fSprite, 
                                          pt2BatchSprite bSprite, 

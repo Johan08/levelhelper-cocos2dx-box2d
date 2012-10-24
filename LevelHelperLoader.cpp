@@ -413,6 +413,9 @@ void LevelHelperLoader::dontStretchArtOnIpad(){
 void LevelHelperLoader::dontStretchArt(void){
     LHSettings::sharedInstance()->setStretchArt(false);
 }
+void LevelHelperLoader::loadLevelsWithOffset(CCPoint offset){
+    LHSettings::sharedInstance()->setUserOffset(offset);
+}
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void LevelHelperLoader::useLevelHelperCollisionHandling(void)
@@ -746,36 +749,33 @@ CCRect LevelHelperLoader::gameWorldSize(void)
     
     return ws;
 }
-////------------------------------------------------------------------------------
+////----------------------------------------------------------------------------
+void LevelHelperLoader::removeAllPhysics()
+{
+    CCArray* allSprites = this->allSprites();    
+    for(int i = 0; i < allSprites->count(); ++i)
+    {
+        LHSprite* spr = (LHSprite*)allSprites->objectAtIndex(i);
+        spr->makeNoPhysics();
+    }
+    
+    LHCuttingEngineMgr::sharedInstance()->destroyAllPrevioslyCutSprites();
+    jointsInLevel.removeAllObjects();
+    physicBoundariesInLevel.removeAllObjects();
+    
+    if(NULL != contactNode){
+        contactNode->removeFromParentAndCleanup(true);
+        contactNode = NULL;
+    }
+
+}
+
 LevelHelperLoader::~LevelHelperLoader()
 {    
-////    releasePhysicBoundaries();
-////    removeAllBezierNodes();
-////    releaseAllJoints();
-////    releaseAllSprites();
-//    removeAllParallaxes();
-////    releaseAllBatchNodes();
-//    
-////    delete lhSprites;
-//    delete lhJoints;
-//    delete lhParallax;
-////    delete lhBeziers;
-////    delete lhAnims;
-////    delete lhBatchInfo;
-//    
-//    delete wb;
-//    
-//    if(NULL != contactNode){
-//        contactNode->removeFromParentAndCleanup(true);
-//    }
-
-//    CCLog("LH DEALLOC");
-
     delete lhNodes;
     delete lhJoints;
     delete lhParallax;
     delete wb;
-
 
     physicBoundariesInLevel.removeAllObjects();
     
@@ -789,6 +789,7 @@ LevelHelperLoader::~LevelHelperLoader()
 
     if(NULL != contactNode){
         contactNode->removeFromParentAndCleanup(true);
+        contactNode = NULL;
     }
 
 }
