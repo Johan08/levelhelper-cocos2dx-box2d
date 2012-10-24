@@ -18,6 +18,7 @@ class LHSprite;
 class LHBatch;
 class LHBezier;
 class LHDictionary;
+class LHAbstractClass;
 
 class LHLayer : public CCLayer
 {
@@ -52,10 +53,29 @@ public:
     CCArray*    beziersWithTag(int tag);
 
     static bool isLHLayer(CCNode* node);
+
+    //USER DATA
+    //--------------------------------------------------------------------------
+    //will return "No Class" if no class is defined
+    //will return the class name if a class is assigned to this sprite
+    std::string userInfoClassName();
+    
+    //this will return an instance of the class defined in LH under Custom Class Properties
+    //check for NULL to see if you have any info
+    //use the class properties to read all your info
+    //e.g MyClass* myInfo = (MyClass*)sprite->userInfo();  if(myInfo){ int life = myInfo.life); }
+    
+    //use the class properties to set new (other then the one set in LH) values
+    //e.g MyClass* myInfo = (MyClass*)sprite->userInfo(); if(myInfo){ myInfo.life = 40; } )
+    void* userInfo();
+    
     
     virtual void draw(void);
 private:    
     friend class LevelHelperLoader;
+    
+    LHAbstractClass* userCustomInfo;
+    void loadUserCustomInfoFromDictionary(LHDictionary* dictionary);
     
     bool isMainLayer;
     std::string uniqueName;

@@ -28,6 +28,8 @@
 #include "LHSettings.h"
 #include "LHSprite.h"
 #include "lhConfig.h"
+#include "../CustomClasses/LHAbstractClass.h"
+#include "../CustomClasses/LHCustomClasses.h"
 
 typedef struct _ccV3F_C4B_T2F_Triangle
 {
@@ -80,6 +82,12 @@ LHBezier::~LHBezier(void){
     pathPoints.clear();
 	linesHolder.clear();
     trianglesHolder.clear();
+    
+    
+    if(userCustomInfo){
+        delete userCustomInfo;
+        userCustomInfo = NULL;
+    }
 }
 
 void LHBezier::removeSelf()
@@ -129,6 +137,25 @@ LHBezier::LHBezier(void){
 
     
 //    numberOfBezierNodes++;
+}
+
+void LHBezier::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
+    userCustomInfo = NULL;
+    
+    if(!dictionary)return;
+    
+    std::string className = dictionary->stringForKey("ClassName");
+    
+    userCustomInfo = LHCustomClassesMgr::customClassInstanceWithName(className);
+    
+    if(!userCustomInfo) return;
+    
+    LHDictionary* dict = dictionary->dictForKey("ClassRepresentation");
+    
+    if(dict){
+        //        CCLog("SETTING PROPERTIES FROM DICT");
+        ((LHAbstractClass*)userCustomInfo)->setPropertiesFromDictionary(dict);
+    }
 }
 ////////////////////////////////////////////////////////////////////////////////
 bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
@@ -198,6 +225,10 @@ bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     lineColor   = textureDict->rectForKey("LineColor");
     lineWidth   = textureDict->floatForKey("LineWidth");//*scale;
     
+    
+    loadUserCustomInfoFromDictionary(bezierDict->dictForKey("CustomClassInfo"));
+    
+    
     LHDictionary* physicsDict = bezierDict->dictForKey("PhysicsProperties");
     
     initTileVerticesFromDictionary(textureDict, physicsDict->arrayForKey("TileVertices"));
@@ -258,15 +289,6 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 			
                 point = LHSettings::sharedInstance()->transformedPointToCocos2d(point);
                 
-//                CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
-//            
-//                CCLog("POS OFFSET %f %f", pos_offset.x, pos_offset.y);
-//                point.x = point.x* convert.x;
-//                point.y = winSize.height - point.y*convert.y;
-//			
-//                point.x += pos_offset.x;
-//                point.y -= pos_offset.y;
-
                 triagle.push_back(point);
             }
             trianglesHolder.push_back(triagle);
@@ -307,18 +329,6 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 					{
                         CCPoint pt1 = LHSettings::sharedInstance()->transformedPointToCocos2d(prevPoint);
                         CCPoint pt2 = LHSettings::sharedInstance()->transformedPointToCocos2d(vPoint);
-//						CCPoint pt1 = CCPointMake(prevPoint.x*convert.x, 
-//												  winSize.height - prevPoint.y*convert.y);
-//						CCPoint pt2 = CCPointMake(vPoint.x*convert.x, 
-//												  winSize.height - vPoint.y*convert.y);
-//						
-//                        
-//                        pt1.x += pos_offset.x;
-//                        pt1.y -= pos_offset.y;
-//                        
-//                        pt2.x += pos_offset.x;
-//                        pt2.y -= pos_offset.y;
-                        
                         linesHolder.push_back(pt1);
                         linesHolder.push_back(pt2);
                         
@@ -332,19 +342,6 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 				
                 CCPoint pos1 = LHSettings::sharedInstance()->transformedPointToCocos2d(startPt);
                 CCPoint pos2 = LHSettings::sharedInstance()->transformedPointToCocos2d(endPt);
-
-//				CCPoint pos1 = CCPointMake(startPt.x*convert.x,
-//										   winSize.height - startPt.y*convert.y);
-//				CCPoint pos2 = CCPointMake(endPt.x*convert.x, 
-//										   winSize.height - endPt.y*convert.y);
-				
-                
-//                pos1.x += pos_offset.x;
-//                pos1.y -= pos_offset.y;
-//                
-//                pos2.x += pos_offset.x;
-//                pos2.y -= pos_offset.y;
-                
                 linesHolder.push_back(pos1);
                 linesHolder.push_back(pos2);				
 			}
@@ -380,11 +377,7 @@ void LHBezier::initPathPointsFromDictionary(LHDictionary* bezierDict)
                                                         endPt,
                                                         t);
 				
-                vPoint = ccp(vPoint.x*conv.x, winSize.height - vPoint.y*conv.y);
-                
-                vPoint.x += pos_offset.x;
-                vPoint.y -= pos_offset.y;
-                                
+                vPoint = LHSettings::sharedInstance()->transformedPointToCocos2d(vPoint);
                 pathPoints.push_back(vPoint);
             }
 			
@@ -392,22 +385,13 @@ void LHBezier::initPathPointsFromDictionary(LHDictionary* bezierDict)
         }
         else
         {
-            CCPoint sPoint =  ccp(startPt.x*conv.x, 
-                                  winSize.height - startPt.y*conv.y);
-            
-            sPoint.x += pos_offset.x;
-            sPoint.y -= pos_offset.y;
-            
+            CCPoint sPoint = LHSettings::sharedInstance()->transformedPointToCocos2d(startPt);
             pathPoints.push_back(sPoint);
 
             
             if(i == curvesInShape->count()-1)
             {
-                CCPoint ePoint = ccp(endPt.x*conv.x,
-                                     winSize.height - endPt.y*conv.y);
-                ePoint.x += pos_offset.x;
-                ePoint.y -= pos_offset.y;
-                
+                CCPoint ePoint = LHSettings::sharedInstance()->transformedPointToCocos2d(endPt);
                 pathPoints.push_back(ePoint);
             }
             ++i;            
@@ -907,7 +891,15 @@ int LHBezier::tagForBody(b2Body* body){
     return -1;
 }
 //------------------------------------------------------------------------------
-
+std::string LHBezier::userInfoClassName(){
+    if(userCustomInfo)
+        return ((LHAbstractClass*)userCustomInfo)->className();
+    return "No Class";
+}
+//------------------------------------------------------------------------------
+void* LHBezier::userInfo(){
+    return userCustomInfo;
+}
 
 //------------------------------------------------------------------------------
 bool LHBezier::isTouchedAtPoint(CCPoint point){

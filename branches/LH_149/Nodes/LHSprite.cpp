@@ -532,6 +532,7 @@ bool LHSprite::initWithDictionary(LHDictionary* dictionary){
 }
 //------------------------------------------------------------------------------
 LHSprite* LHSprite::batchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch){
+    
     LHSprite *pobNode = new LHSprite();
 	if (pobNode && pobNode->initBatchSpriteWithDictionary(dictionary, batch))
     {

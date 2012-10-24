@@ -173,11 +173,16 @@ void LHAnimationNode::setActiveFrameTexture()
                                                    activeFrame->getOffset(),
                                                    activeFrame->getSpriteFrameSize());
 #else
+    
+    CCSize contentSize = sprite->getContentSize();
+    contentSize.width *= CC_CONTENT_SCALE_FACTOR();
+    contentSize.height*= CC_CONTENT_SCALE_FACTOR();
+    
     CCSpriteFrame* sprFrame = CCSpriteFrame::frameWithTexture(sprite->getTexture(), 
                                                               activeFrame->getRect(),
                                                               activeFrame->getRectIsRotated(),
                                                               activeFrame->getOffset(),
-                                                              sprite->getContentSize());
+                                                              contentSize);
 #endif
     sprite->setDisplayFrame(sprFrame);    
 }

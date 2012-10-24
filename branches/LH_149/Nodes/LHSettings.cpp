@@ -60,6 +60,7 @@ LHSettings::LHSettings()
 #endif
     allLHMainLayers->retain();
     
+    m_userOffset = CCPointMake(0, 0);
     hdSuffix = "-hd";
     hd2xSuffix = "-ipadhd";
     
@@ -203,6 +204,9 @@ CCPoint LHSettings::transformedPointToCocos2d(CCPoint point){
     
     point.x += pos_offset.x/2.0f;
     point.y += pos_offset.y/2.0f;
+    
+    point.x += m_userOffset.x/2.0f;
+    point.y += m_userOffset.y/2.0f;
     
     point.x *= wbConv.x;
     point.y  = winSize.height - point.y*wbConv.y;

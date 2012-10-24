@@ -35,6 +35,10 @@
 
 #include "LHSettings.h"
 
+
+#include "../CustomClasses/LHAbstractClass.h"
+#include "../CustomClasses/LHCustomClasses.h"
+
 static int untitledBatchCount = 0;
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,6 +59,24 @@ LevelHelperLoader* LHBatch::parentLoader(){
     return NULL;
 }
 //------------------------------------------------------------------------------
+void LHBatch::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
+    userCustomInfo = NULL;
+    
+    if(!dictionary)return;
+    
+    std::string className = dictionary->stringForKey("ClassName");
+    
+    userCustomInfo = LHCustomClassesMgr::customClassInstanceWithName(className);
+    
+    if(!userCustomInfo) return;
+    
+    LHDictionary* dict = dictionary->dictForKey("ClassRepresentation");
+    
+    if(dict){
+        //        CCLog("SETTING PROPERTIES FROM DICT");
+        ((LHAbstractClass*)userCustomInfo)->setPropertiesFromDictionary(dict);
+    }
+}
 bool LHBatch::initWithDictionary(LHDictionary* dictionary,  LHLayer* layer){
     
     
@@ -93,7 +115,9 @@ bool LHBatch::initWithDictionary(LHDictionary* dictionary,  LHLayer* layer){
     if(layer){
         layer->addChild(this, getZOrder());
     }
-        
+    
+    loadUserCustomInfoFromDictionary(dictionary->dictForKey("CustomClassInfo"));
+    
     LHArray* childrenInfo = dictionary->arrayForKey("Children");
     if(childrenInfo)
     {
@@ -103,11 +127,18 @@ bool LHBatch::initWithDictionary(LHDictionary* dictionary,  LHLayer* layer){
         }
     }
     
+    
+    
     return true;
 }
 //------------------------------------------------------------------------------
 LHBatch::~LHBatch(void){
 //    printf("LH Batch Dealloc %s\n", uniqueName.c_str());
+    
+    if(userCustomInfo){
+        delete userCustomInfo;
+        userCustomInfo = NULL;
+    }
 }
 //------------------------------------------------------------------------------
 LHBatch::LHBatch(){
@@ -199,6 +230,17 @@ std::string LHBatch::getSHFile(){
 void LHBatch::setSHFile(const std::string& file){
     shFile = std::string(file);
 }
+
+std::string LHBatch::userInfoClassName(){
+    if(userCustomInfo)
+        return ((LHAbstractClass*)userCustomInfo)->className();
+    return "No Class";
+}
+//------------------------------------------------------------------------------
+void* LHBatch::userInfo(){
+    return userCustomInfo;
+}
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
