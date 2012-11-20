@@ -395,8 +395,15 @@ void LevelHelperLoader::setIsPaused(bool value){
 
     for(int i = 0; i < allSprites->count(); ++i){
         LHSprite* spr = (LHSprite*)allSprites->objectAtIndex(i);
-        spr->pauseAnimation();
-        spr->pausePathMovement();
+        
+        if(value){
+            spr->pauseAnimation();
+            spr->pausePathMovement();
+        }
+        else{
+            spr->playAnimation();
+            spr->startPathMovement();
+        }
     }
     
     for(int i = 0; i < allParallaxes->count(); ++i){
@@ -1270,10 +1277,13 @@ CCArray* LevelHelperLoader::allParallaxes(void){
 #if COCOS2D_VERSION >= 0x00020000
     CCArray* keys = parallaxesInLevel.allKeys();
     CCArray* array = CCArray::create();
-    for(int i = 0; i < (int)keys->count(); ++i){
-        LHParallaxNode* node = (LHParallaxNode*)parallaxesInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
-        if(node)
-            array->addObject(node);
+    if(keys)
+    {
+        for(int i = 0; i < (int)keys->count(); ++i){
+            LHParallaxNode* node = (LHParallaxNode*)parallaxesInLevel.objectForKey(((CCString*)keys->objectAtIndex(i))->getCString());
+            if(node)
+                array->addObject(node);
+        }
     }
     return array;
 #else

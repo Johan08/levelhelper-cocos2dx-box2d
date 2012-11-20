@@ -176,6 +176,10 @@ public:
 //    virtual CCAffineTransform nodeToParentTransform(void);
 //#endif
     
+    virtual void setPosition(const CCPoint& pos);
+    virtual void setRotation(float fRotation);
+    
+    
     void transformPosition(CCPoint pos);
     void transformRotation(float rot);
 

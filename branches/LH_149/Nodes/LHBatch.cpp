@@ -91,6 +91,8 @@ bool LHBatch::initWithDictionary(LHDictionary* dictionary,  LHLayer* layer){
     
     uniqueName = dictionary->stringForKey("UniqueName");
 
+    setTag(dictionary->intForKey("Tag"));
+    
     if(uniqueName == "")
     {
         uniqueName = dictionary->stringForKey("SheetName");
