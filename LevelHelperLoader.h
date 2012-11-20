@@ -107,8 +107,6 @@ private:
     
     bool m_isPaused;
 public:
-
-    friend class LHSprite;
     
     //------------------------------------------------------------------------------
     LevelHelperLoader(const char* levelFile);
@@ -392,6 +390,7 @@ private:
 };
 
 #endif
+
 
 
 

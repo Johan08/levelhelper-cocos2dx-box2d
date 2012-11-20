@@ -427,10 +427,10 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
         
     CCPoint position = LHSettings::sharedInstance()->transformedPointToCocos2d(texDict->pointForKey("Position"));
     
-    setPosition(ccp((int)position.x, (int)position.y));
+    CCSprite::setPosition(ccp((int)position.x, (int)position.y));
     
     
-    setRotation(texDict->intForKey("Angle"));
+    CCSprite::setRotation(texDict->intForKey("Angle"));
     setColor(texDict->colorForKey("Color"));
     
 #if COCOS2D_VERSION >= 0x00020000
@@ -1300,8 +1300,25 @@ bool LHSprite::pathMovementRelative(){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+void LHSprite::setPosition(const CCPoint& pos){
+    
+    if(usesOverloadedTransformations)
+        transformPosition(pos);
+    else {
+        CCSprite::setPosition(pos);
+    }
+}
+void LHSprite::setRotation(float fRotation){
+    
+    if(usesOverloadedTransformations)
+        transformRotation(fRotation);
+    else {
+        CCSprite::setRotation(fRotation);
+    }
+}
+
 void LHSprite::transformPosition(CCPoint pos){
-    setPosition(pos);
+    CCSprite::setPosition(pos);
     if(0 != body)
     {
         b2Vec2 boxPosition = LevelHelperLoader::pointsToMeters(pos);
@@ -1311,7 +1328,7 @@ void LHSprite::transformPosition(CCPoint pos){
 }
 //------------------------------------------------------------------------------
 void LHSprite::transformRotation(float rot){
-    setRotation(rot);
+    CCSprite::setRotation(rot);
     if(0 != body)
     {
         b2Vec2 boxPosition = LevelHelperLoader::pointsToMeters(getPosition());
@@ -1508,7 +1525,11 @@ bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
                 (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
             }
         }
-        return swallowTouches;
+        
+        //it seams that if this method returns false touch moved and touch ended will not get called
+        return true;
+        
+//        return swallowTouches;
     }
     return false;
 }
@@ -1865,7 +1886,7 @@ CCArray* LHSprite::contactSprites(){
         return NULL;
     
     b2ContactEdge* edge = body->GetContactList();
-    if(NULL != edge){
+    if(NULL == edge){
         return NULL;
     }
     
@@ -1899,7 +1920,7 @@ CCArray* LHSprite::contactBeziers(){
         return NULL;
     
     b2ContactEdge* edge = body->GetContactList();
-    if(NULL != edge){
+    if(NULL == edge){
         return NULL;
     }
     
