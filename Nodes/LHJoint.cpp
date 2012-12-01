@@ -171,7 +171,7 @@ void LHJoint::createBox2dJointFromDictionary(LHDictionary* dictionary)
 	
     float ptm = LHSettings::sharedInstance()->lhPtmRatio();
 	float convertX = LHSettings::sharedInstance()->convertRatio().x;
-//	float convertY = LHSettings::sharedInstance()->convertRatio().y;
+	float convertY = LHSettings::sharedInstance()->convertRatio().y;
     
     if(!dictionary->boolForKey("CenterOfMass"))
     {        
@@ -269,11 +269,14 @@ void LHJoint::createBox2dJointFromDictionary(LHDictionary* dictionary)
                 b2Vec2 bodyAPos = bodyA->GetPosition();
                 b2Vec2 bodyBPos = bodyB->GetPosition();
                 
-				b2Vec2 groundAnchorA = b2Vec2(bodyAPos.x + convertX*grAnchorA.x/ptm, bodyAPos.y - grAnchorA.y/ptm);
-				b2Vec2 groundAnchorB = b2Vec2(bodyBPos.x + convertX*grAnchorB.x/ptm, bodyBPos.y - grAnchorB.y/ptm);
+				b2Vec2 groundAnchorA = b2Vec2(bodyAPos.x + convertX*grAnchorA.x/ptm,
+                                              bodyAPos.y - convertY*grAnchorA.y/ptm);
+				b2Vec2 groundAnchorB = b2Vec2(bodyBPos.x + convertX*grAnchorB.x/ptm,
+                                              bodyBPos.y - convertY*grAnchorB.y/ptm);
                 
 				float ratio = dictionary->floatForKey("Ratio");
-				jointDef.Initialize(bodyA, bodyB, groundAnchorA, groundAnchorB, posA, posB, ratio);				
+				jointDef.Initialize(bodyA, bodyB, groundAnchorA, groundAnchorB,
+                                    posA, posB, ratio);
 				jointDef.collideConnected = collideConnected;   
 				
 				if(0 != boxWorld){
