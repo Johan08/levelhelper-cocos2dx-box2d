@@ -46,7 +46,7 @@ class LHArray;
 class LHAbstractClass;
 class LHFixture;
 
-class LHSprite : public CCSprite, public CCStandardTouchDelegate
+class LHSprite : public CCSprite, public CCTargetedTouchDelegate//CCStandardTouchDelegate
 {
     
 public:
