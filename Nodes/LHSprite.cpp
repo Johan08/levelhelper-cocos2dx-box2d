@@ -60,7 +60,9 @@ LHSprite::~LHSprite(void){
     stopPathMovement();
     stopAllActions();
     removeBodyFromWorld();
-        
+    
+    //in cases onExit is not called
+    removeTouchObserver();
     
     if(NULL != parallaxFollowingThisSprite)
         parallaxFollowingThisSprite->setFollowSprite(NULL);
@@ -124,6 +126,7 @@ LHSprite::LHSprite(){
     pathNode = NULL;
     spriteIsInParallax = NULL;
     parallaxFollowingThisSprite = NULL;
+    prepareAnimInProgress = false;
     
     touchBeginObserver = NULL;
     touchMovedObserver = NULL;
@@ -1399,8 +1402,11 @@ void LHSprite::registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO sele
 
 void LHSprite::registerTouchBeganObserver(CCObject* observer, SEL_CallFuncO selector){
 
+    
     removeTouchObserver();
-        
+
+//    CCLog("REGISTER TOUCH BEGIN OBSERVER %s", uniqueName.c_str());
+
     CCTouchDispatcher* touchDispatcher = NULL;
 #if COCOS2D_VERSION >= 0x00020000
     touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
@@ -1413,8 +1419,7 @@ void LHSprite::registerTouchBeganObserver(CCObject* observer, SEL_CallFuncO sele
         CCTouchHandler* handler = touchDispatcher->findHandler(this);
         
         //if is not already added to the touch dispatcher - then lets add it
-        if(!handler)
-        {
+        if(!handler){
             touchDispatcher->addTargetedDelegate(this, touchPriority, swallowTouches);
         }
     }
@@ -1452,7 +1457,8 @@ void LHSprite::registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO sele
 
 void LHSprite::removeTouchObserver()
 {
-//    CCLog("REMOVE TOUCH OBSERVER");
+//    CCLog("REMOVE TOUCH OBSERVER forSprite %s", uniqueName.c_str());
+    
     if(touchBeginObserver)
         delete touchBeginObserver;
 
@@ -1473,6 +1479,7 @@ void LHSprite::removeTouchObserver()
     touchDispatcher = CCTouchDispatcher::sharedDispatcher();
 #endif
     
+//    if(touchBeginObserver)
     if(touchDispatcher){
         touchDispatcher->removeDelegate(this);
     }
@@ -1481,6 +1488,8 @@ void LHSprite::removeTouchObserver()
 //------------------------------------------------------------------------------
 bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
 {
+//    CCLog("CCTOUCH BEGIN %s", uniqueName.c_str());
+    
     if(touchIsDisabled)
         return false;
 

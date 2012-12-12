@@ -142,6 +142,8 @@ void LHTouchMgr::registerTouchEndedObserverForTag(CCObject* observer,
 //removing touch begin observer will remove all other observers also
 void LHTouchMgr::removeTouchBeginObserver(CCObject* observer){
     
+//    CCLog("REMOVE TOUCH BEGIN OBSERVER %p", observer);
+    
 #if COCOS2D_VERSION >= 0x00020000
     CCArray* keys = onTouchBeginOnSpriteOfTag.allKeys();
 
