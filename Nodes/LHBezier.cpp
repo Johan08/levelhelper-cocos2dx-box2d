@@ -67,8 +67,8 @@ void LHBezier::init(void){
 ////////////////////////////////////////////////////////////////////////////////
 LHBezier::~LHBezier(void){
     
-    CCLog("LHBezierNode destructor %s", uniqueName.c_str());
-        
+//    CCLog("LHBezierNode destructor %s", uniqueName.c_str());
+    
 	if(0 != body)
 	{
 		b2World* _world = body->GetWorld();
