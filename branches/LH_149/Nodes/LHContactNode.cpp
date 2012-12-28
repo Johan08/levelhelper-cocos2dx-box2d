@@ -118,10 +118,11 @@ LHContactNode::LHContactNode(/*b2World* world*/){
 }
 LHContactNode::~LHContactNode(){
 
-    CCLog("LHContactNode release");
-        
+//    CCLog("LHContactNode release");
+    
     preCollisionMap.removeAllObjects();
     postCollisionMap.removeAllObjects();
+    beginEndCollisionMap.removeAllObjects();
     delete lhContactListener;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -436,7 +437,7 @@ void LHContactNode::postSolve(b2Contact* contact,
 #if COCOS2D_VERSION >= 0x00020000
 
     
-    CCDictionary* info = (CCDictionary*)preCollisionMap.objectForKey(nodeA->getTag());
+    CCDictionary* info = (CCDictionary*)postCollisionMap.objectForKey(nodeA->getTag());
     bool foundA = false;
     if(info != NULL){
         LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
@@ -446,7 +447,7 @@ void LHContactNode::postSolve(b2Contact* contact,
         }
     }
     if(!foundA){
-        info = (CCDictionary*)preCollisionMap.objectForKey(nodeB->getTag());
+        info = (CCDictionary*)postCollisionMap.objectForKey(nodeB->getTag());
         if(NULL != info){
             LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
             if(NULL != contactInfo){
@@ -457,7 +458,7 @@ void LHContactNode::postSolve(b2Contact* contact,
 
 #else
     
-    CCMutableDictionary<int>* info = (CCMutableDictionary<int>*)preCollisionMap.objectForKey(nodeA->getTag());
+    CCMutableDictionary<int>* info = (CCMutableDictionary<int>*)postCollisionMap.objectForKey(nodeA->getTag());
     bool foundA = false;
     if(info != NULL){
         LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
@@ -467,7 +468,7 @@ void LHContactNode::postSolve(b2Contact* contact,
         }
     }
     if(!foundA){
-        info = (CCMutableDictionary<int>*)preCollisionMap.objectForKey(nodeB->getTag());
+        info = (CCMutableDictionary<int>*)postCollisionMap.objectForKey(nodeB->getTag());
         if(NULL != info){
             LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
             if(NULL != contactInfo){
