@@ -667,6 +667,7 @@ LHSprite* LHCuttingEngineMgr::spriteWithVertices(b2Vec2* vertices,
     if(newSprite1){
         newBody->SetUserData(newSprite1);
         newSprite1->setBody(newBody);
+        newSprite1->setUsesOverloadedTransformations(false);
     }
     
     return newSprite1;
@@ -1194,6 +1195,7 @@ void LHCuttingEngineMgr::splitBody(b2Body* splitBody, b2Vec2 origA, b2Vec2 origB
         LHSprite* newSprite1 = createNewSpriteFromBodyInfo(body1, oldSprite);
     
         if(newSprite1){
+            newSprite1->setUsesOverloadedTransformations(false);
             body1->SetUserData(newSprite1);
             newSprite1->setBody(body1);
         }
@@ -1213,6 +1215,7 @@ void LHCuttingEngineMgr::splitBody(b2Body* splitBody, b2Vec2 origA, b2Vec2 origB
         if(newSprite2){
             body2->SetUserData(newSprite2);
             newSprite2->setBody(body2);
+            newSprite2->setUsesOverloadedTransformations(false);
         } 
     }
     else {

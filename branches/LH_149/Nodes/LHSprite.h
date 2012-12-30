@@ -171,10 +171,6 @@ public:
     bool getUsesOverloadedTransformations(){return usesOverloadedTransformations;}
     void setUsesOverloadedTransformations(bool v){usesOverloadedTransformations = v;}
     
-//#if COCOS2D_VERSION >= 0x00020000
-//    virtual bool isDirty();
-//    virtual CCAffineTransform nodeToParentTransform(void);
-//#endif
     
     virtual void setPosition(const CCPoint& pos);
     virtual void setRotation(float fRotation);
