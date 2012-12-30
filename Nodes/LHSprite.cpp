@@ -339,6 +339,7 @@ void LHSprite::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
 void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
         
     body = NULL;
+    usesOverloadedTransformations = false;
     
     if(dictionary->objectForKey("UniqueName")){
         uniqueName = std::string(dictionary->stringForKey("UniqueName"));
@@ -381,11 +382,6 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     contentSize.width *= CC_CONTENT_SCALE_FACTOR();
     contentSize.height*= CC_CONTENT_SCALE_FACTOR();
     
-//    CCLog("RETINA CONTENCT SCALE %f", CC_CONTENT_SCALE_FACTOR());
-    
-    //CCLog("IMAGE FILE %s", getImageFile().c_str());
-    
-    
     CCPoint originalTextureOffset = shTexDict->pointForKey("TextureOffset");
     CCSize texOffsetSize = LHSettings::sharedInstance()->transformedSize(CCSizeMake(originalTextureOffset.x, 
                                                                                     originalTextureOffset.y), 
@@ -394,10 +390,7 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     originalTextureOffset.y = texOffsetSize.height;
     originalTextureOffset.x *= CC_CONTENT_SCALE_FACTOR();
     originalTextureOffset.y *= CC_CONTENT_SCALE_FACTOR();
-    
-//    CCLog("RECT %f %f %f %f", rectInPixels.origin.x, rectInPixels.origin.y, rectInPixels.size.width, rectInPixels.size.height);
-//    CCLog("CONTENT SIZE %f %f", contentSize.width, contentSize.height);
-    
+        
 #if COCOS2D_VERSION >= 0x00020000
     CCSpriteFrame* sprFrame = CCSpriteFrame::createWithTexture(getTexture(),
                                                     rectInPixels,
@@ -486,7 +479,7 @@ void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
     tagTouchMovedObserver = NULL;
     tagTouchEndedObserver = NULL;
     
-    usesOverloadedTransformations = false;
+    
 
     
     LevelHelperLoader::setTouchDispatcherForSpriteWithTag(this, getTag());
@@ -1304,9 +1297,9 @@ bool LHSprite::pathMovementRelative(){
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void LHSprite::setPosition(const CCPoint& pos){
-    
-    if(usesOverloadedTransformations)
+    if(usesOverloadedTransformations){
         transformPosition(pos);
+    }
     else {
         CCSprite::setPosition(pos);
     }
