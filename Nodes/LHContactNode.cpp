@@ -27,6 +27,16 @@
 #include "../LevelHelperLoader.h"
 #include "LHSettings.h"
 
+void lhContact_CallBeginEndSolveMethod(void* object,
+                                       b2Contact* contact, bool isBegin);
+void lhContact_CallPreSolveMethod(void* object,
+                                  b2Contact* contact,
+                                  const b2Manifold* oldManifold);
+
+void lhContact_CallPostSolveMethod(void* object,
+                                   b2Contact* contact,
+                                   const b2ContactImpulse* impulse);
+
 class LHContactNodeInfo : public CCObject
 {
 	int tagB;
@@ -35,7 +45,7 @@ class LHContactNodeInfo : public CCObject
 public:
     LHContactNodeInfo(){}
 
-    virtual ~LHContactNodeInfo(void){/*CCLog("ContactNodeInfo release");*/}
+    virtual ~LHContactNodeInfo(void){CCLog("ContactNodeInfo release");}
     
     bool initcontactInfoWithTag(int _tagB,
                                 CCObject* listId,
@@ -64,13 +74,15 @@ public:
     
     void callListenerWithBodyA(b2Body* A, 
                                b2Body* B,
+                               b2Fixture* fixA,
+                               b2Fixture* fixB,
                                b2Contact* contact,
                                int contactType,
                                const b2Manifold* oldManifold,
                                const b2ContactImpulse* impulse){
         
         
-        LHContactInfo* info = LHContactInfo::contactInfo(A, B, contact, contactType, oldManifold, impulse); 
+        LHContactInfo* info = LHContactInfo::contactInfo(A, B, fixA,fixB, contact, contactType, oldManifold, impulse);
         
         if (listenerId) {
             (listenerId->*listenerSel)(info);
@@ -107,9 +119,10 @@ LHContactNode::LHContactNode(/*b2World* world*/){
 LHContactNode::~LHContactNode(){
 
 //    CCLog("LHContactNode release");
-        
+    
     preCollisionMap.removeAllObjects();
     postCollisionMap.removeAllObjects();
+    beginEndCollisionMap.removeAllObjects();
     delete lhContactListener;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,9 +154,24 @@ LHContactNode* LHContactNode::contactNodeWithWorld(b2World* world){
 }
 ////////////////////////////////////////////////////////////////////////////////
 void LHContactNode::registerBeginOrEndCollisionCallbackBetweenTagA(int tagA, 
-                                                    int tagB,
-                                                    CCObject* obj, 
+                                                                   int tagB,
+                                                                   CCObject* obj, 
                                                                    SEL_CallFuncO sel){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary* tableA = (CCDictionary*)beginEndCollisionMap.objectForKey(tagA);
+    
+    if(tableA == NULL){
+        LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
+        
+        CCDictionary tempDict;
+        CCDictionary* map = CCDictionary::createWithDictionary(&tempDict);
+        map->setObject(info, tagB);
+        beginEndCollisionMap.setObject(map, tagA);
+    }
+    
+#else
+    
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)beginEndCollisionMap.objectForKey(tagA);
     
     if(tableA == NULL){
@@ -154,15 +182,24 @@ void LHContactNode::registerBeginOrEndCollisionCallbackBetweenTagA(int tagA,
         map->setObject(info, tagB);
         beginEndCollisionMap.setObject(map, tagA);
     }
+    
+#endif
+    
     else{
         LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
         tableA->setObject(info, tagB);
-    }   
+    }
 }
 //------------------------------------------------------------------------------
 void LHContactNode::cancelBeginOrEndCollisionCallbackBetweenTagA(int tagA,
                                                                  int tagB){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary* tableA = (CCDictionary*)beginEndCollisionMap.objectForKey(tagA);
+#else
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)beginEndCollisionMap.objectForKey(tagA);
+#endif
+
     if(NULL != tableA){
         tableA->removeObjectForKey(tagB);
     }
@@ -172,6 +209,20 @@ void LHContactNode::registerPreCollisionCallbackBetweenTagA(int tagA,
                                                            int tagB,
                                                            CCObject* obj, 
                                                            SEL_CallFuncO sel){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary* tableA = (CCDictionary*)preCollisionMap.objectForKey(tagA);
+    
+    if(tableA == NULL){
+        LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
+        
+        CCDictionary tempDict;
+        CCDictionary* map = CCDictionary::createWithDictionary(&tempDict);
+        map->setObject(info, tagB);
+        preCollisionMap.setObject(map, tagA);
+    }
+    
+#else
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)preCollisionMap.objectForKey(tagA);
     
     if(tableA == NULL){
@@ -182,6 +233,9 @@ void LHContactNode::registerPreCollisionCallbackBetweenTagA(int tagA,
         map->setObject(info, tagB);
         preCollisionMap.setObject(map, tagA);
     }
+    
+#endif
+    
     else{
         LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
         tableA->setObject(info, tagB);
@@ -190,7 +244,12 @@ void LHContactNode::registerPreCollisionCallbackBetweenTagA(int tagA,
 ////////////////////////////////////////////////////////////////////////////////
 void LHContactNode::cancelPreCollisionCallbackBetweenTagA(int tagA,
                                                          int tagB){
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary* tableA = (CCDictionary*)preCollisionMap.objectForKey(tagA);
+#else
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)preCollisionMap.objectForKey(tagA);
+#endif
+    
     if(NULL != tableA){
         tableA->removeObjectForKey(tagB);
     }
@@ -200,6 +259,20 @@ void LHContactNode::registerPostCollisionCallbackBetweenTagA(int tagA,
                                                             int tagB,
                                                             CCObject* obj, 
                                                             SEL_CallFuncO sel){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary* tableA = (CCDictionary*)postCollisionMap.objectForKey(tagA);
+    
+    if(tableA == NULL){
+        LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
+        
+        CCDictionary tempDict;
+        CCDictionary* map = CCDictionary::createWithDictionary(&tempDict);
+        map->setObject(info, tagB);
+        postCollisionMap.setObject(map, tagA);
+    }
+    
+#else
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)postCollisionMap.objectForKey(tagA);
     
     if(tableA == NULL){
@@ -210,6 +283,9 @@ void LHContactNode::registerPostCollisionCallbackBetweenTagA(int tagA,
         map->setObject(info, tagB);
         postCollisionMap.setObject(map, tagA);
     }
+    
+#endif
+    
     else{
         LHContactNodeInfo* info = LHContactNodeInfo::contactInfoWithTag(tagB, obj, sel);
         tableA->setObject(info, tagB);
@@ -218,7 +294,12 @@ void LHContactNode::registerPostCollisionCallbackBetweenTagA(int tagA,
 ////////////////////////////////////////////////////////////////////////////////
 void LHContactNode::cancelPostCollisionCallbackBetweenTagA(int tagA,
                                                           int tagB){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary* tableA = (CCDictionary*)postCollisionMap.objectForKey(tagA);
+#else
     CCMutableDictionary<int>* tableA = (CCMutableDictionary<int>*)postCollisionMap.objectForKey(tagA);
+#endif
     if(NULL != tableA){
         tableA->removeObjectForKey(tagB);
     }
@@ -232,13 +313,39 @@ void LHContactNode::beginEndSolve(b2Contact* contact, bool isBegin){
     CCNode* nodeA = (CCNode*)bodyA->GetUserData();
     CCNode* nodeB = (CCNode*)bodyB->GetUserData();
 
+    if(NULL == nodeA || NULL == nodeB){
+        return;
+    }
+#if COCOS2D_VERSION >= 0x00020000
+    
+    CCDictionary* info = (CCDictionary*)beginEndCollisionMap.objectForKey(nodeA->getTag());
+    bool foundA = false;
+    if(info != NULL){
+        LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
+        if(NULL != contactInfo){
+            foundA = true;
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact, isBegin, 0,0);
+        }
+    }
+    if(!foundA){
+        info = (CCDictionary*)beginEndCollisionMap.objectForKey(nodeB->getTag());
+        if(NULL != info){
+            LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
+            if(NULL != contactInfo){
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, isBegin, 0, 0);
+            }
+        }        
+    }
+    
+#else
+    
     CCMutableDictionary<int>* info = (CCMutableDictionary<int>*)beginEndCollisionMap.objectForKey(nodeA->getTag());
     bool foundA = false;
     if(info != NULL){
         LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
         if(NULL != contactInfo){
             foundA = true;
-            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact, isBegin, 0,0);
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact, isBegin, 0,0);
         }
     }
     if(!foundA){
@@ -246,10 +353,12 @@ void LHContactNode::beginEndSolve(b2Contact* contact, bool isBegin){
         if(NULL != info){
             LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
             if(NULL != contactInfo){
-                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact, isBegin, 0, 0);
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, isBegin, 0, 0);
             }
         }        
     }
+    
+#endif    
 }
 ////////////////////////////////////////////////////////////////////////////////
 void LHContactNode::preSolve(b2Contact* contact,                     
@@ -261,7 +370,35 @@ void LHContactNode::preSolve(b2Contact* contact,
     
     CCNode* nodeA = (CCNode*)bodyA->GetUserData();
     CCNode* nodeB = (CCNode*)bodyB->GetUserData();
-        
+      
+    if(NULL == nodeA || NULL == nodeB)
+        return;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    
+    CCDictionary* info = (CCDictionary*)preCollisionMap.objectForKey(nodeA->getTag());
+    
+    bool foundA = false;
+    if(info != NULL){
+        LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
+        if(NULL != contactInfo){
+            foundA = true;
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact,LH_PRE_SOLVE_CONTACT, oldManifold,0);
+        }
+    }
+    if(!foundA){
+        info = (CCDictionary*)preCollisionMap.objectForKey(nodeB->getTag());
+        if(NULL != info){
+            LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
+            if(NULL != contactInfo){
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, LH_PRE_SOLVE_CONTACT, oldManifold, 0);
+            }
+        }        
+    }
+    
+#else
+    
+    
     CCMutableDictionary<int>* info = (CCMutableDictionary<int>*)preCollisionMap.objectForKey(nodeA->getTag());
     
     bool foundA = false;
@@ -269,7 +406,7 @@ void LHContactNode::preSolve(b2Contact* contact,
         LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
         if(NULL != contactInfo){
             foundA = true;
-            contactInfo->callListenerWithBodyA(bodyA,bodyB,contact,LH_PRE_SOLVE_CONTACT, oldManifold,0);
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact,LH_PRE_SOLVE_CONTACT, oldManifold,0);
         }
     }
     if(!foundA){
@@ -277,10 +414,12 @@ void LHContactNode::preSolve(b2Contact* contact,
         if(NULL != info){
             LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
             if(NULL != contactInfo){
-                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact, LH_PRE_SOLVE_CONTACT, oldManifold, 0);
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, LH_PRE_SOLVE_CONTACT, oldManifold, 0);
             }
         }        
     }
+    
+#endif
 }
 ////////////////////////////////////////////////////////////////////////////////
 void LHContactNode::postSolve(b2Contact* contact,
@@ -289,27 +428,55 @@ void LHContactNode::postSolve(b2Contact* contact,
     b2Body *bodyA = contact->GetFixtureA()->GetBody();
 	b2Body *bodyB = contact->GetFixtureB()->GetBody();
 	
-    
     CCNode* nodeA = (CCNode*)bodyA->GetUserData();
     CCNode* nodeB = (CCNode*)bodyB->GetUserData();
     
-    CCMutableDictionary<int>* info = (CCMutableDictionary<int>*)preCollisionMap.objectForKey(nodeA->getTag());
+    if(NULL == nodeA || NULL == nodeB)
+        return;
+    
+#if COCOS2D_VERSION >= 0x00020000
+
+    
+    CCDictionary* info = (CCDictionary*)postCollisionMap.objectForKey(nodeA->getTag());
     bool foundA = false;
     if(info != NULL){
         LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
         if(NULL != contactInfo){
             foundA = true;
-            contactInfo->callListenerWithBodyA(bodyA,bodyB,contact,LH_POST_SOLVE_CONTACT,  0,impulse);
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact,LH_POST_SOLVE_CONTACT,  0,impulse);
         }
     }
     if(!foundA){
-        info = (CCMutableDictionary<int>*)preCollisionMap.objectForKey(nodeB->getTag());
+        info = (CCDictionary*)postCollisionMap.objectForKey(nodeB->getTag());
         if(NULL != info){
             LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
             if(NULL != contactInfo){
-                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact, LH_POST_SOLVE_CONTACT, 0, impulse);
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, LH_POST_SOLVE_CONTACT, 0, impulse);
             }
         }        
     }    
+
+#else
+    
+    CCMutableDictionary<int>* info = (CCMutableDictionary<int>*)postCollisionMap.objectForKey(nodeA->getTag());
+    bool foundA = false;
+    if(info != NULL){
+        LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeB->getTag());
+        if(NULL != contactInfo){
+            foundA = true;
+            contactInfo->callListenerWithBodyA(bodyA,bodyB, contact->GetFixtureA(), contact->GetFixtureB(), contact,LH_POST_SOLVE_CONTACT,  0,impulse);
+        }
+    }
+    if(!foundA){
+        info = (CCMutableDictionary<int>*)postCollisionMap.objectForKey(nodeB->getTag());
+        if(NULL != info){
+            LHContactNodeInfo* contactInfo = (LHContactNodeInfo*)info->objectForKey(nodeA->getTag());
+            if(NULL != contactInfo){
+                contactInfo->callListenerWithBodyA(bodyB, bodyA, contact->GetFixtureB(), contact->GetFixtureA(), contact, LH_POST_SOLVE_CONTACT, 0, impulse);
+            }
+        }        
+    }    
+
+#endif
 }
 ////////////////////////////////////////////////////////////////////////////////

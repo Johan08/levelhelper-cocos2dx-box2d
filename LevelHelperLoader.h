@@ -27,15 +27,14 @@
 //
 //  Version history
 //  ...............
-//  v0.1 First version for LevelHelper 1.4
-//  v1.3  - Fixed a path pause issue when path is line 
-//        - Fixed a touch issue
-//  v1.4  - Fixed issue with bezier tile shape making a crash, fix issue when using -1 scaled sprites making a crash
+//  v0.1 First version for LevelHelper 1.4.9x
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __LEVEL_HELPER_LOADER__
 #define __LEVEL_HELPER_LOADER__
 
+
+#include "lhConfig.h"
 #include "cocos2d.h"
 #include "cocoa/CCNS.h"
 #include "Box2D/Box2D.h"
@@ -45,78 +44,58 @@
 #include "Utilities/LHObject.h"
 
 #include "Nodes/LHCustomSpriteMgr.h"
-#include "Nodes/LHSprite.h"
 #include "Nodes/LHContactNode.h"
 #include "Nodes/LHAnimationNode.h"
 #include "Nodes/LHParallaxNode.h"
-#include "Nodes/LHJoint.h"
-#include "Nodes/LHBatch.h"
-#include "Nodes/LHPathNode.h"
-#include "Nodes/LHBezierNode.h"
 #include "Nodes/LHContactInfo.h"
+
+#include "Nodes/LHNode.h"
+#include "Nodes/LHLayer.h"
+#include "Nodes/LHBatch.h"
+#include "Nodes/LHSprite.h"
+#include "Nodes/LHBezier.h"
+#include "Nodes/LHJoint.h"
+#include "Nodes/LHPathNode.h"
+
+#include "CustomClasses/LHCustomClasses.h"
+
+#include "Nodes/LHCuttingEngineMgr.h"
 
 using namespace cocos2d;
 
 enum LevelHelper_TAG;
 
-enum LH_ACTIONS_TAGS
-{
-    LH_PATH_ACTION_TAG,
-    LH_ANIM_ACTION_TAG
-};
+std::string stringFromInt(const int& i);
 
 typedef void (CCObject::*SEL_CallFuncFloat)(float);
 #define callfuncFloat_selector(_SELECTOR) (SEL_CallFuncFloat)(&_SELECTOR)
 
 
-int     intFromString(const std::string& str);
-bool    boolFromString(const std::string& str);
-float   floatFromString(const std::string& str);
-CCPoint LHPointFromString(const std::string& str);
-CCRect  LHRectFromString(const std::string& str);
-
 class LevelHelperLoader : public CCObject {
 
 private:
-    LHArray* lhSprites;
-    LHArray* lhJoints;
-    LHArray* lhParallax;
-    LHArray* lhBeziers;
-    LHArray* lhAnims;
-    LHDictionary* lhBatchInfo;       //key - imageName - value LHDictionary
+	LHArray* lhNodes;	//array of NSDictionary //includes LHSprite, LHBezier, LHBatch, LHLayer
+    LHArray* lhJoints;	//array of NSDictionary
+    LHArray* lhParallax;//array of NSDictionary 
+    LHDictionary*  wb;//world boundaries info;
     
-    CCMutableDictionary<std::string>  animationsInLevel;    //key name - value LHAnimationNode*;
-    CCMutableDictionary<std::string>  spritesInLevel;       //key name - value LHSprite*
+    LHLayer* mainLHLayer;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    
+    CCDictionary jointsInLevel;
+    CCDictionary parallaxesInLevel;    
+    CCDictionary physicBoundariesInLevel;
+#else
     CCMutableDictionary<std::string>  jointsInLevel;        //key name - value LHJoint*
     CCMutableDictionary<std::string>  parallaxesInLevel;    //key name - value LHParallaxNode*
-    CCMutableDictionary<std::string>  beziersInLevel;       //key name - value LHBezierNode*
-    CCMutableDictionary<std::string>  batchNodesInLevel;    //key name - value LHBatch*
-
-    LHDictionary*  wb;
-    
-    //keys LHPhysicBoundarieTop, LHPhysicBoundarieLeft, LHPhysicBoundarieBottom, LHPhysicBoundarieRight 
-    //value - LHSprite*    
-    CCMutableDictionary<std::string> physicBoundariesInLevel;
-    //LHDictionary* physicBoundariesInLevel;
-    
-    CCMutableDictionary<std::string> markedSprites;
-    CCMutableDictionary<std::string> markedBeziers;
-    CCMutableDictionary<std::string> markedJoints;
-    
-	bool addSpritesToLayerWasUsed;
-	bool addObjectsToWordWasUsed;
+    CCMutableDictionary<std::string>  physicBoundariesInLevel;
+#endif
     
     CCPoint safeFrame;
     CCRect  gameWorldRect;
     CCPoint gravity;
-	
-    CCObject* pathNotifierId;
-    SEL_CallFuncN pathNotifierSel;
-    
-    CCObject* animNotifierId;
-    SEL_CallFuncND animNotifierSel;
-    bool    notifOnLoopForeverAnim;
-    
+	    
 	CCLayer* cocosLayer; //weak ptr
     b2World* box2dWorld; //weak ptr
     
@@ -126,9 +105,8 @@ private:
     CCObject* loadingProgressId;
     SEL_CallFuncFloat loadingProgressSel;
     
+    bool m_isPaused;
 public:
-
-    friend class LHSprite;
     
     //------------------------------------------------------------------------------
     LevelHelperLoader(const char* levelFile);
@@ -143,11 +121,66 @@ public:
     
     //LOADING
     void addObjectsToWorld(b2World* world, CCLayer* cocosLayer);
-    void addSpritesToLayer(CCLayer* cocosLayer); //NO PHYSICS
+    
+    
+    LHLayer*  layerWithUniqueName(const std::string& name);
+    LHBatch*  batchWithUniqueName(const std::string& name);
+    LHSprite* spriteWithUniqueName(const std::string& name);
+    LHBezier* bezierWithUniqueName(const std::string& name);
+    LHJoint*  jointWithUniqueName(const std::string& name);
+    LHParallaxNode* parallaxNodeWithUniqueName(const std::string& uniqueName);
+    
+    CCArray* allLayers();
+    CCArray* allBatches();
+    CCArray* allSprites();
+    CCArray* allBeziers();
+    CCArray* allJoints();
+    CCArray* allParallaxes();
+    
+    CCArray* layersWithTag(enum LevelHelper_TAG tag);
+    CCArray* batchesWithTag(enum LevelHelper_TAG tag);
+    CCArray* spritesWithTag(enum LevelHelper_TAG tag);
+    CCArray* beziersWithTag(enum LevelHelper_TAG tag);
+    CCArray* jointsWithTag(enum LevelHelper_TAG tag);
+    
+    
+    /*
+     to remove any of the LHLayer, LHBatch, LHSprite, LHBezier, LHJoint objects call
+     object->removeSelf();
+     
+     if you retain it somewhere the object will not be release - so make sure you dont retain
+     any of the objects
+     */
+
+    
+    //in cases where you cannot control when the box2d world is deleted
+    //you may want to call this method prior releasing the LevelHelperLoader instance so that you
+    //dont get an crash when cocos2d removes the sprites and box2d world object is no longer alive
+    void removeAllPhysics();
+
+    
+    
+    
+    
+    
+    
+//    void addSpritesToLayer(CCLayer* cocosLayer); //NO PHYSICS
     //------------------------------------------------------------------------------
+    LH_DEPRECATED_ATTRIBUTE static void dontStretchArtOnIpad(void);
+    static void dontStretchArt(void);
+
     //UTILITIES
-    static void preloadBatchNodes(void);
-    static void dontStretchArtOnIpad(void);
+    //The offset value is not transformed and is device dependend
+    //You must apply this offset based on device. To test for the device you eighter use one of the
+    //ios specific method to get the device or test for the winSize using CCDirector
+    //for iPhone5 if you want to make the level to be positioned starting from the left-centered corner rather then in the center
+    //the offset should be ccp(-88, 0)
+    //for iPad if you want to make the level to be positioned starting from the left-centered corner rather then in the center
+    //the offset should be ccp(-32,0);
+    //left-top corner should be ccp(-32,-64);
+    //THIS METHOD SHOULD BE USED TOGETHER WITH dontStretchArt
+    static void loadLevelsWithOffset(CCPoint offset);
+    
     
     //------------------------------------------------------------------------------
     //PAUSING THE GAME
@@ -155,7 +188,10 @@ public:
     //use  [[CCDirector sharedDirector] pause]; for everything else
     static bool isPaused(void);
     static void setPaused(bool value); //pass true to pause, false to unpause
-    
+
+    //this will pause only the current loader instance and not all the instances like the static methods above
+    bool getIsPaused(void);
+    void setIsPaused(bool value);
     
     //------------------------------------------------------------------------------
     //COLLISION HANDLING
@@ -186,160 +222,111 @@ public:
     
     void cancelPostCollisionCallbackBetweenTagA(enum LevelHelper_TAG tagA,
                                                 enum LevelHelper_TAG tagB);
-    
-    
-    //call this is you want to remove a sprite containg a physical body in one of the contact callbacks
-    //to actually remove the sprite call -removeMarkedSprites at the end of the tick method
-    void markSpriteForRemoval(LHSprite* ccsprite); //do not call this method on both types inside beginOrEnd callback, call only on begin or on end type
-    void removeMarkedSprites(); //actually removes the sprites that were marked for removal
+
     
     //------------------------------------------------------------------------------
-    //SPRITES
-    LHSprite* spriteWithUniqueName(const std::string& name); 
-    CCArray* spritesWithTag(enum LevelHelper_TAG tag);
-    CCArray* allSprites(void);
-    bool removeSprite(LHSprite* sprite);
-    bool removeSpritesWithTag(enum LevelHelper_TAG tag);
-    bool removeAllSprites(void);
-    /*More methods in LHSpitesExt.h - download from http://www.levelhelper.org*/
     //------------------------------------------------------------------------------
     //CREATION
     
-    //New sprite and associated body will be released automatically
-    //or you can use removeFromParentAndCleanup(true), CCSprite method, to do it at a specific time
-    //you must set the desired position after creation
     
-    //sprites returned needs to be added in the layer by you
-    //new sprite unique name for the returned sprite will be
-    //[OLDNAME]_LH_NEW__SPRITE_XX and [OLDNAME]_LH_NEW_BODY_XX
-    LHSprite* newSpriteWithUniqueName(const std::string& name); //no physic body
-    LHSprite* newPhysicalSpriteWithUniqueName(const std::string& name);//with physic body
     
-    //sprites are added in the coresponding batch node automatically
-    //new sprite unique name for the returned sprite will be
-    //[OLDNAME]_LH_NEW_BATCH_SPRITE_XX and [OLDNAME]_LH_NEW_BATCH_BODY_XX
-    LHSprite* newBatchSpriteWithUniqueName(const std::string& name); //no physic body
-    LHSprite* newPhysicalBatchSpriteWithUniqueName(const std::string& name); //with physic body
-    
-    /*More methods in LHCreationExt.h - download from http://www.levelhelper.org*/
+    //SPRITE CREATION
     //------------------------------------------------------------------------------
-    //JOINTS
-    LHJoint* jointWithUniqueName(const std::string& name);
-    CCArray* jointsWithTag(enum LevelHelper_TAG tag); //returns array with LHJoint*
-    CCArray* allJoints(void);
-    void removeJointsWithTag(enum LevelHelper_TAG tag);
-    bool removeJoint(LHJoint* joint);
-    bool removeAllJoints(void);
-    
-    //call this is you want to remove a joint containg a physical body in one of the contact callbacks
-    //to actually remove the joint call -removeMarkedJoints at the end of the tick method
-    //do not call this method on both types inside beginOrEnd callback, call only on begin or on end type
-    void markJointForRemoval(LHJoint* jt); 
-    void markJointsAttachedToSpriteForRemoval(LHSprite* spr);
-    void removeMarkedJoints(void); //actually removes the joints that were marked for removal
-    
-    /*More methods in LHJointsExt.h - download from http://www.levelhelper.org*/
     //------------------------------------------------------------------------------
-    //PARALLAX
-    //this method is deprecated. Please use the next one
-    LHParallaxNode* paralaxNodeWithUniqueName(const std::string& uniqueName);
+    //name is from one of a sprite already in the level
+    //parent will be Main Layer
+    //if you use custom sprite classes - this will create a sprite of that custom registered class
+    //method will create custom sprite if one is register for the tag of this sprite
+    LHSprite* createSpriteWithUniqueName(const std::string& name);
     
-    LHParallaxNode* parallaxNodeWithUniqueName(const std::string& uniqueName);    
-    CCArray* allParallaxes(void);
+    //use this method if you want the sprite to be child of a specific node and not the main LH node
+    //pass nil if you dont want a parent
+    //method will create custom sprite if one is register for the tag of this sprite
+    LHSprite* createSpriteWithUniqueName(const std::string& name, CCNode* parent);
+    
+    //name is from one of a sprite already in the level
+    //parent will be the batch node that is handling the image file of this sprite
+    //method will create custom sprite if one is register for the tag of this sprite
+    LHSprite* createBatchSpriteWithUniqueName(const std::string& name);
+    
+    
+    LHSprite* createSpriteWithName(const std::string& name,
+                                   const std::string& shSheetName,
+                                   const std::string& shFile);
+    
+    //use this method if you want the sprite to be child of a specific node and not the main LH node
+    //pass nil if you dont want a parent
+    LHSprite* createSpriteWithName(const std::string& name,
+                                   const std::string& shSheetName,
+                                   const std::string& shFile,
+                                   CCNode* parent);
+    
+    
+    //use this in order to create sprites of custom types
+    LHSprite* createSpriteWithName(const std::string& name,
+                                   const std::string& shSheetName,
+                                   const std::string& shFile,
+                                   LevelHelper_TAG tag);
+    
+    //use this method if you want the sprite to be child of a specific node and not the main LH node
+    //pass nil if you dont want a parent
+    LHSprite* createSpriteWithName(const std::string& name,
+                                   const std::string& shSheetName,
+                                   const std::string& shFile,
+                                   LevelHelper_TAG tag,
+                                   CCNode* parent);
+    
+    
+    LHSprite* createBatchSpriteWithName(const std::string& name,
+                                        const std::string& shSheetName,
+                                        const std::string& shFile);
+    
+    //use this in order to create sprites of custom types
+    LHSprite* createBatchSpriteWithName(const std::string& name,
+                                        const std::string& shSheetName,
+                                        const std::string& shFile,
+                                        LevelHelper_TAG tag);
+    
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    
+//    //------------------------------------------------------------------------------
+//    //PARALLAX
     void removeParallaxNode(LHParallaxNode* node, bool removeSprites = false);
     void removeAllParallaxes(bool removeSprites = false); //does not remove the sprites
-    //------------------------------------------------------------------------------
-    //BEZIER
-    LHBezierNode* bezierNodeWithUniqueName(const std::string& name);
-    CCArray*      bezierNodesWithTag(enum LevelHelper_TAG tag);
-    CCArray*      allBeziers(void);
-    void          removeBezier(LHBezierNode* node);
-    void          removeAllBezierNodes(void);
-    //call this is you want to remove a bezier containg a physical body in one of the contact callbacks
-    //to actually remove the bezier call -removeMarkedBeziers at the end of the tick method
-    //do not call this method on both types inside beginOrEnd callback, call only on begin or on end type
-    void markBezierForRemoval(LHBezierNode* node); 
-    void removeMarkedBeziers(void); //actually removes the beziers that were marked for removal
+//    //------------------------------------------------------------------------------
+//    //------------------------------------------------------------------------------
 
-    //------------------------------------------------------------------------------
     //GRAVITY
     bool isGravityZero(void);
     void createGravity(b2World* world);
     //------------------------------------------------------------------------------
-    //PHYSIC BOUNDARIES
+//    //PHYSIC BOUNDARIES
     void createPhysicBoundaries(b2World* _world);
-    
+
     //this method should be used when using dontStretchArtOnIpad
     //see api documentatin for more info
     void createPhysicBoundariesNoStretching(b2World * _world);
-    
+
     CCRect physicBoundariesRect(void);
     bool hasPhysicBoundaries(void);
-    
+
     b2Body* leftPhysicBoundary(void);
-    LHSprite* leftPhysicBoundarySprite(void);
+    LHNode* leftPhysicBoundaryNode(void);
     b2Body* rightPhysicBoundary(void);
-    LHSprite* rightPhysicBoundarySprite(void);
+    LHNode* rightPhysicBoundaryNode(void);
     b2Body* topPhysicBoundary(void);
-    LHSprite* topPhysicBoundarySprite(void);
+    LHNode* topPhysicBoundaryNode(void);
     b2Body* bottomPhysicBoundary(void);
-    LHSprite* bottomPhysicBoundarySprite(void);
+    LHNode* bottomPhysicBoundaryNode(void);
     void removePhysicBoundaries(void);
-    //------------------------------------------------------------------------------
-    //LEVEL INFO
+    
+//    //------------------------------------------------------------------------------
+//    //LEVEL INFO
     CCSize gameScreenSize(void); //the device size set in loaded level
     CCRect gameWorldSize(void); //the size of the game world
-    //------------------------------------------------------------------------------
-    //BATCH
-    unsigned int numberOfBatchNodesUsed(void);
-    void removeUnusedBatchesFromMemory(void);
-    /*More methods in LHBatchExt.h - download from http://www.levelhelper.org*/
-    //------------------------------------------------------------------------------
-    //ANIMATION
-    void startAnimationWithUniqueName(const std::string& animationName, 
-                                      LHSprite* sprite, 
-                                      CCObject* customAnimNotifierId = NULL,
-                                      SEL_CallFuncND customAnimNotifierSel = NULL);
-    
-    void stopAnimationOnSprite(LHSprite* sprite);
-    
-    //this will not start the animation - it will just prepare it
-    void prepareAnimationWithUniqueName(const std::string& animName, LHSprite* sprite);
-    
-    //needs to be called before addObjectsToWorld or addSpritesToLayer
-    //signature for registered method should be like this: void HelloWorld::spriteAnimHasEnded(CCSprite* spr, const std::string& animName);
-    //registration is done like this:  lh->registerNotifierOnAnimationEnds(this, callfuncND_selector(HelloWorld::spriteAnimHasEnded));
-    //this will trigger for all type of animations even for the ones controlled by you will next/prevFrameFor...
-    void registerNotifierOnAllAnimationEnds(CCObject* obj, SEL_CallFuncND sel);
-    
-    /*
-     by default the notification on animation end works only on non-"loop forever" animations
-     if you want to receive notifications on "loop forever" animations enable this behaviour
-     before addObjectsToWorld by calling the following function
-     */
-    void enableNotifOnLoopForeverAnimations(void);
-    
-    /*More methods in LHAnimationsExt.h - download from http://www.levelhelper.org*/
-    //------------------------------------------------------------------------------
-    //PATH
-    void moveSpriteOnPathWithUniqueName(LHSprite * ccsprite, 
-                                        const   std::string& pathUniqueName,
-                                        float   time, 
-                                        bool    startAtEndPoint,
-                                        bool    isCyclic,
-                                        bool    restartOtherEnd,
-                                        int     axis,
-                                        bool    flipx,
-                                        bool    flipy,
-                                        bool    deltaMove);//describe path movement without setting the sprite position on the actual points on the path
-    
-    //DISCUSSION
-    //signature for registered method should be like this: void HelloWorld::spriteMoveOnPathEnded(LHSprite* spr);
-    //registration is done like this:  lh->registerNotifierOnPathEnd(this, callfuncN_selector(HelloWorld::spriteMoveOnPathEnded));
-    void registerNotifierOnAllPathEndPoints(CCObject* obj, SEL_CallFuncN sel);
+//    //------------------------------------------------------------------------------
 
-    
-    /*More methods in LHPathExt.h - download from http://www.levelhelper.org*/
     //------------------------------------------------------------------------------
     //PHYSICS
     static void setMeterRatio(float ratio); //default is 32.0f
@@ -353,80 +340,56 @@ public:
     
     static CCPoint metersToPoints(b2Vec2 vec); //Box2d point to Cocos2d point
     static CCPoint metersToPixels(b2Vec2 vec); //Box2d point to Cocos2d pixels
-    //------------------------------------------------------------------------------
-    //needed when deriving this class
-    virtual void setSpriteProperties(LHSprite* ccsprite, LHDictionary* spriteProp);
-    virtual void setCustomAttributesForPhysics(LHDictionary* spriteProp, b2Body* body, LHSprite* sprite);
-    virtual void setCustomAttributesForNonPhysics(LHDictionary* spriteProp, LHSprite* sprite);
-    virtual void setCustomAttributesForBezierBodies(LHDictionary* bezierProp, CCNode* sprite, b2Body* body);
-    ////////////////////////////////////////////////////////////////////////////
     
 private:
+    
     void initObjects(void);
     
+    friend class LHJoint;
+    friend class LHSprite;
+    friend class LHBezier;
+    friend class LHLayer;
+    friend class LHCuttingEngineMgr;
+
     
+    void createAllNodes();
+    void createAllJoints();
+    
+    LHParallaxNode*  parallaxNodeFromDictionary(LHDictionary* parallaxDict, CCLayer*layer);
+    void createParallaxes();
+    void startAllPaths();
+
+    b2World* getPhysicsWorld();
+    void removeMainLayer();
+    
+    void removeJoint(LHJoint* jt);
     void callLoadingProgressObserverWithValue(float val);
     
-    //------------------------------------------------------------------------------
-    void createAllAnimationsInfo(void);
-    void createAnimationFromDictionary(LHDictionary* spriteProp, LHSprite* ccsprite);
-
-    //------------------------------------------------------------------------------
-    void createAllBeziers(void);
-    //------------------------------------------------------------------------------
-    void createPathOnSprite(LHSprite* ccsprite, LHDictionary* spriteProp);
-    //------------------------------------------------------------------------------
-    void createSpritesWithPhysics(void);
-    void setFixtureDefPropertiesFromDictionary(LHDictionary* spritePhysic, b2FixtureDef* shapeDef);
-
-    b2Body* b2BodyFromDictionary(LHDictionary* spritePhysic,
-                                 LHDictionary* spriteProp,
-                                 LHSprite* ccsprite,
-                                 b2World* _world);
-    
-    void releaseAllSprites(void);
-    //------------------------------------------------------------------------------
-    void createParallaxes(void);
-    LHParallaxNode* parallaxNodeFromDictionary(LHDictionary* parallaxDict, CCLayer* layer);
-    //------------------------------------------------------------------------------
-    void createJoints(void);
-    LHJoint* jointFromDictionary(LHDictionary* joint, b2World* world);
-    void releaseAllJoints(void);
-    //------------------------------------------------------------------------------
-    void releasePhysicBoundaries(void);
-    b2Body* physicBoundarieForKey(const std::string& key);
-    //------------------------------------------------------------------------------
     void loadLevelHelperSceneFile(const char* levelFile,
                                   const char* subfolder, 
                                   const char* imgFolder);
-    
-    LHBatch* loadBatchNodeWithImage(const std::string& image);
-    void addBatchNodesToLayer(CCLayer* _cocosLayer);
-    void addBatchNodeToLayer(CCLayer* _cocosLayer, LHBatch* info);
-    LHBatch* batchNodeForFile(const std::string& image);
-    void releaseAllBatchNodes(void);
-    
-    void loadLevelHelperSceneFromDictionary(const LHDictionary& levelDictionary, 
+
+    void loadLevelHelperSceneFromDictionary(const LHDictionary& levelDictionary,
                                             const std::string& imgFolder);
         
     void processLevelFileFromDictionary(LHDictionary* dictionary);
-        
+
+    LHDictionary* dictionaryInfoForSpriteNodeNamed(const std::string& name, LHDictionary* dict);
+    
+    static void setTouchDispatcherForBezierWithTag(LHBezier* object, int tag);
+    static void setTouchDispatcherForSpriteWithTag(LHSprite* object, int tag);
+    static void removeTouchDispatcherFromSprite(LHSprite* object);
+    static void removeTouchDispatcherFromBezier(LHBezier* object);
+    
+    b2Body* physicBoundarieForKey(const std::string& key);
+    void setFixtureDefPropertiesFromDictionary(LHDictionary* spritePhysic, b2FixtureDef* shapeDef);
     void createPhysicBoundariesHelper(b2World* _world,
                                       const CCPoint& wbConv,
                                       const CCPoint& pos_offset);
 
-    void setTouchDispatcherForBezierWithTag(LHBezierNode* object, int tag);
-    void setTouchDispatcherForSpriteWithTag(LHSprite* object, int tag);
-    void removeTouchDispatcherFromSprite(LHSprite* object);
-    void removeTouchDispatcherFromBezier(LHBezierNode* object);
-    
-    LHSprite* spriteFromDictionary(LHDictionary* spriteProp);
-    LHSprite* spriteWithBatchFromDictionary(LHDictionary* spriteProp, LHBatch* lhBatch);
 };
 
 #endif
-
-
 
 
 

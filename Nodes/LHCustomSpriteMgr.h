@@ -29,10 +29,13 @@
 #define __LH_CUSTOM_SPRITE_MGR_SINGLETON
 
 #include "cocos2d.h"
-#include "LHSprite.h"
 
-typedef LHSprite* (*pt2BatchSprite)(CCSpriteBatchNode *batchNode, const CCRect& rect);
-typedef LHSprite* (*pt2FileSprite)(const char *pszFileName, const CCRect& rect);
+class LHSprite;
+class LHBatch;
+class LHDictionary;
+
+typedef LHSprite* (*pt2BatchSprite)(LHDictionary *dict, LHBatch* batch);
+typedef LHSprite* (*pt2FileSprite)(LHDictionary* dict);
 typedef std::pair<pt2FileSprite, pt2BatchSprite> lh_spriteCreationMethods;
 
 using namespace cocos2d;
@@ -43,7 +46,16 @@ private:
     
     std::map<int, lh_spriteCreationMethods > classesDictionary;    
 
+    lh_spriteCreationMethods baseSpriteClass;
 public:
+    
+    
+    //when specified the base class of all sprites will be this
+    //base class needs to be a subclass of LHSprite
+    void registerBaseSpriteClass(pt2FileSprite fSprite,
+                                 pt2BatchSprite bSprite);
+    lh_spriteCreationMethods baseClass();
+
     
     void registerCustomSpriteClassForTag(pt2FileSprite fSprite, 
                                          pt2BatchSprite bSprite, 

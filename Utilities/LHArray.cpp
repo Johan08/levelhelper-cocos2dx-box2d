@@ -10,6 +10,8 @@
 #include "LHDictionary.h"
 #include "LHObject.h"
 #include <stdlib.h>
+
+#include "cocoa/CCNS.h"
 int LHArray::numberOfArrays = 0;
 //------------------------------------------------------------------------------
 LHArray::LHArray()
@@ -19,9 +21,8 @@ LHArray::LHArray()
 //------------------------------------------------------------------------------
 LHArray::~LHArray(){
     
-    //printf("ARRAY DEALLOC %d\n", --numberOfArrays);
-    for(size_t i = 0; i< objects.size(); ++i)
-    {
+//    printf("ARRAY DEALLOC %d\n", --numberOfArrays);
+    for(size_t i = 0; i< objects.size(); ++i){
         delete objects[i];
     }
     objects.clear();
@@ -192,6 +193,114 @@ LHObject* LHArray::objectAtIndex(const int& idx){
     return 0;
 }
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+cocos2d::CCRect LHArray::rectAtIndex(const int& idx){
+    
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("rectAtIndex %d is not a string\n", idx);
+        }
+        else {
+            return cocos2d::CCRectFromString(obj->stringValue().c_str());
+        }
+    }
+    return cocos2d::CCRectMake(0, 0, 0, 0);
+}
+//------------------------------------------------------------------------------
+float LHArray::floatAtIndex(const int& idx){
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::FLOAT_TYPE){
+            printf("floatAtIndex %d is not a float\n", idx);
+        }
+        else {
+            return obj->floatValue();
+        }
+    }
+    return 0.0f;
+}
+//------------------------------------------------------------------------------
+int LHArray::intAtIndex(const int& idx){
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::INT_TYPE){
+            printf("intAtIndex %d is not a int\n", idx);
+        }
+        else {
+            return obj->intValue();
+        }
+    }    
+    return 0;
+}
+//------------------------------------------------------------------------------
+bool LHArray::boolAtIndex(const int& idx){
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::BOOL_TYPE){
+            printf("boolAtIndex %d is not a bool\n", idx);
+        }
+        else {
+            return obj->boolValue();
+        }
+    }    
+    return false;
+}
+//------------------------------------------------------------------------------
+cocos2d::CCPoint LHArray::pointAtIndex(const int& idx){
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("pointAtIndex %d is not a string\n", idx);
+        }
+        else {
+            return cocos2d::CCPointFromString(obj->stringValue().c_str());
+        }
+    }    
+    return cocos2d::CCPointMake(0, 0); 
+}
+//------------------------------------------------------------------------------
+cocos2d::CCSize LHArray::sizeAtIndex(const int& idx){
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("sizeAtIndex %ds is not a string\n", idx);
+        }
+        else {
+            return cocos2d::CCSizeFromString(obj->stringValue().c_str());
+        }
+    }    
+    return cocos2d::CCSizeMake(0, 0);
+}
+//------------------------------------------------------------------------------
+cocos2d::ccColor3B LHArray::colorAtIndex(const int& idx){
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("colorAtIndex %d is not a string\n", idx);
+        }
+        else {
+            cocos2d::CCRect rect = cocos2d::CCRectFromString(obj->stringValue().c_str());
+            return cocos2d::ccc3(rect.origin.x*255.0f, rect.origin.y*255.0f, rect.size.width*255.0f);
+        }
+    }    
+    return cocos2d::ccc3(255.0f, 255.0f, 255.0f);
+}
+//------------------------------------------------------------------------------
+std::string LHArray::stringAtIndex(const int& idx){
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::STRING_TYPE){
+            printf("stringAtIndex %d is not a string\n", idx);
+        }
+        else {
+            return obj->stringValue();
+        }
+    }    
+    return std::string();
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 int LHArray::count(void){
     return (int)objects.size();
 }
@@ -211,5 +320,68 @@ int LHArray::intFromString(const std::string& str)
 float LHArray::floatFromString(const std::string& str)
 {
     return atof(str.c_str());
+}
+//------------------------------------------------------------------------------
+LHDictionary* LHArray::dictAtIndex(const int& idx){
+
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::LH_DICT_TYPE){
+            printf("dictAtIndex %d is not a dictionary\n", idx);
+        }
+        else {
+            return obj->dictValue();
+        }
+    }    
+    return NULL;
+}
+//------------------------------------------------------------------------------
+LHArray* LHArray::arrayAtIndex(const int& idx){
+    LHObject* obj = objectAtIndex(idx);
+    if(obj){
+        if(obj->type() != LHObject::LH_ARRAY_TYPE){
+            printf("arrayAtIndex %d is not a array\n", idx);
+        }
+        else {
+            return obj->arrayValue();
+        }
+    }    
+    return NULL;    
+}
+//------------------------------------------------------------------------------
+void LHArray::insertObjectsInVector(std::vector<std::string>* vec){
+    for(int i = 0; i< count(); ++i)
+    {
+        LHObject* obj = objectAtIndex(i);
+        if(obj){
+            if(obj->type() == LHObject::STRING_TYPE){
+                vec->push_back(obj->stringValue());
+            }
+        }    
+    }
+}
+//------------------------------------------------------------------------------
+void LHArray::insertObjectsInVector(std::vector<float>* vec){
+    for(int i = 0; i< count(); ++i)
+    {
+        LHObject* obj = objectAtIndex(i);
+        if(obj){
+            if(obj->type() == LHObject::FLOAT_TYPE){
+                vec->push_back(obj->floatValue());
+            }
+        }    
+    }
+}
+//------------------------------------------------------------------------------
+void LHArray::insertObjectsInVector(std::vector<bool>* vec){
+    for(int i = 0; i< count(); ++i)
+    {
+        LHObject* obj = objectAtIndex(i);
+        if(obj){
+            if(obj->type() == LHObject::BOOL_TYPE){
+                vec->push_back(obj->boolValue());
+            }
+        }    
+    }
 }
 //------------------------------------------------------------------------------

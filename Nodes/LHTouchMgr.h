@@ -28,13 +28,11 @@
 
 #ifndef __LH_TOUCH_MGR_SINGLETON
 #define __LH_TOUCH_MGR_SINGLETON
-#include "cocos2d.h"
-//#include "include/CCMutableDictionary.h"
-//#include "LHSprite.h"
-//#include "LHBezierNode.h"
-//#include "LevelHelperLoader.h"
 
-class LHBezierNode;
+#include "../lhConfig.h"
+#include "cocos2d.h"
+
+class LHBezier;
 class LHSprite;
 
 using namespace cocos2d;
@@ -50,7 +48,7 @@ public:
     CCEvent* event; //the event
     CCTouch* touch; //the touch 
     LHSprite* sprite; //the sprite on which the touch was performed (nil if touch was performed on a bezier)
-    LHBezierNode* bezier;//the bezier tile shape on which the touch was performed (nil if touch was performed on a sprite)
+    LHBezier* bezier;//the bezier tile shape on which the touch was performed (nil if touch was performed on a sprite)
     
     virtual ~LHTouchInfo(void);
     
@@ -90,10 +88,16 @@ public:
     //sprite will be the LHSprite* instance on which the touch was performed that has the registered tag
     //for specific touch on a certain sprite use the observer from LHSprite
     
-    void registerTouchBeginObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
+    LH_DEPRECATED_ATTRIBUTE void registerTouchBeginObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
+    
+    void registerTouchBeganObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
     void registerTouchMovedObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
     void registerTouchEndedObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag);
         
+    //removing touch begin observer will remove all other observers also
+    void removeTouchBeginObserver(CCObject* observer);
+    void removeTouchMovedObserver(CCObject* observer);
+    void removeTouchEndedObserver(CCObject* observer);
     
     //get back the observer that was registered for a specific tag
     LHObserverPair* onTouchBeginObserverForTag(int tag);
@@ -104,14 +108,16 @@ public:
     int priorityForTag(int tag);
 
 private:
-//    CCDictionary onTouchBeginOnSpriteOfTag;
-//    CCDictionary onTouchMovedOnSpriteOfTag;
-//    CCDictionary onTouchEndedOnSpriteOfTag;
     
-    
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary onTouchBeginOnSpriteOfTag;
+    CCDictionary onTouchMovedOnSpriteOfTag;
+    CCDictionary onTouchEndedOnSpriteOfTag;
+#else
     CCMutableDictionary<int> onTouchBeginOnSpriteOfTag;
     CCMutableDictionary<int> onTouchMovedOnSpriteOfTag;
     CCMutableDictionary<int> onTouchEndedOnSpriteOfTag;
+#endif
     
     std::map<int, bool> swallowTouchesOnTag;
     std::map<int, int> priorityForTouchesOfTag;

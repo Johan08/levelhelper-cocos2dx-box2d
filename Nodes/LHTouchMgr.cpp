@@ -26,7 +26,7 @@
 
 #include "LHTouchMgr.h"
 #include "LHSprite.h"
-#include "LHBezierNode.h"
+#include "LHBezier.h"
 #include "../LevelHelperLoader.h"
 
 
@@ -105,7 +105,12 @@ void LHTouchMgr::swallowTouchesForTag(int tag){
 void LHTouchMgr::registerTouchBeginObserverForTag(CCObject* observer, 
                                                   SEL_CallFuncO selector, 
                                                   int tag){
+    this->registerTouchBeganObserverForTag(observer, selector, tag);
+}
 
+void LHTouchMgr::registerTouchBeganObserverForTag(CCObject* observer, SEL_CallFuncO selector, int tag){
+
+    onTouchBeginOnSpriteOfTag.removeObjectForKey(tag);
     LHObserverPair* pair = LHObserverPair::observerPair();
     pair->object = observer;
     pair->selector = selector;
@@ -116,6 +121,7 @@ void LHTouchMgr::registerTouchMovedObserverForTag(CCObject* observer,
                                                   SEL_CallFuncO selector, 
                                                   int tag){
     
+    onTouchMovedOnSpriteOfTag.removeObjectForKey(tag);
     LHObserverPair* pair = LHObserverPair::observerPair();
     pair->object = observer;
     pair->selector = selector;
@@ -125,12 +131,108 @@ void LHTouchMgr::registerTouchMovedObserverForTag(CCObject* observer,
 void LHTouchMgr::registerTouchEndedObserverForTag(CCObject* observer, 
                                                   SEL_CallFuncO selector, 
                                                   int tag){
-    
+ 
+    onTouchEndedOnSpriteOfTag.removeObjectForKey(tag);
     LHObserverPair* pair = LHObserverPair::observerPair();
     pair->object = observer;
     pair->selector = selector;
     onTouchEndedOnSpriteOfTag.setObject(pair, tag);
 }
+
+//removing touch begin observer will remove all other observers also
+void LHTouchMgr::removeTouchBeginObserver(CCObject* observer){
+    
+//    CCLog("REMOVE TOUCH BEGIN OBSERVER %p", observer);
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* keys = onTouchBeginOnSpriteOfTag.allKeys();
+
+    if(keys){
+        for(int i = 0; i < keys->count(); ++i){
+            
+            LHObserverPair* pair = (LHObserverPair*)onTouchBeginOnSpriteOfTag.objectForKey(((CCInteger*)keys->objectAtIndex(i))->getValue());
+            
+            if(pair->object == observer){
+                onTouchBeginOnSpriteOfTag.removeObjectForKey(((CCInteger*)keys->objectAtIndex(i))->getValue());
+            }
+        }
+    }
+    
+#else
+    
+    std::vector<int> keys = onTouchBeginOnSpriteOfTag.allKeys();
+    for(int i = 0; i < keys.size(); ++i){
+       LHObserverPair* pair = (LHObserverPair*)onTouchBeginOnSpriteOfTag.objectForKey(keys[i]);
+
+        if(pair->object == observer){
+            onTouchBeginOnSpriteOfTag.removeObjectForKey(keys[i]);
+        }
+    }    
+#endif
+    
+    removeTouchMovedObserver(observer);
+    removeTouchEndedObserver(observer);
+    
+    
+}
+void LHTouchMgr::removeTouchMovedObserver(CCObject* observer){
+    
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* keys = onTouchMovedOnSpriteOfTag.allKeys();
+    
+    if(keys){
+        for(int i = 0; i < keys->count(); ++i){
+            
+            LHObserverPair* pair = (LHObserverPair*)onTouchMovedOnSpriteOfTag.objectForKey(((CCInteger*)keys->objectAtIndex(i))->getValue());
+            
+            if(pair->object == observer){
+                onTouchMovedOnSpriteOfTag.removeObjectForKey(((CCInteger*)keys->objectAtIndex(i))->getValue());
+            }
+        }
+    }
+    
+#else
+    
+    std::vector<int> keys = onTouchMovedOnSpriteOfTag.allKeys();
+    for(int i = 0; i < keys.size(); ++i){
+        LHObserverPair* pair = (LHObserverPair*)onTouchMovedOnSpriteOfTag.objectForKey(keys[i]);
+        
+        if(pair->object == observer){
+            onTouchMovedOnSpriteOfTag.removeObjectForKey(keys[i]);
+        }
+    }    
+#endif
+}
+void LHTouchMgr::removeTouchEndedObserver(CCObject* observer){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* keys = onTouchEndedOnSpriteOfTag.allKeys();
+    
+    if(keys){
+        for(int i = 0; i < keys->count(); ++i){
+            
+            LHObserverPair* pair = (LHObserverPair*)onTouchEndedOnSpriteOfTag.objectForKey(((CCInteger*)keys->objectAtIndex(i))->getValue());
+            
+            if(pair->object == observer){
+                onTouchEndedOnSpriteOfTag.removeObjectForKey(((CCInteger*)keys->objectAtIndex(i))->getValue());
+            }
+        }
+    }
+    
+#else
+    
+    std::vector<int> keys = onTouchEndedOnSpriteOfTag.allKeys();
+    for(int i = 0; i < keys.size(); ++i){
+        LHObserverPair* pair = (LHObserverPair*)onTouchEndedOnSpriteOfTag.objectForKey(keys[i]);
+        
+        if(pair->object == observer){
+            onTouchEndedOnSpriteOfTag.removeObjectForKey(keys[i]);
+        }
+    }    
+#endif
+}
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 LHObserverPair* LHTouchMgr::onTouchBeginObserverForTag(int tag){

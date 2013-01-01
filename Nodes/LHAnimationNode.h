@@ -29,69 +29,143 @@
 #define __LHANIMATION_NODE__
 
 #include "cocos2d.h"
-#include "Box2d/Box2D.h"
-
 using namespace cocos2d;
+//notifications
+#define LHAnimationHasEndedAllRepetitionsNotification "LHAnimationHasEndedAllRepetitionsNotification"
+#define LHAnimationHasEndedNotification "LHAnimationHasEndedNotification"
+#define LHAnimationFrameNotification "LHAnimationFrameNotification" //frame notifications are only triggered on frames with user data
+
+//user info keys
+#define LHAnimationSpriteObject "LHAnimationSpriteObject"
+#define LHAnimationUserInfo "LHAnimationUserInfo"
+#define LHAnimationFrameName "LHAnimationFrameName"
 
 class LHSprite;
-class LHAnimationNode : public CCObject
-{
-private:
-    
-    std::string uniqueName;
-    std::string imageName;
-    
-    //CCArray frames; //object is CCSpriteFrame*
-    CCMutableArray<CCSpriteFrame*> frames;
-    std::vector<CCRect> framesInfo;
-    
+class LHBatch;
+class LHDictionary;
 
-    CCSpriteBatchNode* batchNode; //week ptr
-    
-//    static int numberOfAnimNodes;
+
+class LHAnimationFrameInfo : public CCObject
+{
     
 public:
-    bool loop;
-    float speed;
-    int repetitions;
-    bool startAtLaunch;    
-  
-    virtual bool init(void);
-    virtual ~LHAnimationNode(void);
-	LHAnimationNode(void);    
+    
+    virtual bool initWithDictionary(LHDictionary* dictionary, LHSprite* sprite);
+    virtual ~LHAnimationFrameInfo();
+    LHAnimationFrameInfo();
 
-    bool initWithUniqueName(const char* name);
-    static LHAnimationNode* animationNodeWithUniqueName(const char* name);    
-    
-    void setImageName(const char* img);
-    std::string& getImageName(void);
-    
-    void setUniqueName(const char* name);
-    const std::string& getUniqueName(void);
-    
-    //void setFrames( CCMutableArray<CCSpriteFrame*> * frames);
-    
-    void setFramesInfo(const std::vector<CCRect>& frmInfo);
 
-    void computeFrames(void);//needs a valid batchNode and framesInfo
+    static LHAnimationFrameInfo* frameWithDictionary(LHDictionary* dictionary, LHSprite* sprite);
     
-    //CCArray* getFrames(void); //object of ccarray is CCSpriteFrame*
-    CCMutableArray<CCSpriteFrame*>* getFrames(void);
+    float   getDelayPerUnit(){return delayPerUnit;}
+    CCPoint getOffset(){return offset;}
     
-    void setBatchNode(CCSpriteBatchNode* node);
+    LHDictionary*       getNotifications(){return notifications;}
+    const std::string&  getSpriteFrameName(){return spriteframeName;}
 
-    //call setBatchNode then cumputeFrames first
-    void runAnimationOnSprite(LHSprite* node,
-                              int startFrame,
-                              CCObject* animNotifierId,
-                              SEL_CallFuncND animNotifierSel,
-                              const bool& notifOnLoop);
+    CCRect  getRect(){return rect;}
+    bool    getRectIsRotated(){return rectIsRotated;}
+    CCPoint getSpriteFrameOffset(){return spriteFrameOffset;}
+    CCSize  getSpriteFrameSize(){return spriteFrameSize;}
     
-    int getNumberOfFrames(void);
-
-    void setAnimationTexturePropertiesOnSprite(LHSprite* ccsprite);
-    void setFrame(int frameNo, LHSprite* spr);
+private:
+    float           delayPerUnit;
+    CCPoint         offset;
+    LHDictionary*   notifications;
+    std::string     spriteframeName;
+    CCRect          rect;
+    bool            rectIsRotated;
+    CCPoint         spriteFrameOffset;
+    CCSize          spriteFrameSize;
 };
 ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+class LHAnimationNode : public CCObject
+{
+    
+public:
+    
+//    virtual bool initWithDictionary(LHDictionary* dictionary, LHSprite* sprite);
+    virtual ~LHAnimationNode();
+    LHAnimationNode(LHDictionary* dic, LHSprite* sprite, std::string shScene);
+    
+//    static LHAnimationNode* animationWithDictionary(LHDictionary* dic, LHSprite* sprite);
 
+    
+    const std::string& getSHSceneName(){return shSceneName;}
+    const std::string& getUniqueName(){return uniqueName;}
+    const std::string& getSheetName(){return sheetName;}
+
+    float   getDelayPerUnit(){return delayPerUnit;}
+    void    setDelayPerUnit(const float& f){delayPerUnit = f;}
+    
+    bool    getLoop(){return loop;}
+    void    setLoop(const bool& l){loop = l;}
+
+    int     getRepetitions(){return repetitions;}
+    void    setRepetitions(const int& r){repetitions = r;}
+    
+    bool    getRestoreOriginalFrame(){return restoreOriginalFrame;}
+    void    setRestoreOriginalFrame(const bool& b){restoreOriginalFrame = b;}
+    
+    LHSprite* getSprite(){return sprite;}
+    
+    bool    getPaused(){return paused;}
+    void    setPaused(const bool& p){paused = p;}
+    
+    LHDictionary* getUserDataForCurrentFrame();
+    
+    void prepare();//sets first frame of the animation as texture of the sprite
+    void play();
+    void restart();
+    
+    int     getNumberOfFrames();
+    void    setFrame(int frm);
+    int     getCurrentFrame();
+    
+    void nextFrame();
+    void prevFrame();
+    void nextFrameAndRepeat();
+    void prevFrameAndRepeat();
+    bool isAtLastFrame();
+    
+    void update(float dt);
+    
+    void restoreFrame();//only restore the sprites frame if restoreOriginaFrame is set
+    ////////////////////////////////////////////////////////////////////////////////
+    
+    void setOldBatch(LHBatch* b);
+    void setOldTexture(CCTexture2D* tex);
+    void setOldRect(CCRect r);
+    
+    float totalTime();
+    
+private:
+    
+    std::string shSceneName;
+    std::string uniqueName;
+    std::string sheetName;
+    
+    float           delayPerUnit;
+    CCArray*        frames;//array of LHAnimationFrameInfo;
+    bool            loop;
+    int             repetitions;
+    int             repetitionsPerformed;
+    bool            restoreOriginalFrame;
+    
+    LHSprite*       sprite;//the sprite on which this animation obj is assigned to    
+    
+    int             currentFrame;
+    float           elapsedFrameTime;
+    LHAnimationFrameInfo* activeFrame;
+    
+    bool            paused;
+    
+    LHBatch*        oldBatch;
+    CCTexture2D*    oldTexture;
+    CCRect          oldRect;
+    CCSpriteFrame*  oldSpriteFrame;
+    
+    void setActiveFrameTexture();
+};
 #endif

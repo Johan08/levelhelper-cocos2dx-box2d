@@ -28,8 +28,9 @@
 #ifndef __LH_BEZIER_NODE__
 #define __LH_BEZIER_NODE__
 
+#include "../lhConfig.h"
 #include "cocos2d.h"
-#include "Box2d/Box2D.h"
+#include "Box2D/Box2D.h"
 #include "../Utilities/LHDictionary.h"
 #include "LHTouchMgr.h"
 
@@ -38,6 +39,7 @@ using namespace cocos2d;
 class LHSprite;
 class LHPathNode;
 class LevelHelperLoader;
+class LHAbstractClass;
 
 typedef struct __LHBezierBlendingInfo{
   
@@ -48,15 +50,22 @@ typedef struct __LHBezierBlendingInfo{
 } LHBezierBlendingInfo;
 
 
-class LHBezierNode : public CCNode, public CCStandardTouchDelegate
+class LHBezier : public CCNode, public CCStandardTouchDelegate
 {
 protected:
     
+#if COCOS2D_VERSION >= 0x00020000
+    CCGLProgram *mShaderProgram;
+	GLint		mColorLocation;
+#endif
+
 	bool isClosed;
 	bool isTile;
 	bool isVisible;
 	bool isLine;
 	bool isPath;
+    bool drawBorder;
+    float opacity;
     std::string uniqueName;
 	b2Body* body; //can be 0
     std::vector<CCPoint> pathPoints;
@@ -79,15 +88,21 @@ protected:
     
     friend class LevelHelperLoader;    
     
-    LHObserverPair touchBeginObserver;
-    LHObserverPair touchMovedObserver;
-    LHObserverPair touchEndedObserver;
+    LHObserverPair* touchBeginObserver;
+    LHObserverPair* touchMovedObserver;
+    LHObserverPair* touchEndedObserver;
     bool swallowTouches;
+    bool touchIsDisabled;
+    int touchPriority;
+    
     LHObserverPair* tagTouchBeginObserver;
     LHObserverPair* tagTouchMovedObserver;
     LHObserverPair* tagTouchEndedObserver;
     
+     LHAbstractClass* userCustomInfo;
 public:
+    
+    const std::vector<CCPoint>& getPathPoints(){return pathPoints;}
     
     bool getIsClosed(void){return isClosed;}
  
@@ -108,30 +123,44 @@ public:
                                   GLenum blendSource = GL_DST_COLOR, 
                                   GLenum blendDestination = GL_ZERO);
     
-    static bool isLHBezierNode(CCNode* obj);
+    static bool isLHBezier(CCNode* obj);
+    static std::string uniqueNameForBody(b2Body* body);
+    static LHBezier* bezierForBody(b2Body* body);
+    static int tagForBody(b2Body* body);
     
     virtual void init(void);
-    virtual ~LHBezierNode(void);
-    LHBezierNode(void);
+    virtual ~LHBezier(void);
+    LHBezier(void);
     
-    bool initWithDictionary(LHDictionary* properties, 
-                            CCLayer* ccLayer, 
-                            b2World* world);
-    static LHBezierNode* nodeWithDictionary(LHDictionary* properties, 
-                                            CCLayer* ccLayer, 
-                                            b2World* world);
     
-    LHPathNode* addSpriteOnPath(LHSprite* spr, 
-                                float   pathSpeed, 
-                                bool    startAtEndPoint,
-                                bool    isCyclic,
-                                bool    restartOtherEnd,
-                                int     axis,
-                                bool    flipx,
-                                bool    flipy,
-                                bool    deltaMove);
+    void removeSelf();//use this to remove the bezier node entirely;
+    LevelHelperLoader* parentLoader();
     
+    bool initWithDictionary(LHDictionary* properties);
+    
+    static LHBezier* bezierWithDictionary(LHDictionary* properties);
+        
     virtual void draw(void);
+    
+    
+    //USER DATA
+    //--------------------------------------------------------------------------
+    //will return "No Class" if no class is defined
+    //will return the class name if a class is assigned to this sprite
+    std::string userInfoClassName();
+    
+    //this will return an instance of the class defined in LH under Custom Class Properties
+    //check for NULL to see if you have any info
+    //use the class properties to read all your info
+    //e.g MyClass* myInfo = (MyClass*)sprite->userInfo();  if(myInfo){ int life = myInfo.life); }
+    
+    //use the class properties to set new (other then the one set in LH) values
+    //e.g MyClass* myInfo = (MyClass*)sprite->userInfo(); if(myInfo){ myInfo.life = 40; } )
+    void* userInfo();
+    
+
+    
+    
     
     //TOUCH METHODS
     //------------------------------------------------------------------------------
@@ -145,22 +174,42 @@ public:
     //because compiler doesn't know how to cast
     //info will have all information regarding the touch (see API Documentation or top of this file)
     //for generic touch on sprites with tag use the observers from LevelHelperLoader
-    void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
+    LH_DEPRECATED_ATTRIBUTE void registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector);
+
+    void registerTouchBeganObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector);
     void registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector);
 
+    void removeTouchObserver(); //once removed it cannot be added back - (error in Cocos2d) - use -(void)setTouchedDisabled:(bool)val;
+    
     virtual bool ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent);
 	virtual void ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent);
 	virtual void ccTouchCancelled(CCTouch *pTouch, CCEvent *pEvent);
 
+    void setTouchedDisabled(bool val){touchIsDisabled = val;}
+    bool getTouchedDisabled(){return touchIsDisabled;}
+    
+    void setSwallowTouches(bool val){swallowTouches = val;}
+    bool getSwallowTouches(){return swallowTouches;}
+    
+    void setTouchPriority(int val){touchPriority = val;}
+    int getTouchPriority(){return touchPriority;}
+
     virtual void touchDelegateRetain() {} //compatibility with old cocos2d-x version
     virtual void touchDelegateRelease() {}//compatibility with old cocos2d-x version
+    virtual void onExit();
+    
+//    virtual void visit();
 private:
+    
+    
+    void loadUserCustomInfoFromDictionary(LHDictionary* dictionary);
     
     static CCPoint pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, float t);
     
-    void initTileVerticesFromDictionary(LHDictionary* bezierDict);
+    void initTileVerticesFromDictionary(LHDictionary* dictionary, LHArray* fixtures);
+//    void initTileVerticesFromDictionary(LHDictionary* bezierDict);
     void initPathPointsFromDictionary(LHDictionary* bezierDict);
     void createBodyFromDictionary(LHDictionary* bezierDict, b2World* world);
     

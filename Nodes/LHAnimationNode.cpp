@@ -24,287 +24,414 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHAnimationNode.h"
-#include "LHSprite.h"
 #include "../LevelHelperLoader.h"
 #include "LHSettings.h"
-
-//int LHAnimationNode::numberOfAnimNodes;
+#include "../Utilities/LHDictionary.h"
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-bool LHAnimationNode::init(void){
-
-    return true;
-}
-LHAnimationNode::~LHAnimationNode(void){
- 
-//    CCLog("LH_ANIMATION_NODE dealloc %d", --numberOfAnimNodes);
-    frames.removeAllObjects();
-}
-LHAnimationNode::LHAnimationNode(void){
-        
-  //  ++numberOfAnimNodes;
+bool LHAnimationFrameInfo::initWithDictionary(LHDictionary* dictionary, LHSprite* sprite){
     
-    batchNode = 0;
-    loop = false;
-    speed = 0.2f;
+    if(NULL == dictionary)
+        return false;
     
-    repetitions = 1;
-    startAtLaunch = true;
-}
-////////////////////////////////////////////////////////////////////////////////
-bool LHAnimationNode::initWithUniqueName(const char* name){
-    CCAssert(name != 0, "Name must not be NULL");
-    setUniqueName(name);
-    init();
-    return true;
-}
-LHAnimationNode* LHAnimationNode::animationNodeWithUniqueName(const char* name){
+    delayPerUnit = dictionary->floatForKey("delayPerUnit");
+    offset = dictionary->pointForKey("offset");
+    
+    notifications = NULL;
+    
+    if(dictionary->objectForKey("notifications"))
+        notifications= new LHDictionary(dictionary->dictForKey("notifications"));
+    
+    spriteframeName = std::string(dictionary->stringForKey("spriteframe"));
+    
+    rect = dictionary->rectForKey("Frame");
+    rect = CC_RECT_POINTS_TO_PIXELS(rect);
+    
+    rect = LHSettings::sharedInstance()->transformedTextureRect(rect, sprite->getImageFile());
+    
+    spriteFrameOffset = dictionary->pointForKey("TextureOffset");
+    spriteFrameOffset.x *= CC_CONTENT_SCALE_FACTOR();
+    spriteFrameOffset.y *= CC_CONTENT_SCALE_FACTOR();
 
-    LHAnimationNode *anim = new LHAnimationNode();
-	if (anim && anim->initWithUniqueName(name))
-    {
-	    anim->autorelease();
-        return anim;
+    if(LHSettings::sharedInstance()->isHDImage(sprite->getImageFile())){
+        spriteFrameOffset.x *= 2.0f;
+        spriteFrameOffset.y *= 2.0f;
     }
-    CC_SAFE_DELETE(anim);
+
+    
+    CCPoint tempOffset = spriteFrameOffset;
+    
+    tempOffset.x += offset.x;
+    tempOffset.y -= offset.y;
+    
+    offset = tempOffset;
+    
+    rectIsRotated   = dictionary->boolForKey("IsRotated");
+
+    spriteFrameSize = dictionary->sizeForKey("SpriteSize");
+    spriteFrameSize.width *= CC_CONTENT_SCALE_FACTOR();
+    spriteFrameSize.height*= CC_CONTENT_SCALE_FACTOR();
+    
+    if(LHSettings::sharedInstance()->isHDImage(sprite->getImageFile())){
+        spriteFrameSize.width *= 2.0f;
+        spriteFrameSize.height*= 2.0f;
+    }
+
+    return true;
+}
+//------------------------------------------------------------------------------
+LHAnimationFrameInfo::~LHAnimationFrameInfo(){
+    //CCLog("LHSpriteFrame Dealloc %s\n", spriteframeName.c_str());
+    delete notifications;
+}
+//------------------------------------------------------------------------------
+LHAnimationFrameInfo::LHAnimationFrameInfo(){
+    notifications = NULL;
+}
+//------------------------------------------------------------------------------
+LHAnimationFrameInfo* LHAnimationFrameInfo::frameWithDictionary(LHDictionary* dictionary, LHSprite* sprite){
+    
+    LHAnimationFrameInfo *pobNode = new LHAnimationFrameInfo();
+	if (pobNode && pobNode->initWithDictionary(dictionary, sprite))
+    {
+	    pobNode->autorelease();
+        return pobNode;
+    }
+    CC_SAFE_DELETE(pobNode);
 	return NULL;
-}
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-void LHAnimationNode::setUniqueName(const char* name){
-    CCAssert(name!=0, "UniqueName must not be nil");
-    uniqueName = std::string(name);
-}
-const std::string& LHAnimationNode::getUniqueName(void){
-    return uniqueName;
-}
-////////////////////////////////////////////////////////////////////////////////
-//void LHAnimationNode::setFrames(CCMutableArray<CCSpriteFrame*>* frms){
-//    frames.removeAllObjects();
-//    frames.addObjectsFromArray(frms);
-//}
-void LHAnimationNode::setImageName(const char* img){
-    imageName = std::string(img);
-}
-std::string& LHAnimationNode::getImageName(void){
-    return imageName;
-}
-////////////////////////////////////////////////////////////////////////////////
-void LHAnimationNode::setFramesInfo(const std::vector<CCRect>& frmInfo)
-{
-    framesInfo.clear();
     
-    for(int i = 0; i< (int)frmInfo.size(); ++i)
-    {
-        framesInfo.push_back(frmInfo[i]);
-    }
 }
+//------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
-void LHAnimationNode::computeFrames(void)
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+LHAnimationNode::~LHAnimationNode()
 {
-    if(batchNode == 0)
+    //CCLog("LH Animation Dealloc %s %p", uniqueName.c_str(), this);
+    oldSpriteFrame->release();
+    delete frames;
+    activeFrame = NULL;
+}
+
+LHAnimationNode::LHAnimationNode(LHDictionary* dictionary, LHSprite* spr, std::string shScene){
+    
+    frames= NULL;
+    sprite= NULL;
+    activeFrame= NULL;
+    oldBatch= NULL;
+    oldTexture= NULL;
+    
+    //this info will be from the spritehelper document
+    //the info from the level is loaded by LHSprite
+    shSceneName = std::string(shScene);
+    uniqueName  = std::string(dictionary->stringForKey("UniqueName"));
+    sheetName   = std::string(dictionary->stringForKey("SheetName"));
+    restoreOriginalFrame = dictionary->boolForKey("RestoreOriginalFrame");
+    repetitions = dictionary->intForKey("Repetitions");
+    delayPerUnit= dictionary->floatForKey("DelayPerUnit");
+    loop = dictionary->boolForKey("Loop");
+    sprite = spr;
+    oldRect = sprite->getTextureRect();
+
+#if COCOS2D_VERSION >= 0x00020000
+    oldSpriteFrame = sprite->displayFrame();
+#else
+    oldSpriteFrame = sprite->displayedFrame();
+#endif
+    oldSpriteFrame->retain();
+    
+    repetitionsPerformed = 0;
+    currentFrame = 0;
+    elapsedFrameTime = 0.0f;
+    LHArray* framesInfo = dictionary->arrayForKey("Frames");
+    
+#if COCOS2D_VERSION >= 0x00020000
+    frames = CCArray::create();
+#else
+    frames = CCArray::array();
+#endif
+    
+    frames->retain();
+    
+    for(int i = 0; i< framesInfo->count(); ++i){
+        
+        LHDictionary* frmInfo = framesInfo->dictAtIndex(i);
+        frames->addObject(LHAnimationFrameInfo::frameWithDictionary(frmInfo, sprite));
+    }
+    
+    paused = true;
+}
+
+void LHAnimationNode::setActiveFrameTexture()
+{
+    if(NULL == activeFrame) return;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCSpriteFrame* sprFrame = CCSpriteFrame::createWithTexture(sprite->getTexture(),
+                                                   activeFrame->getRect(),
+                                                   activeFrame->getRectIsRotated(),
+                                                   activeFrame->getOffset(),
+                                                   activeFrame->getSpriteFrameSize());
+#else
+    
+    CCSize contentSize = sprite->getContentSize();
+    contentSize.width *= CC_CONTENT_SCALE_FACTOR();
+    contentSize.height*= CC_CONTENT_SCALE_FACTOR();
+    
+    CCSpriteFrame* sprFrame = CCSpriteFrame::frameWithTexture(sprite->getTexture(), 
+                                                              activeFrame->getRect(),
+                                                              activeFrame->getRectIsRotated(),
+                                                              activeFrame->getOffset(),
+                                                              contentSize);
+#endif
+    sprite->setDisplayFrame(sprFrame);    
+}
+
+void LHAnimationNode::update(float dt)
+{
+    if(!activeFrame)
+    {
+        CCLog("ERROR: No active frame found in animation %s on sprite %s", uniqueName.c_str(), sprite->getUniqueName().c_str());
+        return;
+    }
+    
+    if(paused || LHSettings::sharedInstance()->levelPaused())
         return;
     
-    CCMutableArray<CCSpriteFrame*> ccframes;
+    elapsedFrameTime += dt;
     
-    for(int i = 0; i < (int)framesInfo.size(); ++i)
-    {
-        CCRect rect =  framesInfo[i];//LHRectFromString([frm objectForKey:@"FrameRect"]);
+    bool endedNotif = false;
+    bool endedRep = false;
+    bool frameChanged = false;
+    
+    if(activeFrame->getDelayPerUnit()*delayPerUnit <= elapsedFrameTime){
+        elapsedFrameTime = 0.0f;
+        ++currentFrame;
         
-        std::string image = LHSettings::sharedInstance()->imagePath(imageName.c_str());
-        
-        if(LHSettings::sharedInstance()->shouldScaleImageOnRetina(image.c_str()))
-        {
-            rect.origin.x *=2.0f;
-            rect.origin.y *=2.0f;
-            rect.size.width *=2.0f;
-            rect.size.height *=2.0f;
+        if(currentFrame >= (int)frames->count()){
+            
+            //we should trigger a notification that the animation has ended
+            endedNotif = true;
+            if(loop){
+                currentFrame = 0;
+            }
+            else 
+            {
+
+                ++repetitionsPerformed;                
+                
+                if(repetitionsPerformed >= repetitions)
+                {
+                    paused = true;
+                    currentFrame = frames->count() -1;
+                    endedRep = true;
+                }
+                else {
+                
+                    if(restoreOriginalFrame || repetitionsPerformed < repetitions){
+                        currentFrame = 0;
+                    }
+                    else {
+                        currentFrame = frames->count() -1;
+                    }
+                }
+            }
         }
         
-        CCSpriteFrame* frame = CCSpriteFrame::frameWithTexture(batchNode->getTexture(), 
-                                                               rect);
-        ccframes.addObject(frame);
+        setFrame(currentFrame);
+        frameChanged = true;
     }
     
-    frames.removeAllObjects();
-    frames.addObjectsFromArray(&ccframes);
+    if(endedNotif){
+        
+        if(endedRep){
+            setPaused(true);
+            restoreFrame();
+        }
+            
+#if COCOS2D_VERSION >= 0x00020000
+        
+        CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
+//        cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
+#else
+        CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
+#endif
+        if(endedRep){
+#if COCOS2D_VERSION >= 0x00020000
+            
+            CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
+            
+//            cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
+#else
+            
+            CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
+#endif
+            return;//animation is removed so dont go any further or else exc_bad_access since all objets are released
+        }
+    }
+    
+    
+    if(frameChanged)
+    {   
+        //check if this frame has any info and trigger a notification if it has
+        //we dont trigger frame changed notifications for every frame because 
+        //it may impact performance - we trigger only where user is looking for info
+        if(activeFrame->getNotifications() && activeFrame->getNotifications()->allKeys().size() > 0)
+        {
+            
+#if COCOS2D_VERSION >= 0x00020000
+            
+            CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationFrameNotification, sprite);
+//        cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationFrameNotification, sprite);
+#else
+        CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationFrameNotification, sprite);
+#endif       
+        }
+    }
 }
-
-
-
-CCMutableArray<CCSpriteFrame*>* LHAnimationNode::getFrames(void){
-    return &frames;
-}
-void LHAnimationNode::setBatchNode(CCSpriteBatchNode* node){
-    batchNode = node;
-}
-////////////////////////////////////////////////////////////////////////////////
-void LHAnimationNode::runAnimationOnSprite(LHSprite* ccsprite,
-                                           int startFrame,
-                                           CCObject* animNotifierId,
-                                           SEL_CallFuncND animNotifierSel,
-                                           const bool& notifOnLoop)
+//------------------------------------------------------------------------------
+LHDictionary* LHAnimationNode::getUserDataForCurrentFrame()
 {
-    CCAnimate* animSeqFromStartAction = NULL;
-    CCMutableArray<CCSpriteFrame*> framesSeq;
-    
-    if(startFrame > 0 && startFrame < frames.count())
-    {        
-        for(int i = startFrame; i < frames.count(); ++i){
-            framesSeq.addObject(frames.getObjectAtIndex(i));
-        }
-        
-        CCAnimation *animSeqFromStartFrame = CCAnimation::animationWithFrames(&framesSeq, speed);
-        
-        animSeqFromStartAction = CCAnimate::actionWithAnimation(animSeqFromStartFrame,false);
+    if(activeFrame){
+        return activeFrame->getNotifications();
     }
+    return NULL;
+}
 
-    CCAnimation *anim = CCAnimation::animationWithFrames(&frames, speed);
+void LHAnimationNode::prepare()
+{
+    currentFrame = 0;
+    repetitionsPerformed = 0;
+    elapsedFrameTime = 0.0f;
+    if(frames->count() > 0)
+        activeFrame = (LHAnimationFrameInfo*)frames->objectAtIndex(0);
+        else {
+            activeFrame = NULL;
+        } 
     
-    CCFiniteTimeAction *seq = 0;
-    if(!loop)
-    {
-        CCRepeat* animAct = CCRepeat::actionWithAction(CCAnimate::actionWithAnimation(anim, false), 
-                                                       repetitions);
-        CCFiniteTimeAction* seq1 = animAct;
-        if(animSeqFromStartAction != NULL)
-            seq1 = CCSequence::actionOneTwo(animSeqFromStartAction, animAct);
-            
-        if(0 != animNotifierId)
-        {
-            CCCallFuncND* actionRestart = CCCallFuncND::actionWithTarget(animNotifierId,
-                                                                         animNotifierSel,
-                                                                         (void*)&uniqueName);
-            seq = CCSequence::actionOneTwo(seq1,actionRestart);
-        }
-        else{
-            seq = seq1;
-        }
+    setActiveFrameTexture();
+}
+//------------------------------------------------------------------------------
+void LHAnimationNode::play(){
+    paused = false;
+}
+//------------------------------------------------------------------------------
+void LHAnimationNode::restart(){
+    prepare();
+    play();
+}
+//------------------------------------------------------------------------------
+int LHAnimationNode::getNumberOfFrames(){
+    return frames->count();
+}
+//------------------------------------------------------------------------------
+void LHAnimationNode::setFrame(int frm){
+    if(frm >= 0 && frm < (int)frames->count()){
+        currentFrame = frm;
+        activeFrame = (LHAnimationFrameInfo*)frames->objectAtIndex(currentFrame);
+        setActiveFrameTexture();
     }
-    else
-    {
-        if(notifOnLoop && 0 != animNotifierId)
-        {
-            CCCallFuncND* actionRestart = CCCallFuncND::actionWithTarget(animNotifierId, 
-                                                                         animNotifierSel,
-                                                                         (void*)&uniqueName);
-            
-            CCSequence* animAct = CCSequence::actionOneTwo(CCAnimate::actionWithAnimation(anim, false), 
-                                                           actionRestart);
-            
-            seq = CCRepeatForever::actionWithAction(animAct);
-        }
-        else
-        {
-            seq = CCRepeatForever::actionWithAction(CCAnimate::actionWithAnimation(anim , false));
-        }
-
-        if(animSeqFromStartAction != NULL)
-        {
-            CCFiniteTimeAction* repeatActionCantBeAddedInSequence = CCCallFuncO::actionWithTarget(ccsprite, callfuncO_selector(LHSprite::setAnimationSequence), seq);
-            
-            seq = CCSequence::actionOneTwo(animSeqFromStartAction, repeatActionCantBeAddedInSequence);
-        }
-        //////////<<<<<<<<<<<<-------
-    }
+}
+//------------------------------------------------------------------------------
+int LHAnimationNode::getCurrentFrame(){
+    return currentFrame;
+}
+//------------------------------------------------------------------------------
+void LHAnimationNode::nextFrame(){
     
-    if(0 != seq)
-    {
-        seq->setTag(LH_ANIM_ACTION_TAG);
-        
-        ccsprite->stopActionByTag(LH_ANIM_ACTION_TAG);
-        ccsprite->setAnimation(this);
-        setAnimationTexturePropertiesOnSprite(ccsprite);
-        ccsprite->runAction(seq);    
+    int curFrame = getCurrentFrame();    
+    curFrame +=1;
+    
+    if(curFrame >= 0 && curFrame < getNumberOfFrames()){
+        setFrame(curFrame);
     }    
 }
-
-/*
-void LHAnimationNode::runAnimationOnSprite(LHSprite* ccsprite,
-                                           SelectorProtocol* animNotifierId,
-                                           SEL_CallFuncND animNotifierSel,
-                                           const bool& notifOnLoop)
-{
-    CCAnimation *anim = CCAnimation::animationWithFrames(&frames, speed);
+//------------------------------------------------------------------------------
+void LHAnimationNode::prevFrame(){
     
-    CCFiniteTimeAction *seq = 0;
-    if(!loop)
-    {
-        CCRepeat* animAct = CCRepeat::actionWithAction(CCAnimate::actionWithAnimation(anim, false), 
-                                                       repetitions);
-        
-        if(0 != animNotifierId)
-        {
-            CCCallFuncND* actionRestart = CCCallFuncND::actionWithTarget(animNotifierId,
-                                                                         animNotifierSel,
-                                                                         (void*)&uniqueName);
-            seq = CCSequence::actionOneTwo(animAct,actionRestart);
-        }
-        else{
-            seq = animAct;
-        }
-    }
-    else
-    {
-        if(notifOnLoop && 0 != animNotifierId)
-        {
-            CCCallFuncND* actionRestart = CCCallFuncND::actionWithTarget(animNotifierId, 
-                                                                         animNotifierSel,
-                                                                         (void*)&uniqueName);
-            
-            CCSequence* animAct = CCSequence::actionOneTwo(CCAnimate::actionWithAnimation(anim, false), 
-                                                           actionRestart);
-            
-            seq = CCRepeatForever::actionWithAction(animAct);
-        }
-        else
-        {
-            seq = CCRepeatForever::actionWithAction(CCAnimate::actionWithAnimation(anim , false));
-        }
-    }
+    int curFrame = getCurrentFrame();
+    curFrame -=1;
     
-    if(0 != seq)
-    {
-        seq->setTag(LH_ANIM_ACTION_TAG);
-
-        printf ("set anim--------------------------\n");
-        ccsprite->setAnimation(this);
-        //setAnimationTexturePropertiesOnSprite(ccsprite);
-        ccsprite->runAction(seq);    
-    }
+    if(curFrame >= 0 && curFrame < (int)getNumberOfFrames()){
+        setFrame(curFrame);
+    }        
 }
-*/
-////////////////////////////////////////////////////////////////////////////////
-int LHAnimationNode::getNumberOfFrames(void){
-    return frames.count();
-}
-////////////////////////////////////////////////////////////////////////////////
-void LHAnimationNode::setAnimationTexturePropertiesOnSprite(LHSprite* ccsprite){
+//------------------------------------------------------------------------------
+void LHAnimationNode::nextFrameAndRepeat(){
     
-    if(!LHSettings::sharedInstance()->isCoronaUser())
-        ccsprite->removeFromParentAndCleanup(true);
+    int curFrame = getCurrentFrame();
+    curFrame +=1;
     
-    ccsprite->setTexture(batchNode->getTexture());
-    
-    if(!LHSettings::sharedInstance()->isCoronaUser())
-    {
-        ccsprite->setSpriteBatchNode(batchNode);
-        batchNode->addChild(ccsprite);
+    if(curFrame >= getNumberOfFrames()){
+        curFrame = 0;
     }
+    
+    if(curFrame >= 0 && curFrame < getNumberOfFrames()){
+        setFrame(curFrame);
+    }    
 }
-void LHAnimationNode::setFrame(int frameNo, LHSprite* spr){
-
-    if(0 == spr)
+//------------------------------------------------------------------------------
+void LHAnimationNode::prevFrameAndRepeat(){
+    
+    int curFrame = getCurrentFrame();
+    curFrame -=1;
+    
+    if(curFrame < 0){
+        curFrame = getNumberOfFrames() - 1;        
+    }
+    
+    if(curFrame >= 0 && curFrame < (int)getNumberOfFrames()){
+        setFrame(curFrame);
+    }        
+}
+//------------------------------------------------------------------------------
+bool LHAnimationNode::isAtLastFrame(){
+    return (getNumberOfFrames()-1 == getCurrentFrame());
+}
+//------------------------------------------------------------------------------
+void LHAnimationNode::restoreFrame(){
+    if(!restoreOriginalFrame){
         return;
-    
-    if(frameNo >= 0 && frameNo < frames.count())
-    {
-        CCSpriteFrame* frame = frames.getObjectAtIndex(frameNo);
-        
-        if(0 != frame)
-        {
-            spr->setTextureRect(frame->getRect());
-        }
     }
+    
+    //we do this so that we dont lose touches
+    sprite->setPrepareAnimInProgress(true);
+    
+    if(oldBatch){
+        sprite->removeFromParentAndCleanup(false);
+        sprite->setTexture(oldTexture);
+        oldBatch->addChild(sprite,sprite->getZOrder());
+    }
+//    else if(oldTexture){
+//        sprite->setTexture(oldTexture);
+//    }
+    
+    if(oldSpriteFrame){
+        sprite->setDisplayFrame(oldSpriteFrame);
+    }
+    //we do this so that we dont lose touches
+    sprite->setPrepareAnimInProgress(false);
 }
-////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LHAnimationNode::setOldBatch(LHBatch* b){
+    oldBatch = b;
+    oldTexture = b->getTexture();
+}
+void LHAnimationNode::setOldTexture(CCTexture2D* tex){
+    oldTexture = tex;
+    oldBatch = NULL;
+}
+void LHAnimationNode::setOldRect(CCRect r){
+    oldRect = r;
+}
+//------------------------------------------------------------------------------
+float LHAnimationNode::totalTime(){
+    float t = 0.0f;
+    for(int i = 0; i < frames->count(); ++i)
+    {
+        LHAnimationFrameInfo* frm = (LHAnimationFrameInfo*)frames->objectAtIndex(i);
+        t += delayPerUnit*frm->getDelayPerUnit();
+    }
+    return t;
+}

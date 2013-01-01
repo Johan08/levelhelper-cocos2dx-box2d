@@ -24,74 +24,968 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHSprite.h"
-
+#include "lhConfig.h"
 #include "LHAnimationNode.h"
+
 #include "../LevelHelperLoader.h"
 #include "LHPathNode.h"
 #include "LHParallaxNode.h"
 #include "LHSettings.h"
-#include "LHJoint.h"
-//int LHSprite::numberOfSprites = 0;
 
+#include "../CustomClasses/LHAbstractClass.h"
+
+#include "LHBatch.h"
+#include "LHJoint.h"
+#include "../Utilities/LHDictionary.h"
+#include "LHFixture.h"
+
+#include "../CustomClasses/LHCustomClasses.h"
+#include "SHDocumentLoader.h"
+//int LHSprite::numberOfSprites = 0;
+static int untitledSpritesCount = 0;
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 LHSprite::~LHSprite(void){
 
+//    CCLog("LH SPRITE %s dealloc", uniqueName.c_str());
+    
+    if(fixturesInfo){
+        delete fixturesInfo;
+        fixturesInfo = NULL;
+    }
+    
+    
+    unscheduleAllSelectors();
+    stopAnimation();
+    stopPathMovement();
+    stopAllActions();
     removeBodyFromWorld();
+    
+    //in cases onExit is not called
+    removeTouchObserver();
     
     if(NULL != parallaxFollowingThisSprite)
         parallaxFollowingThisSprite->setFollowSprite(NULL);
 
-    //CCLog("LHSPRITE Destructor %d", --numberOfSprites);
-    stopAllActions();
-           
-    cancelPathMovement();
-    
-    if(NULL != parallaxNode){
-        parallaxNode->removeChild(this);
+    if(userCustomInfo){
+        delete userCustomInfo;
+        userCustomInfo = NULL;
     }
-    parallaxNode = NULL;
+    
+    if(NULL != spriteIsInParallax){
+        spriteIsInParallax->removeChild(this);
+    }
+    spriteIsInParallax = NULL;
+    
+    if(fixturesObj)
+        delete fixturesObj;
 }
-////////////////////////////////////////////////////////////////////////////////
-bool LHSprite::init(void){
-    return CCSprite::init();
+//------------------------------------------------------------------------------
+void LHSprite::removeSelf(){
+    
+    if(body){
+        if(body->GetWorld()->IsLocked()){
+            LHSettings::sharedInstance()->markNodeForRemoval(this);
+            return;
+        }
+    }
+    removeFromParentAndCleanup(true);
 }
-////////////////////////////////////////////////////////////////////////////////
+
+LevelHelperLoader* LHSprite::parentLoader(){
+    
+    CCNode* layerParent = this->getParent();
+    
+    while (layerParent && !LHLayer::isLHLayer(layerParent)){
+        layerParent = layerParent->getParent();
+    }
+    
+    if(layerParent && LHLayer::isLHLayer(layerParent)) {
+        return ((LHLayer*)layerParent)->parentLoader();
+    }
+    return NULL;
+}
+
+void LHSprite::onExit(){
+//    CCLog("LH SPrite %s onExit", uniqueName.c_str());
+    
+    if(!prepareAnimInProgress){
+        
+        removeTouchObserver();
+    }
+}
+//------------------------------------------------------------------------------
 LHSprite::LHSprite(){
 
     //CCLog("LHSprite init");
+    fixturesInfo = NULL;
+    fixturesObj = NULL;
+    userCustomInfo = NULL;
     body = NULL;
-    parentLoader = NULL;
-    currentFrame = 0;
+    animation = NULL;
     pathNode = NULL;
-    parallaxNode = NULL;
+    spriteIsInParallax = NULL;
     parallaxFollowingThisSprite = NULL;
+    prepareAnimInProgress = false;
+    
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
     
     tagTouchBeginObserver = NULL;
     tagTouchMovedObserver = NULL;
     tagTouchEndedObserver = NULL;
     swallowTouches = false;
+    touchIsDisabled = false;
+    touchPriority = 0;
+    
+    animHasEndedObserver = NULL;
+    animHasChangedFrameObserver = NULL;
+    animHasEndedRepObserver = NULL;
+    
+    pathMoveChangedPointObserver = NULL;
+    pathMoveHasEndedObserver = NULL;
 
    // ++numberOfSprites;
    // CCLog("LHSprite Constructor %d", numberOfSprites);
 }
-////////////////////////////////////////////////////////////////////////////////
-void LHSprite::setUniqueName(const char* name){
-    uniqueName = std::string(name);
+//------------------------------------------------------------------------------
+void LHSprite::createFixturesFromInfoOnBody(){
+    
+    if(fixturesInfo && fixturesObj)
+    {
+        fixturesObj->removeAllObjects();
+        
+        if(body->GetWorld()->IsLocked())
+        {
+            CCLog("ERROR: Cannot create fixture for body, because Box2d is Locked. Try changing the location on where you want to change the body. e.g Try doing it at the end of tick function");
+            return;
+        }
+        
+        b2Fixture* curFixture = body->GetFixtureList();
+        
+        while(curFixture)
+        {
+            b2Fixture* tempNextFix = curFixture->GetNext();
+            body->DestroyFixture(curFixture);
+            curFixture = tempNextFix;
+        }
+
+        for(int i = 0; i< fixturesInfo->count(); ++i)
+        {
+            
+            LHDictionary* fixInfo = fixturesInfo->dictAtIndex(i);
+
+            LHFixture* lhFixture = LHFixture::fixtureWithDictionary(fixInfo, body, this);
+            fixturesObj->addObject(lhFixture);
+        }
+    }
 }
 //------------------------------------------------------------------------------
-const std::string& LHSprite::getUniqueName(void){
-    return uniqueName;
+void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
+    
+    fixturesInfo = NULL;
+    body = NULL;
+    
+    if(NULL == dictionary)
+        return;
+    
+    b2World* world = LHSettings::sharedInstance()->getActiveBox2dWorld();
+    
+    if(world == NULL)
+        return;
+    
+    bDefaultFixRotation =dictionary->boolForKey("FixedRot");
+    bDefaultGravityScale = dictionary->floatForKey("GravityScale");
+    bDefaultCanSleep = dictionary->boolForKey("CanSleep");
+    bDefaultIsBullet = dictionary->boolForKey("IsBullet");
+    
+    CCPoint linearVelocity = dictionary->pointForKey("LinearVelocity");
+    bDefaultLinearVelocity = b2Vec2(linearVelocity.x, linearVelocity.y);
+    bDefaultAngularVelocity = dictionary->floatForKey("AngularVelocity");
+    bDefaultLinearDamping = dictionary->floatForKey("LinearDamping");
+    bDefaultAngularDamping = dictionary->floatForKey("AngularDamping");
+    
+    
+    
+    b2BodyDef bodyDef;	
+	
+    int pType = dictionary->intForKey("Type");//LH
+    
+	if(pType == 3) //"NO_PHYSIC"
+        return;
+    
+    
+    usePhysicsForTouches = true;
+    
+    this->createBodyFromDefaultValuesWithType((b2BodyType)pType);
+	
+    
+    LHArray* fixInfo = dictionary->arrayForKey("SH_ComplexShapes");
+    fixturesInfo = new LHArray(fixInfo);
+    
+#if COCOS2D_VERSION >= 0x00020000
+    fixturesObj = CCArray::create();
+#else
+    fixturesObj = CCArray::array();
+#endif
+    fixturesObj->retain();
+    
+    createFixturesFromInfoOnBody();
 }
-////////////////////////////////////////////////////////////////////////////////
-void  LHSprite::setBody(b2Body* bd){
-    CCAssert(bd!=0, "b2Body must not be nil");
-    body = bd;
+
+void LHSprite::createBodyFromDefaultValuesWithType(b2BodyType bDefaultType)
+{    
+    b2BodyDef bodyDef;
+    
+	bodyDef.type = bDefaultType;
+	
+	CCPoint pos = this->getPosition();
+	bodyDef.position.Set(pos.x/LHSettings::sharedInstance()->lhPtmRatio(),
+                         pos.y/LHSettings::sharedInstance()->lhPtmRatio());
+    
+	bodyDef.angle = CC_DEGREES_TO_RADIANS(-1*this->getRotation());
+    
+    bodyDef.userData = this;
+    
+    b2World* world = LHSettings::sharedInstance()->getActiveBox2dWorld();
+    
+    if(world == NULL)
+        return;
+    
+    body = world->CreateBody(&bodyDef);
+	body->SetFixedRotation(bDefaultFixRotation);
+    
+    //we use this define to figure out which version of Box2d the user has
+    //its not nice that box2d does not have a compile time versioning just like cocos2d
+#ifdef B2_EDGE_SHAPE_H
+    body->SetGravityScale(bDefaultGravityScale);
+#endif
+	body->SetSleepingAllowed(bDefaultCanSleep);
+    body->SetBullet(bDefaultIsBullet);
+    
+    body->SetLinearVelocity(bDefaultLinearVelocity);
+    
+    body->SetAngularVelocity(bDefaultAngularVelocity);
+    body->SetLinearDamping(bDefaultLinearDamping);
+    body->SetAngularDamping(bDefaultAngularDamping);
+}
+
+
+//------------------------------------------------------------------------------
+void LHSprite::loadAnimationsInformationFromDictionary(LHDictionary* dictionary){
+    
+    if(dictionary ==NULL) return; //When sprite is loaded from SH dictionary this info is not available;
+    
+    //if sprite has no animation dictionary will be empty in order to make the level size smaller
+    //so we test here to see if we should load anything
+    if(!dictionary->objectForKey("AnimName")) return;
+    
+    prepareAnimationNamed(dictionary->stringForKey("AnimName"), dictionary->stringForKey("SHScene"));
+    
+    if(!animation) return;//something has gone wrong with animation loading
+    
+    if(dictionary->boolForKey("AnimAtStart"))//we should pause the animation
+        animation->play();
+    
+    //dictionary->print();
+    
+    animation->setLoop(dictionary->boolForKey("AnimLoop"));
+    animation->setRepetitions((int)dictionary->intForKey("AnimRepetitions"));
+    animation->setRestoreOriginalFrame(dictionary->boolForKey("AnimRestoreOriginalFrame"));
+    animation->setDelayPerUnit(dictionary->floatForKey("AnimSpeed"));
 }
 //------------------------------------------------------------------------------
-b2Body*  LHSprite::getBody(void){
-    return body;
+void LHSprite::loadPathMovementFromDictionary(LHDictionary* dictionary){
+    if(!dictionary)return;
+    
+    //at this point we may not have a LHBezier in the level 
+    //so we create the path after the level is fully loaded
+    //but we save the path properties here
+    if(!dictionary->objectForKey("PathName")) return;
+    
+    
+    pathDefaults.flipX              = dictionary->boolForKey("PathFlipX");
+    pathDefaults.flipY              = dictionary->boolForKey("PathFlipY");
+    pathDefaults.isCyclic           = dictionary->boolForKey("PathIsCyclic");
+    pathDefaults.relativeMovement   = dictionary->boolForKey("PathMoveDelta");
+    pathDefaults.name               = std::string(dictionary->stringForKey("PathName"));
+    pathDefaults.orientation        = dictionary->intForKey("PathOrientation");
+    pathDefaults.restartOtherEnd    = dictionary->boolForKey("PathOtherEnd");
+    pathDefaults.speed              = dictionary->floatForKey("PathSpeed");    
+    pathDefaults.startAtLaunch      = dictionary->boolForKey("PathStartAtLaunch");
+    pathDefaults.startPoint         = dictionary->intForKey("PathStartPoint");
 }
+//------------------------------------------------------------------------------
+void LHSprite::loadUserCustomInfoFromDictionary(LHDictionary* dictionary){
+    userCustomInfo = NULL;
+    
+    if(!dictionary)return;
+
+    std::string className = dictionary->stringForKey("ClassName");
+    
+    userCustomInfo = LHCustomClassesMgr::customClassInstanceWithName(className);
+    
+    if(!userCustomInfo) return;
+    
+    LHDictionary* dict = dictionary->dictForKey("ClassRepresentation");
+    
+    if(dict){
+//        CCLog("SETTING PROPERTIES FROM DICT");
+        ((LHAbstractClass*)userCustomInfo)->setPropertiesFromDictionary(dict);
+    }
+}
+//------------------------------------------------------------------------------
+void LHSprite::loadInformationFromDictionary(LHDictionary* dictionary){
+        
+    body = NULL;
+    usesOverloadedTransformations = false;
+    
+    if(dictionary->objectForKey("UniqueName")){
+        uniqueName = std::string(dictionary->stringForKey("UniqueName"));
+    }else {
+        uniqueName = "UntitledSprite_" + stringFromInt(untitledSpritesCount);
+        ++untitledSpritesCount;
+    }
+    
+    if(dictionary->objectForKey("SHSceneName"))
+        shSceneName = std::string(dictionary->stringForKey("SHSceneName"));
+        
+    if(dictionary->objectForKey("SHSheetName"))
+        shSheetName = std::string(dictionary->stringForKey("SHSheetName"));
+        
+    if(dictionary->objectForKey("SHSpriteName"))
+        shSpriteName= std::string(dictionary->stringForKey("SHSpriteName"));
+                
+    LHDictionary* texDict = dictionary->dictForKey("TextureProperties");
+                
+    LHDictionary* shTexDict = texDict;
+                
+    if(!dictionary->objectForKey("IsSHSprite"))//we may be loading directly from a sh dictionary
+    {
+        LHDictionary* shDict = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(dictionary->stringForKey("SHSpriteName"),
+                                                                                            dictionary->stringForKey("SHSheetName"),
+                                                                                            dictionary->stringForKey("SHSceneName"));
+                    
+        if(shDict)
+            shTexDict = shDict->dictForKey("TextureProperties");
+    }
+    
+    CCRect rectInPixels = shTexDict->rectForKey("Frame");
+    
+    rectInPixels = LHSettings::sharedInstance()->transformedTextureRect(rectInPixels, getImageFile());
+    rectInPixels = CC_RECT_POINTS_TO_PIXELS(rectInPixels);
+        
+    CCSize contentSize = shTexDict->sizeForKey("SpriteSize");
+    
+    contentSize = LHSettings::sharedInstance()->transformedSize(contentSize,getImageFile());
+    contentSize.width *= CC_CONTENT_SCALE_FACTOR();
+    contentSize.height*= CC_CONTENT_SCALE_FACTOR();
+    
+    CCPoint originalTextureOffset = shTexDict->pointForKey("TextureOffset");
+    CCSize texOffsetSize = LHSettings::sharedInstance()->transformedSize(CCSizeMake(originalTextureOffset.x, 
+                                                                                    originalTextureOffset.y), 
+                                                                         getImageFile());        
+    originalTextureOffset.x = texOffsetSize.width;
+    originalTextureOffset.y = texOffsetSize.height;
+    originalTextureOffset.x *= CC_CONTENT_SCALE_FACTOR();
+    originalTextureOffset.y *= CC_CONTENT_SCALE_FACTOR();
+        
+#if COCOS2D_VERSION >= 0x00020000
+    CCSpriteFrame* sprFrame = CCSpriteFrame::createWithTexture(getTexture(),
+                                                    rectInPixels,
+                                                    shTexDict->boolForKey("IsRotated"),
+                                                    originalTextureOffset,
+                                                    contentSize);
+#else
+    CCSpriteFrame* sprFrame = CCSpriteFrame::frameWithTexture(getTexture(),
+                                                              rectInPixels,
+                                                              shTexDict->boolForKey("IsRotated"),
+                                                              originalTextureOffset,
+                                                              contentSize);    
+#endif
+    
+    setDisplayFrame(sprFrame);
+    
+    bool flipX = texDict->boolForKey("FlipX");
+    bool flipY = texDict->boolForKey("FlipY");
+    
+    setFlipX(flipX);
+    setFlipY(flipY);
+
+    CCPoint scale = LHSettings::sharedInstance()->transformedScalePointToCocos2d(texDict->pointForKey("Scale"));    
+    setScaleX(scale.x);
+    setScaleY(scale.y);
+    
+    
+    realScale = CCSizeMake(scale.x*LHSettings::sharedInstance()->convertRatio().x,
+                           scale.y*LHSettings::sharedInstance()->convertRatio().y);
+        
+    CCPoint position = LHSettings::sharedInstance()->transformedPointToCocos2d(texDict->pointForKey("Position"));
+    
+    CCSprite::setPosition(ccp((int)position.x, (int)position.y));
+    
+    
+    CCSprite::setRotation(texDict->intForKey("Angle"));
+    setColor(texDict->colorForKey("Color"));
+    
+#if COCOS2D_VERSION >= 0x00020000
+    setVisible(texDict->boolForKey("IsDrawable"));
+#else
+    setIsVisible(texDict->boolForKey("IsDrawable"));
+#endif
+    
+    setOpacity(texDict->floatForKey("Opacity")*255.0f);
+    setTag(texDict->intForKey("Tag"));
+    m_nZOrder = texDict->intForKey("ZOrder");
+
+    LHDictionary* phyDict = dictionary->dictForKey("PhysicProperties");
+    if(phyDict->boolForKey("HandledBySH") && !dictionary->objectForKey("IsSHSprite"))
+    {        
+        LHDictionary* sprDict = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(shSpriteName,shSheetName,shSceneName);
+        phyDict = sprDict->dictForKey("PhysicProperties");
+    }
+    
+    //we do this because we need the batch to contain the sprite before loading any animation
+#if COCOS2D_VERSION >= 0x00020000
+    if(getBatchNode()){
+        getBatchNode()->addChild(this, m_nZOrder);
+    }
+#else
+    if(getSpriteBatchNode()){
+        getSpriteBatchNode()->addChild(this, m_nZOrder);
+    }
+#endif
+    
+    originalRect = getTextureRect();
+    
+    fixturesObj = NULL;
+    
+    loadPhysicalInformationFromDictionary(phyDict);
+    
+    loadAnimationsInformationFromDictionary(dictionary->dictForKey("AnimationsProperties"));
+    
+    loadUserCustomInfoFromDictionary(dictionary->dictForKey("CustomClassInfo"));
+    loadPathMovementFromDictionary(dictionary->dictForKey("PathProperties"));
+    
+    pathNode = NULL;
+    spriteIsInParallax = NULL;
+    
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
+    
+    tagTouchBeginObserver = NULL;
+    tagTouchMovedObserver = NULL;
+    tagTouchEndedObserver = NULL;
+    
+    
+
+    
+    LevelHelperLoader::setTouchDispatcherForSpriteWithTag(this, getTag());
+    
+    scheduleUpdate();
+}
+//------------------------------------------------------------------------------
+bool LHSprite::initBatchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch){
+    
+    LHDictionary* texDict = dictionary->dictForKey("TextureProperties");
+    CCRect rect = texDict->rectForKey("Frame");    
+    
+    rect = LHSettings::sharedInstance()->transformedTextureRect(rect, batch->getImagePath());
+    
+    if(initWithTexture(batch->getTexture(), rect))
+    {    
+        setImageFile(batch->getImagePath());        
+        loadInformationFromDictionary(dictionary);
+        return true;
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+bool LHSprite::initWithDictionary(LHDictionary* dictionary){
+    
+    std::string imgPath = LHSettings::sharedInstance()->imagePath(dictionary->stringForKey("SheetImage"));
+    
+    if(imgPath == "")
+        return false;
+    
+    
+    LHDictionary* texDict = dictionary->dictForKey("TextureProperties");
+    CCRect rect = texDict->rectForKey("Frame");
+    
+    rect = LHSettings::sharedInstance()->transformedTextureRect(rect,imgPath);
+    
+    if(initWithFile(imgPath.c_str(), rect))
+    {
+        setImageFile(imgPath);
+        loadInformationFromDictionary(dictionary);
+        
+        return true;
+    }
+
+    return false;
+}
+//------------------------------------------------------------------------------
+LHSprite* LHSprite::batchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* batch){
+    
+    LHSprite *pobNode = new LHSprite();
+	if (pobNode && pobNode->initBatchSpriteWithDictionary(dictionary, batch))
+    {
+        pobNode->autorelease();
+        pobNode->postInit();
+        return pobNode;
+    }
+    CC_SAFE_DELETE(pobNode);
+	return NULL;
+}
+//------------------------------------------------------------------------------
+LHSprite* LHSprite::spriteWithDictionary(LHDictionary* dictionary){
+    LHSprite *pobNode = new LHSprite();
+	if (pobNode && pobNode->initWithDictionary(dictionary))
+    {
+	    pobNode->autorelease();
+        pobNode->postInit();
+        return pobNode;
+    }
+    CC_SAFE_DELETE(pobNode);
+	return NULL;
+}
+LHSprite* LHSprite::spriteWithTexture(CCTexture2D* texture)
+{
+    LHSprite *pobNode = new LHSprite();
+	if (pobNode && pobNode->initWithTexture(texture))
+    {
+	    pobNode->autorelease();
+        pobNode->postInit();
+        return pobNode;
+    }
+    CC_SAFE_DELETE(pobNode);
+	return NULL;
+}
+//------------------------------------------------------------------------------
+LHSprite* LHSprite::spriteWithName(const std::string& spriteName, const std::string& sheetName, const std::string& spriteHelperFile){
+    
+    LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(spriteName,sheetName, spriteHelperFile);
+
+    LHSprite* sprite = LHSprite::spriteWithDictionary(dictionary);
+
+    if(sprite){      
+        sprite->setShSceneName(spriteHelperFile);
+        sprite->postInit();
+    }
+    return sprite;
+}
+//------------------------------------------------------------------------------
+LHSprite* LHSprite::batchSpriteWithName(const std::string& spriteName, LHBatch* batch){
+    
+    CCAssert(batch!=NULL, "Batch must not be nil");
+    
+    LHDictionary* dictionary = SHDocumentLoader::sharedInstance()->dictionaryForSpriteNamed(spriteName,batch->getUniqueName(),batch->getSHFile());
+    LHSprite* sprite = LHSprite::batchSpriteWithDictionary(dictionary,batch);
+
+    if(sprite){
+        sprite->setShSceneName(batch->getSHFile());
+        sprite->postInit();
+    }
+    return sprite;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LHSprite::update(float dt){    
+    
+    if(animation){
+        animation->update(dt);
+    }
+    
+    if(pathNode)
+        pathNode->update(dt);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LHSprite::prepareAnimationNamed(const std::string& animName, const std::string& shScene){
+    
+    
+    if(animation)
+    {
+        //if we already have the same animation active - reset it to frame 0
+        if(animation->getUniqueName() == animName &&
+           animation->getSHSceneName() == shScene){
+            animation->setFrame(0);
+            return;
+        }
+        
+    }
+    
+    
+    LHDictionary* animDict = SHDocumentLoader::sharedInstance()->dictionaryForAnimationNamed(animName,shScene);
+        
+    if(!animDict) {
+        CCLog("ERROR: SpriteHelper document %s for animation %s needs to be updated. Animation is canceled.", shScene.c_str(), animName.c_str());
+        return;
+    }
+    
+    stopAnimation();
+
+    //very important that prepareAnimInProgress is after stopAnimation or else touches will be removed
+    prepareAnimInProgress = true;
+    
+    std::string textureFile = animDict->stringForKey("SheetImage");
+    std::string animSheet   = animDict->stringForKey("SheetName");
+    
+    animation = new LHAnimationNode(animDict, this, shScene);
+    
+    if(textureFile != "")
+    {
+        std::string filePath = LHSettings::sharedInstance()->imagePath(textureFile);
+
+        CCTexture2D* newTexture = CCTextureCache::sharedTextureCache()->addImage(filePath.c_str());
+            
+            if(newTexture && newTexture->getName() != this->getTexture()->getName()){
+                    //if sprite is render by a batch node we need to remove if from the batch and
+                    //move it on the layer that contains the batch
+#if COCOS2D_VERSION >= 0x00020000
+                LHBatch* parentBatch = (LHBatch*)getBatchNode();
+#else
+                LHBatch* parentBatch = (LHBatch*)getSpriteBatchNode();
+#endif
+                    
+                if(parentBatch){
+                    removeFromParentAndCleanup(false);
+                    
+                    animation->setOldBatch(parentBatch);
+                    //we need to keep the z order so its batch z + sprite z 
+                    if(parentBatch->getParent()){                        
+                        parentBatch->getParent()->addChild(this, parentBatch->getZOrder() + getZOrder());
+                    }
+                    else {
+                        CCLog("ERROR: Sprite is render by batch node, but batch node has no parent.");
+                    }
+                }   
+                else {
+                    animation->setOldTexture(getTexture());
+                }
+                
+                setTexture(newTexture);
+                shSheetName = animSheet;
+            }
+        }
+        else{
+            if(animation)
+                delete animation;
+
+            CCLog("ERROR: Image file %s could not be found. Please add it in the resource folder.", textureFile.c_str());
+        }
+    
+    if(animation){
+        animation->prepare();
+    }
+    prepareAnimInProgress = false;
+}
+//------------------------------------------------------------------------------
+//use this methods when you want to get notification about animation on a per sprite basis
+void LHSprite::setAnimationHasEndedObserver(CCObject *target, SEL_CallFuncO selector){
+    
+    animHasEndedObserver = target;
+   
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedNotification,
+                                                                  this);
+#else
+     CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedNotification,
+                                                                  this);
+#endif
+    
+}
+void LHSprite::setAnimationHasChangedFrameObserver(CCObject *target, SEL_CallFuncO selector){
+    animHasChangedFrameObserver = target;
+
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationFrameNotification,
+                                                                  this);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                           selector,
+                                                           LHAnimationFrameNotification,
+                                                           this);
+#endif
+}
+
+void LHSprite::setAnimationHasEndedAllRepetitionsObserver(CCObject *target, SEL_CallFuncO selector){
+    animHasEndedRepObserver = target;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedAllRepetitionsNotification,
+                                                                  this);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedAllRepetitionsNotification,
+                                                                  this);
+#endif
+
+}
+void LHSprite::removeAnimationHasEndedObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(animHasEndedObserver, LHAnimationHasEndedNotification);
+
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(animHasEndedObserver, LHAnimationHasEndedNotification);
+
+#endif
+    animHasEndedObserver = NULL;
+}
+
+void LHSprite::removeAnimationHasChangedFrameObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(animHasChangedFrameObserver, LHAnimationFrameNotification);
+
+#else
+   CCNotificationCenter::sharedNotifCenter()->removeObserver(animHasChangedFrameObserver, LHAnimationFrameNotification);
+#endif
+    animHasChangedFrameObserver = NULL;
+}
+void LHSprite::removeAnimationHasEndedAllRepetitionsObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(animHasEndedRepObserver, LHAnimationHasEndedAllRepetitionsNotification);
+
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(animHasEndedRepObserver, LHAnimationHasEndedAllRepetitionsNotification);
+
+#endif
+    animHasEndedRepObserver = NULL;
+}
+
+//use this methods when you want to get notification about animations for all sprites
+void LHSprite::setGlobalAnimationHasEndedObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedNotification,
+                                                                  NULL);
+#endif
+
+}
+void LHSprite::setGlobalAnimationHasChangedFrameObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationFrameNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationFrameNotification,
+                                                                  NULL);
+#endif
+
+}
+void LHSprite::setGlobalAnimationHasEndedAllRepertitionsObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedAllRepetitionsNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHAnimationHasEndedAllRepetitionsNotification,
+                                                                  NULL);
+
+#endif
+
+}
+void LHSprite::removeGlobalAnimationHasEndedObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHAnimationHasEndedNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHAnimationHasEndedNotification);
+#endif
+
+}
+void LHSprite::removeGlobalAnimationHasChangedFrameObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHAnimationFrameNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHAnimationFrameNotification);
+#endif
+
+}
+void LHSprite::removeGlobalAnimationHasEndedAllRepetitionsObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHAnimationHasEndedAllRepetitionsNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHAnimationHasEndedAllRepetitionsNotification);
+#endif
+}
+//------------------------------------------------------------------------------
+void LHSprite::playAnimation(){ if(animation)animation->play();}
+//------------------------------------------------------------------------------
+void LHSprite::pauseAnimation(){ if(animation)animation->setPaused(true);}
+//------------------------------------------------------------------------------
+void LHSprite::restartAnimation(){ if(animation)animation->restart();}
+//------------------------------------------------------------------------------
+bool LHSprite::isAnimationPaused(){ if(!animation)return false;
+    return animation->getPaused();
+}
+//------------------------------------------------------------------------------
+void LHSprite::stopAnimation(){
+    
+    if(!animation)return;
+    
+    animation->setPaused(true);
+    animation->restoreFrame();
+
+    this->removeAnimationHasChangedFrameObserver();
+    this->removeAnimationHasEndedAllRepetitionsObserver();
+    this->removeAnimationHasEndedObserver();
+    delete animation;
+    animation = NULL;
+}
+//------------------------------------------------------------------------------
+std::string LHSprite::animationName(){ if(animation) return animation->getUniqueName();
+    return std::string("");
+}
+//------------------------------------------------------------------------------
+int LHSprite::numberOfFrames(){ if(animation)return animation->getNumberOfFrames();    
+    return -1;
+}
+//------------------------------------------------------------------------------
+float LHSprite::animationDelayPerUnit(){
+    if(animation){return animation->getDelayPerUnit();}
+    return 0.0f;
+}
+void LHSprite::setAnimationDelayPerUnit(float d){
+    if(animation){ if(d < 0.0f) d = 0.0f; animation->setDelayPerUnit(d);}
+}
+//------------------------------------------------------------------------------
+std::vector<std::string> LHSprite::getCurrentFrameDataKeys(){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->allKeys();
+        }
+    }
+    return std::vector<std::string>();
+}
+//------------------------------------------------------------------------------
+float LHSprite::getCurrentFrameFloatDataForKey(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->floatForKey(key);
+        }
+    }
+    return -1;    
+}
+//------------------------------------------------------------------------------
+std::string LHSprite::getCurrentFrameStringDataForKey(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->stringForKey(key);
+        }
+    }
+    return std::string();        
+}
+//------------------------------------------------------------------------------
+bool LHSprite::getCurrentFrameBoolDataForKey(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->boolForKey(key);
+        }
+    }
+    return false;     
+}
+//------------------------------------------------------------------------------
+bool LHSprite::isCurrentFrameValueForKeyFloat(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            LHObject* obj = dict->objectForKey(key);
+            if(obj){
+                return obj->type() == LHObject::FLOAT_TYPE;
+            }
+        }
+    }
+    return false;    
+}
+//------------------------------------------------------------------------------
+bool LHSprite::isCurrentFrameValueForKeyString(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            LHObject* obj = dict->objectForKey(key);
+            if(obj){
+                return obj->type() == LHObject::STRING_TYPE;
+            }
+        }
+    }
+    return false;        
+}
+//------------------------------------------------------------------------------
+bool LHSprite::isCurrentFrameValueForKeyBool(const std::string& key){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            LHObject* obj = dict->objectForKey(key);
+            if(obj){
+                return obj->type() == LHObject::BOOL_TYPE;
+            }
+        }
+    }
+    return false;    
+}
+//------------------------------------------------------------------------------
+float LHSprite::animationDuration(){
+    if(animation)return animation->totalTime();
+    return 0.0f;
+}
+//------------------------------------------------------------------------------
+void LHSprite::setFrame(int frmNo){ if(animation)animation->setFrame(frmNo);}
+//------------------------------------------------------------------------------
+int LHSprite::currentFrame(){     
+    if(animation) return animation->getCurrentFrame();    
+    return -1;
+}
+//------------------------------------------------------------------------------
+void LHSprite::nextFrame(){ if(animation)animation->nextFrame();}
+//------------------------------------------------------------------------------
+void LHSprite::prevFrame(){ if(animation)animation->prevFrame();}
+//------------------------------------------------------------------------------
+void LHSprite::nextFrameAndRepeat(){ if(animation)animation->nextFrameAndRepeat();}
+//------------------------------------------------------------------------------
+void LHSprite::prevFrameAndRepeat(){ if(animation)animation->prevFrameAndRepeat();}
+//------------------------------------------------------------------------------
+bool LHSprite::isAtLastFrame(){ if(animation)return animation->isAtLastFrame();
+    return false;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+std::string LHSprite::userInfoClassName(){
+    if(userCustomInfo)
+        return ((LHAbstractClass*)userCustomInfo)->className();
+    return "No Class";
+}
+//------------------------------------------------------------------------------
+void* LHSprite::userInfo(){
+    return userCustomInfo;
+}
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 bool  LHSprite::removeBodyFromWorld(void){
     
@@ -102,17 +996,17 @@ bool  LHSprite::removeBodyFromWorld(void){
 		if(0 != _world)
 		{
             CCArray* list = jointList();
-            if(list && parentLoader){
+            if(list){
                 for(int i = 0; i < (int)list->count(); ++i){
                     LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
                     if(jt){
                         jt->shouldDestroyJointOnDealloc = false;
-                        parentLoader->removeJoint(jt);
+                        jt->removeSelf();
                     }
                 }
                 list->removeAllObjects();
             }
-            
+                        
 			_world->DestroyBody(body);
 			body = NULL;
             return true;
@@ -121,352 +1015,15 @@ bool  LHSprite::removeBodyFromWorld(void){
     return false;    
 }
 //------------------------------------------------------------------------------
-bool LHSprite::removeAllAttachedJoints(void){
 
-    CCArray* list = jointList();
-    if(list && parentLoader){
-        for(int i = 0; i < (int)list->count(); ++i){
-            LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
-            if(jt){
-                if(jt->getJoint()->GetBodyA()->GetContactList() ||
-                   jt->getJoint()->GetBodyB()->GetContactList())
-                    parentLoader->markJointForRemoval(jt);
-                else
-                    parentLoader->removeJoint(jt);
-            }
-        }
-        list->removeAllObjects();
-        return true;
-    }
-    return false;
-}
-//------------------------------------------------------------------------------
-bool LHSprite::removeJoint(LHJoint* jt){
- 
-    if(jt == NULL)
-        return false;
+CCArray* LHSprite::jointList(){
     
-    if(body != NULL){
-        b2JointEdge* jtList = body->GetJointList();
-        while (jtList) {
-            LHJoint* lhJt = LHJoint::jointFromBox2dJoint(jtList->joint);
-            if(lhJt == jt){
-                if(parentLoader){
-                    if(jt->getJoint()->GetBodyA()->GetContactList() ||
-                       jt->getJoint()->GetBodyB()->GetContactList())
-                        parentLoader->markJointForRemoval(jt);
-                    else
-                        parentLoader->removeJoint(jt);
-                    
-                    return true;
-                }
-            }
-            jtList = jtList->next;
-        }
-    }
-    CCLog("WARNING: Trying to remove joint %s from the sprite %s but the joint does not belong to that sprite. Removal of joint was not performed.", jt->getUniqueName().c_str(), uniqueName.c_str());
-    return false;
-}
-////////////////////////////////////////////////////////////////////////////////
-void LHSprite::setAnimation(LHAnimationNode* anim){
-    animation = anim;
-
-    if(0 != anim){
-        anim->setAnimationTexturePropertiesOnSprite(this);
-        setFrame(0);
-    }
-}
-//------------------------------------------------------------------------------
-LHAnimationNode* LHSprite::getAnimation(void){
-    return animation;
-}
-//------------------------------------------------------------------------------
-std::string LHSprite::getAnimationName(void){
-
-    if(0 != animation)
-        return animation->getUniqueName();
-    
-    return std::string("");
-}
-//------------------------------------------------------------------------------
-int LHSprite::getNumberOfFrames(void){
-
-    if(0 != animation)
-        return animation->getNumberOfFrames();
-    return -1;
-}
-//------------------------------------------------------------------------------
-void LHSprite::setFrame(int frmNo){
-
-    if(animation == 0)
-        return;
-    
-    animation->setFrame(frmNo, this);
-    currentFrame = frmNo;
-}
-//------------------------------------------------------------------------------
-void LHSprite::nextFrame(){
-    
-    int curFrame = getCurrentFrame();
-    curFrame +=1;
-    
-    if(curFrame >= 0 && curFrame < getNumberOfFrames()){
-        setFrame(curFrame);
-    }   
-    
-}
-//------------------------------------------------------------------------------
-void LHSprite::prevFrame(){
-    
-    int curFrame = getCurrentFrame();
-    curFrame -=1;
-    
-    if(curFrame >= 0 && curFrame < (int)getNumberOfFrames()){
-         setFrame(curFrame);
-    }    
-}
-//------------------------------------------------------------------------------
-void LHSprite::nextFrameAndRepeat(){
-    
-    int curFrame = getCurrentFrame();
-
-    curFrame +=1;
-    
-    if(curFrame >= getNumberOfFrames()){
-        curFrame = 0;
-    }
-    
-    if(curFrame >= 0 && curFrame < getNumberOfFrames()){
-        setFrame(curFrame);
-    }    
-}
-//------------------------------------------------------------------------------
-void LHSprite::prevFrameAndRepeat(){
-    
-    int curFrame =  getCurrentFrame();
-    curFrame -=1;
-    
-    if(curFrame < 0){
-        curFrame = getNumberOfFrames() - 1;        
-    }
-    
-    if(curFrame >= 0 && curFrame < (int)getNumberOfFrames()){
-        setFrame(curFrame);
-    }    
-}
-//------------------------------------------------------------------------------
-bool LHSprite::isAtLastFrame(){
-    return (getNumberOfFrames()-1 == getCurrentFrame());
-}
-//------------------------------------------------------------------------------
-int LHSprite::getCurrentFrame(void){
-   
-    if(0 != animation){
-        CCMutableArray<CCSpriteFrame*> *frames = animation->getFrames();
-        if(0 != frames)
-        {
-            for(int i = 0; i < (int)frames->count(); ++i){
-                CCSpriteFrame* frame = (CCSpriteFrame*)frames->getObjectAtIndex(i);
-                
-                if(CCRect::CCRectEqualToRect(frame->getRect(), getTextureRect())){
-                    return i;
-                }
-            }
-        }
-    }
-    return 0;
-}
-//------------------------------------------------------------------------------
-void LHSprite::startAnimationNamed(const std::string& animName,                         
-                                   int startFrame,
-                                   CCObject* customAnimNotifierId,
-                                   SEL_CallFuncND customAnimNotifierSel,
-                                   bool observeLooping){
-    
-    if(parentLoader == NULL)
-        return;
-    
-    
-    LHAnimationNode* animNode = (LHAnimationNode*)parentLoader->animationsInLevel.objectForKey(animName);
-    if(NULL != animNode){
-        
-        LHBatch* batch = parentLoader->batchNodeForFile(animNode->getImageName());
-        
-        if(batch)
-        {
-            animNode->setBatchNode(batch->getSpriteBatchNode());
-            animNode->computeFrames();
-            
-            if(customAnimNotifierId == NULL){
-                animNode->runAnimationOnSprite(this, 
-                                               startFrame,
-                                               parentLoader->animNotifierId,
-                                               parentLoader->animNotifierSel, 
-                                               parentLoader->notifOnLoopForeverAnim); 
-            }
-            else
-            {
-                animNode->runAnimationOnSprite(this, 
-                                               startFrame,
-                                               customAnimNotifierId,
-                                               customAnimNotifierSel, 
-                                               observeLooping);    
-            }
-        }
-    }
-}
-//------------------------------------------------------------------------------
-void LHSprite::setAnimationSequence(CCObject* seqObj)
-{        
-	CCAction* seq = (CCAction*)seqObj;//visual studio compatibility
-    stopActionByTag(LH_ANIM_ACTION_TAG);
-    runAction(seq);
-}
-//------------------------------------------------------------------------------
-//does not start the animation - just changed the texture. 
-//use this when you want to use nextFrame / prevFrame methods
-void LHSprite::prepareAnimationNamed(const std::string& animName){
- 
-    if(parentLoader == NULL)
-        return;
-    
-    LHAnimationNode* animNode = (LHAnimationNode*)parentLoader->animationsInLevel.objectForKey(animName);
-    if(animNode == NULL)
-        return;
-    
-    LHBatch* batch = parentLoader->batchNodeForFile(animNode->getImageName());
-    
-    if(batch)
-    {
-        animNode->setBatchNode(batch->getSpriteBatchNode());
-        animNode->computeFrames();
-        setAnimation(animNode);
-    }    
-}
-//------------------------------------------------------------------------------
-void LHSprite::stopAnimation(){
-    stopActionByTag(LH_ANIM_ACTION_TAG);
-    setAnimation(NULL);
-}
-////////////////////////////////////////////////////////////////////////////////
-void LHSprite::setPathNode(LHPathNode* node){
-    CCAssert(node != NULL, "Argument must not be null");
-    pathNode = node;
-}
-void  LHSprite::moveOnPathWithUniqueName(const std::string& pathUniqueName,
-                                         float time,
-                                         bool startAtEndPoint,
-                                         bool isCyclic,
-                                         bool restartOtherEnd,
-                                         int axisOrientation,
-                                         bool flipx,
-                                         bool flipy,
-                                         bool dMove,
-                                         CCObject* obj,
-                                         SEL_CallFuncN sel){
-    
-    if(NULL == parentLoader)
-        return;
-
-	cancelPathMovement();
-    
-	LHBezierNode* node = parentLoader->bezierNodeWithUniqueName(pathUniqueName);
-	
-	if(NULL != node)
-	{
-		LHPathNode* pNode = node->addSpriteOnPath(this,
-                                                     time,
-                                                     startAtEndPoint,
-                                                     isCyclic,
-                                                     restartOtherEnd,
-                                                     axisOrientation,
-                                                     flipx,
-                                                     flipy,
-                                                     dMove);
-        
-        if(NULL != pNode)
-        {
-            pNode->setPathNotifierObject(obj);
-            pNode->setPathNotifierSelector(sel);
-        }
-        
-        pathNode = pNode;
-	}
-}
-//------------------------------------------------------------------------------
-LHPathNode* LHSprite::getPathNode(void){
-    return pathNode;
-}
-//------------------------------------------------------------------------------
-void LHSprite::cancelPathMovement(void){
-    if(NULL != pathNode){
-        pathNode->removeFromParentAndCleanup(true);
-        pathNode = NULL;
-    }
-}
-//------------------------------------------------------------------------------
-void LHSprite::pausePathMovement(const bool& pauseStatus){
-    if(NULL != pathNode){
-        pathNode->setPaused(pauseStatus);
-    }
-}
-//------------------------------------------------------------------------------
-void LHSprite::setPathSpeed(float value){
-    
-    if(pathNode != NULL){
-        pathNode->setSpeed(value);
-    }
-}
-//------------------------------------------------------------------------------
-float LHSprite::getPathSpeed(void){
-    if(pathNode != NULL)
-        return pathNode->getSpeed();
-    return 0;
-}
-//------------------------------------------------------------------------------
-void LHSprite::registerNotifierOnPathEndPoints(CCObject* obj, 
-                                               SEL_CallFuncN sel)
-{    
-    if(NULL == pathNode)
-        return;
-    
-    pathNode->setPathNotifierObject(obj);
-    pathNode->setPathNotifierSelector(sel);   
-}
-////////////////////////////////////////////////////////////////////////////////
-void LHSprite::setCustomValue(void* value, const char* key){
-    CCAssert(value!=0, "Custom value object must not be nil");    
-    CCAssert(key!=0, "Custom value key must not be nil");    
-    
-    customUserValues[std::string(key)] = value;
-}
-void* LHSprite::getCustomValueWithKey(const char* key){
-    CCAssert(key!=0, "Custom value key must not be nil");    
-    return customUserValues[std::string(key)];
-}
-////////////////////////////////////////////////////////////////////////////////
-void LHSprite::transformPosition(CCPoint pos){
-    setPosition(pos);
-    if(0 != body)
-    {
-        b2Vec2 boxPosition = LevelHelperLoader::pointsToMeters(pos);
-        float angle = CC_DEGREES_TO_RADIANS(-1*getRotation());
-        body->SetTransform(boxPosition, angle);
-    }
-}
-void LHSprite::transformRotation(float rot){
-    setRotation(rot);
-    if(0 != body)
-    {
-        b2Vec2 boxPosition = LevelHelperLoader::pointsToMeters(getPosition());
-        float angle = CC_DEGREES_TO_RADIANS(-1*rot);
-        body->SetTransform(boxPosition, angle);
-    }    
-}
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-CCArray* LHSprite::jointList(void){
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* array = CCArray::create();
+#else
     CCArray* array = CCArray::array();
+#endif
+    
     if(body != NULL){
         b2JointEdge* jtList = body->GetJointList();
         while (jtList) {
@@ -478,154 +1035,344 @@ CCArray* LHSprite::jointList(void){
     }
     return array;
 }
+//------------------------------------------------------------------------------
 LHJoint* LHSprite::jointWithUniqueName(const std::string& name){
     
-    if(body != NULL){
-        b2JointEdge* jtList = body->GetJointList();
-        while (jtList) {
-            LHJoint* lhJt = LHJoint::jointFromBox2dJoint(jtList->joint);
-            if(lhJt != NULL)
-                if(lhJt->getUniqueName() == name)
-                    return lhJt;
-            jtList = jtList->next;
+    CCArray* list = jointList();
+    for(int i = 0; i< list->count(); ++i){
+        LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
+        
+        if(jt->getUniqueName() == name){
+            return jt;
         }
     }
     return NULL;
 }
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-LHSprite* LHSprite::sprite(void){
-    LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->init())
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
+//------------------------------------------------------------------------------
+bool LHSprite::removeAllAttachedJoints(){
+    CCArray* list = jointList();
+    if(list){
+        for(int i = 0; i< list->count(); ++i){
+            LHJoint* jt = (LHJoint*)list->objectAtIndex(i);
+            jt->removeSelf();
+            return true;
+        }        
     }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
+    return false;
 }
-LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture)
-{
-	LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->initWithTexture(pTexture))
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture, const CCRect& rect)
-{
-    LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->initWithTexture(pTexture, rect))
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithTexture(CCTexture2D *pTexture, const CCRect& rect, const CCPoint& offset)
-{
-    CC_UNUSED_PARAM(pTexture);
-    CC_UNUSED_PARAM(rect);
-    CC_UNUSED_PARAM(offset);
-	// not implement
-	CCAssert(0, "");
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithFile(const char *pszFileName)
-{
-    LHSprite *pobSprite = new LHSprite();
-    if (pobSprite && pobSprite->initWithFile(pszFileName))
-    {
-        pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithFile(const char *pszFileName, const CCRect& rect)
-{
-    LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->initWithFile(pszFileName, rect))
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithSpriteFrame(CCSpriteFrame *pSpriteFrame)
-{
-    LHSprite *pobSprite = new LHSprite();
-    if (pobSprite && pobSprite->initWithSpriteFrame(pSpriteFrame))
-    {
-	    pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
-}
-
-LHSprite* LHSprite::spriteWithSpriteFrameName(const char *pszSpriteFrameName)
-{
-	CCSpriteFrame *pFrame = CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(pszSpriteFrameName);
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LHSprite::prepareMovementOnPathWithUniqueName(const std::string& pathName){
     
-    char msg[256] = {0};
-    sprintf(msg, "Invalid spriteFrameName: %s", pszSpriteFrameName);
-    CCAssert(pFrame != NULL, msg);
-	return spriteWithSpriteFrame(pFrame);
+    if(pathName == "" || pathName == "No Path")
+        return;
+
+    
+    stopPathMovement();
+
+    CCArray* allLayers = LHSettings::sharedInstance()->getAllLHMainLayers();
+    
+    LHBezier* bezier = NULL;
+    for(int i = 0; i< allLayers->count(); ++i)
+    {
+        LHLayer* layer = (LHLayer*)allLayers->objectAtIndex(i);
+    
+        bezier = layer->bezierWithUniqueName(pathName);
+        if(bezier)
+            break;
+    }
+    if(bezier){
+        
+        pathNode = new LHPathNode(bezier->getPathPoints(), this);
+        pathNode->setPaused(true);
+        
+        pathDefaults.name= std::string(pathName);
+        pathNode->setFlipX(pathDefaults.flipX);
+        pathNode->setFlipY(pathDefaults.flipY);
+        pathNode->setIsCyclic(pathDefaults.isCyclic);
+        pathNode->setRelativeMovement(pathDefaults.relativeMovement);
+        pathNode->setAxisOrientation(pathDefaults.orientation);
+        pathNode->setRestartOtherEnd(pathDefaults.restartOtherEnd);        
+        pathNode->setSpeed(pathDefaults.speed);
+        pathNode->setStartAtEndPoint(pathDefaults.startPoint);
+    }
+}
+//------------------------------------------------------------------------------
+const std::string& LHSprite::pathUniqueName(){
+    return pathDefaults.name;
 }
 
-LHSprite* LHSprite::spriteWithBatchNode(CCSpriteBatchNode *batchNode, const CCRect& rect)
-{
-	LHSprite *pobSprite = new LHSprite();
-	if (pobSprite && pobSprite->initWithBatchNode(batchNode, rect))
-	{
-        pobSprite->autorelease();
-        return pobSprite;
-    }
-    CC_SAFE_DELETE(pobSprite);
-	return NULL;
+void LHSprite::setPathMovementHasEndedObserver(CCObject *target, SEL_CallFuncO selector){
+    pathMoveHasEndedObserver = target;
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasEndedNotification,
+                                                                  this);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasEndedNotification,
+                                                                  this);
+
+#endif
 }
+void LHSprite::setPathMovementHasChangedPointObserver(CCObject *target, SEL_CallFuncO selector){
+    pathMoveChangedPointObserver = target;
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasChangedPointNotification,
+                                                                  this);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasChangedPointNotification,
+                                                                  this);
+#endif
+
+}
+void LHSprite::removePathMovementHasEndedObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(pathMoveHasEndedObserver, LHPathMovementHasEndedNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(pathMoveHasEndedObserver, LHPathMovementHasEndedNotification);
+#endif
+
+    pathMoveHasEndedObserver = NULL;
+}
+void LHSprite::removePathMovementHasChangedPointObserver(){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(pathMoveChangedPointObserver, LHPathMovementHasChangedPointNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(pathMoveChangedPointObserver, LHPathMovementHasChangedPointNotification);
+#endif
+
+    pathMoveChangedPointObserver = NULL;
+}
+
+
+//use this methods when you want to get notification about path movement for all sprites
+void LHSprite::setGlobalPathMovementHasEndedObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasEndedNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasEndedNotification,
+                                                                  NULL);
+
+#endif
+
+}
+void LHSprite::setGlobalPathMovementHasChangedPointObserver(CCObject *target, SEL_CallFuncO selector){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasChangedPointNotification,
+                                                                  NULL);
+#else
+    CCNotificationCenter::sharedNotifCenter()->addObserver(target,
+                                                                  selector,
+                                                                  LHPathMovementHasChangedPointNotification,
+                                                                  NULL);
+#endif
+
+}
+void LHSprite::removeGlobalPathMovementHasEndedObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHPathMovementHasEndedNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHPathMovementHasEndedNotification);
+#endif
+
+}
+void LHSprite::removeGlobalPathMovementHasChangedPointObserver(CCObject *target){
+#if COCOS2D_VERSION >= 0x00020000
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(target, LHPathMovementHasChangedPointNotification);
+#else
+    CCNotificationCenter::sharedNotifCenter()->removeObserver(target, LHPathMovementHasChangedPointNotification);
+#endif
+
+}
+
+//------------------------------------------------------------------------------
+void LHSprite::startPathMovement(){
+    if(pathNode)pathNode->setPaused(false);
+}
+//------------------------------------------------------------------------------
+void LHSprite::pausePathMovement(){
+    if(pathNode)pathNode->setPaused(true);
+}
+//------------------------------------------------------------------------------
+void LHSprite::restartPathMovement(){
+    if(pathNode)pathNode->restart();
+}
+//------------------------------------------------------------------------------
+void LHSprite::stopPathMovement(){
+    if(pathNode){
+        this->removePathMovementHasChangedPointObserver();
+        this->removePathMovementHasEndedObserver();
+        delete pathNode;
+        pathNode = NULL;
+    }
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementSpeed(float value){
+    if(pathNode)pathNode->setSpeed(value);
+}
+//------------------------------------------------------------------------------
+float LHSprite::pathMovementSpeed(){
+    if(pathNode)return pathNode->getSpeed();
+    return 0.0f;
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementStartPoint(enum LH_PATH_MOVEMENT_START_POINT point){
+    if(!pathNode)return;
+    pathNode->setStartAtEndPoint((bool)point);
+}
+//------------------------------------------------------------------------------
+enum LH_PATH_MOVEMENT_START_POINT LHSprite::pathMovementStartPoint(){
+    if(!pathNode)return  LH_PATH_INVALID_POINT;
+    return (enum LH_PATH_MOVEMENT_START_POINT)pathNode->getStartAtEndPoint();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementIsCyclic(bool cyclic){
+    if(pathNode)pathNode->setIsCyclic(cyclic);
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementIsCyclic(){
+    if(!pathNode)return false;
+    return pathNode->getIsCyclic();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementRestartsAtOtherEnd(bool otherEnd){
+    if(pathNode)pathNode->setRestartOtherEnd(otherEnd);
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementRestartsAtOtherEnd(){
+    if(!pathNode)return false;
+    return pathNode->getRestartOtherEnd();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementOrientation(enum LH_PATH_MOVEMENT_ORIENTATION point){
+    if(pathNode)pathNode->setAxisOrientation((int)point);
+}
+//------------------------------------------------------------------------------
+enum LH_PATH_MOVEMENT_ORIENTATION LHSprite::pathMovementOrientation(){
+    if(!pathNode)return LH_INVALID_ORIENTATION;
+    return (enum LH_PATH_MOVEMENT_ORIENTATION)pathNode->getAxisOrientation();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementFlipXAtEnd(bool flip){
+    if(pathNode)pathNode->setFlipX(flip);
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementFlipXAtEnd(){
+    if(!pathNode)return false;
+    return pathNode->getFlipX();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementFlipYAtEnd(bool flip){
+    if(pathNode)pathNode->setFlipY(flip);    
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementFlipYAtEnd(){
+    if(!pathNode)return false;
+    return pathNode->getFlipY();
+}
+//------------------------------------------------------------------------------
+void LHSprite::setPathMovementRelative(bool rel){
+    if(pathNode)pathNode->setRelativeMovement(rel);
+}
+//------------------------------------------------------------------------------
+bool LHSprite::pathMovementRelative(){
+    if(!pathNode)return false;
+    return pathNode->getRelativeMovement();
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LHSprite::setPosition(const CCPoint& pos){
+    if(usesOverloadedTransformations){
+        transformPosition(pos);
+    }
+    else {
+        CCSprite::setPosition(pos);
+    }
+}
+void LHSprite::setRotation(float fRotation){
+    
+    if(usesOverloadedTransformations)
+        transformRotation(fRotation);
+    else {
+        CCSprite::setRotation(fRotation);
+    }
+}
+
+void LHSprite::transformPosition(CCPoint pos){
+    CCSprite::setPosition(pos);
+    if(0 != body)
+    {
+        b2Vec2 boxPosition = LevelHelperLoader::pointsToMeters(pos);
+        float angle = CC_DEGREES_TO_RADIANS(-1*getRotation());
+        body->SetTransform(boxPosition, angle);
+    }
+}
+//------------------------------------------------------------------------------
+void LHSprite::transformRotation(float rot){
+    CCSprite::setRotation(rot);
+    if(0 != body)
+    {
+        b2Vec2 boxPosition = LevelHelperLoader::pointsToMeters(getPosition());
+        float angle = CC_DEGREES_TO_RADIANS(-1*rot);
+        body->SetTransform(boxPosition, angle);
+    }    
+}
+//------------------------------------------------------------------------------
+void LHSprite::transformScale(float scale){
+    setScale(scale);
+    if(0 != body){
+        createFixturesFromInfoOnBody();
+    }
+}
+//------------------------------------------------------------------------------
+void LHSprite::transformScaleX(float scaleX){
+    
+    setScaleX(scaleX);
+    
+    if(0 != body){
+        createFixturesFromInfoOnBody();        
+    }
+    
+}
+//------------------------------------------------------------------------------
+void LHSprite::transformScaleY(float scaleY){
+    setScaleY(scaleY);
+    
+    if(0 != body){
+        createFixturesFromInfoOnBody();
+    }
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 bool LHSprite::isTouchedAtPoint(CCPoint point){
     
-    if(body == NULL)
+    if(body == NULL || !usePhysicsForTouches)
     {
-        float x = point.x;
-        float y = point.y;
+        CCRect bbox = CCRectMake( 0.0f, 0.0f, this->getContentSize().width, this->getContentSize().height );
+        bbox = CCRectApplyAffineTransform(bbox, this->nodeToWorldTransform());
         
-        float ax = m_sQuad.tl.vertices.x;
-        float ay = m_sQuad.tl.vertices.y;
-        
-        float bx = m_sQuad.tr.vertices.x;
-        float by = m_sQuad.tr.vertices.y;
-        
-        float dx = m_sQuad.bl.vertices.x;
-        float dy = m_sQuad.bl.vertices.y;
-        
-        float bax=bx-ax;
-        float bay=by-ay;
-        float dax=dx-ax;
-        float day=dy-ay;
-        
-        if ((x-ax)*bax+(y-ay)*bay<0.0) return false;
-        if ((x-bx)*bax+(y-by)*bay>0.0) return false;
-        if ((x-ax)*dax+(y-ay)*day<0.0) return false;
-        if ((x-dx)*dax+(y-dy)*day>0.0) return false;
-        
-        return true;
+#if COCOS2D_VERSION >= 0x00020000
+        return bbox.containsPoint(point);
+#else
+        return CCRect::CCRectContainsPoint(bbox, point);
+#endif
         
     }
     else{
@@ -643,25 +1390,119 @@ bool LHSprite::isTouchedAtPoint(CCPoint point){
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void LHSprite::registerTouchBeginObserver(CCObject* observer, SEL_CallFuncO selector){
+    this->registerTouchBeganObserver(observer, selector);
+}
+
+void LHSprite::registerTouchBeganObserver(CCObject* observer, SEL_CallFuncO selector){
+
+    
+    removeTouchObserver();
+
+//    CCLog("REGISTER TOUCH BEGIN OBSERVER %s", uniqueName.c_str());
+
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+    if(touchDispatcher){
         
-        touchBeginObserver.object = observer;
-        touchBeginObserver.selector = selector;
+        CCTouchHandler* handler = touchDispatcher->findHandler(this);
+        
+        //if is not already added to the touch dispatcher - then lets add it
+        if(!handler){
+            touchDispatcher->addTargetedDelegate(this, touchPriority, swallowTouches);
+        }
+    }
+        
+    if(NULL == touchBeginObserver){
+        touchBeginObserver = new LHObserverPair();
+    }
+    
+    if(touchBeginObserver){
+        touchBeginObserver->object = observer;
+        touchBeginObserver->selector = selector;
+    }
 }
 //------------------------------------------------------------------------------
 void LHSprite::registerTouchMovedObserver(CCObject* observer, SEL_CallFuncO selector){
-    touchMovedObserver.object = observer;
-    touchMovedObserver.selector = selector;
+   
+    if(NULL == touchMovedObserver)
+        touchMovedObserver = new LHObserverPair();
+    
+    if(touchMovedObserver){
+        touchMovedObserver->object = observer;
+        touchMovedObserver->selector = selector;
+    }
 }
 //------------------------------------------------------------------------------
 void LHSprite::registerTouchEndedObserver(CCObject* observer, SEL_CallFuncO selector){
-    touchEndedObserver.object = observer;
-    touchEndedObserver.selector = selector;    
+    if(NULL == touchEndedObserver)
+        touchEndedObserver = new LHObserverPair();
+
+    if(touchEndedObserver){
+        touchEndedObserver->object = observer;
+        touchEndedObserver->selector = selector;    
+    }
+}
+
+void LHSprite::removeTouchObserver()
+{
+//    CCLog("REMOVE TOUCH OBSERVER forSprite %s", uniqueName.c_str());
+    
+    if(touchBeginObserver)
+        delete touchBeginObserver;
+
+    if(touchMovedObserver)
+        delete touchMovedObserver;
+
+    if(touchEndedObserver)
+        delete touchEndedObserver;
+    
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
+    
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+//    if(touchBeginObserver)
+    if(touchDispatcher){
+        touchDispatcher->removeDelegate(this);
+    }
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
-{    
+{
+//    CCLog("CCTOUCH BEGIN %s", uniqueName.c_str());
+    
+    if(touchIsDisabled)
+        return false;
+
+    if(NULL == touchBeginObserver && NULL == tagTouchBeginObserver)
+        return false;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint touchPoint =     pTouch->getLocationInView();
+#else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
+    
+#endif
+
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
     if(isTouchedAtPoint(touchPoint))
@@ -675,24 +1516,66 @@ bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
         info->sprite = this;
         info->delta = CCPointZero;
         
-        if(touchBeginObserver.object){
-            (touchBeginObserver.object->*touchBeginObserver.selector)(info);
-        }        
-        
-        if(tagTouchBeginObserver && tagTouchBeginObserver->object){
-            (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
+        if(touchBeginObserver){
+            if(touchBeginObserver->object){
+                (touchBeginObserver->object->*touchBeginObserver->selector)(info);
+            }        
         }
-        return swallowTouches;
+        
+        if(tagTouchBeginObserver){
+            if(tagTouchBeginObserver && tagTouchBeginObserver->object){
+                (tagTouchBeginObserver->object->*tagTouchBeginObserver->selector)(info);
+            }
+        }
+        
+        //it seams that if this method returns false touch moved and touch ended will not get called
+        return true;
+        
+//        return swallowTouches;
     }
-    return true;
+    return false;
 }
 //------------------------------------------------------------------------------
 void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
         
+    if(touchIsDisabled)
+        return;
+    
+    if(NULL == touchMovedObserver && NULL == tagTouchMovedObserver)
+        return;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint touchPoint =     pTouch->getLocationInView();
+#else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
+
+#endif
+
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
-    CCPoint prevLocation = pTouch->previousLocationInView();
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint prevLocation = pTouch->getPreviousLocationInView();
+#else
+    
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
+    CCPoint prevLocation =     pTouch->previousLocationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint prevLocation =     pTouch->previousLocationInView(pTouch->view());
+#endif
+    
+#endif
+
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
@@ -705,22 +1588,57 @@ void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
     info->delta = CCPointMake(touchPoint.x - prevLocation.x,
                               touchPoint.y - prevLocation.y);
     
+    if(touchMovedObserver){
+        if(touchMovedObserver->object){
+            (touchMovedObserver->object->*touchMovedObserver->selector)(info);
+        }  
+    }
     
-    if(touchMovedObserver.object){
-        (touchMovedObserver.object->*touchMovedObserver.selector)(info);
-    }  
-    
-    if(tagTouchMovedObserver && tagTouchMovedObserver->object){
-        (tagTouchMovedObserver->object->*tagTouchMovedObserver->selector)(info);
+    if(tagTouchMovedObserver){
+        if(tagTouchMovedObserver && tagTouchMovedObserver->object){
+            (tagTouchMovedObserver->object->*tagTouchMovedObserver->selector)(info);
+        }
     }
 }
 //------------------------------------------------------------------------------
 void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     
+    if(touchIsDisabled)
+        return;
+    
+    if(NULL == touchEndedObserver && NULL == tagTouchEndedObserver)
+        return;
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint touchPoint =     pTouch->getLocationInView();
+#else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
     CCPoint touchPoint =     pTouch->locationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint touchPoint =     pTouch->locationInView(pTouch->view());
+#endif
+
+#endif
+    
     touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
     
-    CCPoint prevLocation = pTouch->previousLocationInView();
+#if COCOS2D_VERSION >= 0x00020000
+    CCPoint prevLocation = pTouch->getPreviousLocationInView();
+#else
+    
+#if LH_COCOS2DX_VERSION == 0x00010103
+    //cocos2d-1.0.1-x-0.13.0-beta
+    CCPoint prevLocation =     pTouch->previousLocationInView();
+#else
+    //cocos2d-1.0.1-x-0.12.0
+    CCPoint prevLocation =     pTouch->previousLocationInView(pTouch->view());
+#endif
+    
+#endif
+
     prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
@@ -733,11 +1651,16 @@ void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     info->delta = CCPointMake(touchPoint.x - prevLocation.x,
                               touchPoint.y - prevLocation.y);
     
-    if(touchEndedObserver.object){
-        (touchEndedObserver.object->*touchEndedObserver.selector)(info);
+    if(touchEndedObserver){
+        if(touchEndedObserver->object){
+            (touchEndedObserver->object->*touchEndedObserver->selector)(info);
+        }
     }
-    if(tagTouchEndedObserver && tagTouchEndedObserver->object){
-        (tagTouchEndedObserver->object->*tagTouchEndedObserver->selector)(info);
+    if(tagTouchEndedObserver)
+    {
+        if(tagTouchEndedObserver && tagTouchEndedObserver->object){
+            (tagTouchEndedObserver->object->*tagTouchEndedObserver->selector)(info);
+        }
     }
 }
 //------------------------------------------------------------------------------
@@ -764,8 +1687,8 @@ std::string LHSprite::uniqueNameForBody(b2Body* body){
     if(LHSprite::isLHSprite(spr))
         return ((LHSprite*)spr)->getUniqueName();
     
-    if(LHBezierNode::isLHBezierNode(spr))
-        return ((LHBezierNode*)spr)->getUniqueName();
+    if(LHBezier::isLHBezier(spr))
+        return ((LHBezier*)spr)->getUniqueName();
     
     return NULL;
 }
@@ -804,5 +1727,226 @@ bool LHSprite::isLHSprite(CCNode* obj){
     
     return false;
 }
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void LHSprite::setCollisionFilterCategory(int category){
+    if(body == NULL)
+        return;
+    
+    b2Fixture* curFix = body->GetFixtureList();
+    while (curFix) {
+        
+        b2Filter curFilter = curFix->GetFilterData();
+        
+        b2Filter filter;
+        filter.categoryBits = (uint16)category;
+        filter.maskBits     = curFilter.maskBits;
+        filter.groupIndex   = curFilter.groupIndex;
+        
+        curFix->SetFilterData(filter);        
+        curFix = curFix->GetNext();
+    }
+}
+void LHSprite::setCollisionFilterMask(int mask){
+    if(body == NULL)
+        return;
+    
+    b2Fixture* curFix = body->GetFixtureList();
+    while (curFix) {
+        
+        b2Filter curFilter = curFix->GetFilterData();
+        
+        b2Filter filter;
+        filter.categoryBits = curFilter.categoryBits;
+        filter.maskBits     = (uint16)mask;
+        filter.groupIndex   = curFilter.groupIndex;
+        
+        curFix->SetFilterData(filter);        
+        curFix = curFix->GetNext();
+    }
+}
+void LHSprite::setCollisionFilterGroup(int group){
+    if(body == NULL)
+        return;
+    b2Fixture* curFix = body->GetFixtureList();
+    while (curFix) {
+        
+        b2Filter curFilter = curFix->GetFilterData();
+        
+        b2Filter filter;
+        filter.categoryBits = curFilter.categoryBits;
+        filter.maskBits     = curFilter.maskBits;
+        filter.groupIndex   = (int16)group;
+        
+        curFix->SetFilterData(filter);        
+        curFix = curFix->GetNext();
+    }
+}
 
+//TYPE CONVERSION
+//------------------------------------------------------------------------------
+void LHSprite::makeDynamic(){
+    
+    if(body == NULL)
+    {
+        this->createBodyFromDefaultValuesWithType(b2_dynamicBody);
+        this->createFixturesFromInfoOnBody();
+        return;
+    }
+    
+    body->SetType(b2_dynamicBody);    
+}
+void LHSprite::makeStatic(){
+    if(body == NULL){
+        this->createBodyFromDefaultValuesWithType(b2_staticBody);
+        this->createFixturesFromInfoOnBody();
+        return;
+    }
+    
+    body->SetType(b2_staticBody);
+}
+void LHSprite::makeKinematic(){
+    if(body == NULL){
+        this->createBodyFromDefaultValuesWithType(b2_kinematicBody);
+        this->createFixturesFromInfoOnBody();
+        
+        return;
+    }
+    
+    body->SetType(b2_kinematicBody);
+}
+
+
+void LHSprite::makeNoPhysics(){
+    if(body == NULL)
+        return;
+    
+    this->removeBodyFromWorld();
+}
+
+void LHSprite::setSensor(bool val, const std::string fixtureName){
+   
+    if(body == NULL)return;
+    
+    b2Fixture* fix = body->GetFixtureList();
+    
+    while (fix) {
+        LHFixture* lhFix = (LHFixture*)(fix->GetUserData());
+        if(LHFixture::isLHFixture(lhFix))
+        {
+            if(lhFix->getFixtureName() == fixtureName){
+                fix->SetSensor(val);
+                return;
+            }
+        }
+        fix = fix->GetNext();
+    }
+}
+
+void LHSprite::setSensor(bool val, int fixtureID){
+    
+    if(body == NULL)return;
+    
+    b2Fixture* fix = body->GetFixtureList();
+    
+    while (fix) {
+        LHFixture* lhFix = (LHFixture*)(fix->GetUserData());
+        
+        if(LHFixture::isLHFixture(lhFix))
+        {
+            if(lhFix->getFixtureID() == fixtureID){
+                fix->SetSensor(val);
+            }
+        }
+        fix = fix->GetNext();
+    }
+}
+
+void LHSprite::setSensor(bool val){
+    if(body == NULL)return;
+    b2Fixture* fix = body->GetFixtureList();
+    while (fix) {
+        fix->SetSensor(val);
+        fix = fix->GetNext();
+    }
+}
+
+bool LHSprite::hasContacts(){
+    if(body == NULL)
+        return false;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL != edge){
+        return true;
+    }
+    return false;
+}
+
+CCArray* LHSprite::contactSprites(){
+    
+    if(body == NULL)
+        return NULL;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL == edge){
+        return NULL;
+    }
+    
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* array = CCArray::create();
+#else
+    CCArray* array = CCArray::array();
+#endif
+    
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHSprite* spr = LHSprite::spriteForBody(contact_body);
+            if(spr){
+                array->addObject(spr);
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return array;
+}
+
+CCArray* LHSprite::contactBeziers(){
+    
+    if(body == NULL)
+        return NULL;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL == edge){
+        return NULL;
+    }
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray* array = CCArray::create();
+#else
+    CCArray* array = CCArray::array();
+#endif
+
+
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHBezier* bez = LHBezier::bezierForBody(contact_body);
+            if(bez){
+                array->addObject(bez);
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return array;
+}
 

@@ -3,38 +3,52 @@
 <plist version="1.0">
 <dict>
 	<key>Message</key>
-	<string>Cocos2d-X with Box2d - last update 1 Feb.2012 </string>
+	<string>Cocos2d-X with Box2d - last update 18 Jul. 2012 </string>
 	<key>GenerateCodeInFolder</key>
 	<string>LevelHelper/</string>
 	<key>Availability</key>
 	<true/>
 	<key>Files</key>
 	<array>
+		<string>TemporaryDummyClass.h</string>
+		<string>TemporaryDummyClass.cpp</string>
+	
 		<string>LHObject.h</string>
 		<string>LHObject.cpp</string>
 		<string>LHDictionary.h</string>
 		<string>LHDictionary.cpp</string>
 		<string>LHArray.h</string>
 		<string>LHArray.cpp</string>
-		<string>LHAnimationsExt.h</string>
-		<string>LHAnimationsExt.cpp</string>
-		<string>LHJointsExt.h</string>
-		<string>LHJointsExt.cpp</string>
-		<string>LHPathExt.h</string>
-		<string>LHPathExt.cpp</string>
-		<string>LHSpritesExt.h</string>
-		<string>LHSpritesExt.cpp</string>
+		
 		<string>LevelHelperLoader.h</string>
 		<string>LevelHelperLoader.cpp</string>
+		<string>lhConfig.h</string>
 		<string>LICENSE_LevelHelper.txt</string>
+
 		<string>LHAnimationNode.h</string>
 		<string>LHAnimationNode.cpp</string>
 		<string>LHBatch.h</string>
 		<string>LHBatch.cpp</string>
-		<string>LHBezierNode.h</string>
-		<string>LHBezierNode.cpp</string>
+		<string>LHBezier.h</string>
+		<string>LHBezier.cpp</string>
+		<string>LHContactInfo.h</string>
+		<string>LHContactInfo.cpp</string>
+		<string>LHContactListener.h</string>
+		<string>LHContactListener.cpp</string>
+		<string>LHContactNode.h</string>
+		<string>LHContactNode.cpp</string>	
+		<string>LHCustomSpriteMgr.h</string>
+		<string>LHCustomSpriteMgr.cpp</string>
+		<string>LHCuttingEngineMgr.h</string>
+		<string>LHCuttingEngineMgr.cpp</string>
+		<string>LHFixture.h</string>		
+		<string>LHFixture.cpp</string>		
 		<string>LHJoint.h</string>
 		<string>LHJoint.cpp</string>
+		<string>LHLayer.h</string>
+		<string>LHLayer.cpp</string>
+		<string>LHNode.h</string>
+		<string>LHNode.cpp</string>
 		<string>LHParallaxNode.h</string>
 		<string>LHParallaxNode.cpp</string>
 		<string>LHPathNode.h</string>
@@ -43,36 +57,18 @@
 		<string>LHSettings.cpp</string>
 		<string>LHSprite.h</string>
 		<string>LHSprite.cpp</string>
-		<string>LHContactNode.h</string>
-		<string>LHContactNode.cpp</string>	
-		<string>LHContactListener.h</string>
-		<string>LHContactListener.cpp</string>
-		<string>LHContactInfo.h</string>
-		<string>LHContactInfo.cpp</string>
-		<string>LHCustomSpriteMgr.h</string>
-		<string>LHCustomSpriteMgr.cpp</string>
-		<string>lhConfig.h</string>
 		<string>LHTouchMgr.h</string>
 		<string>LHTouchMgr.cpp</string>
+		<string>SHDocumentLoader.h</string>
+		<string>SHDocumentLoader.cpp</string>
 	</array>
 	<key>Directories</key>
 	<dict>
-		<key>LHAnimationsExt.h</key>
-		<string>ExtendingCategories</string>
-		<key>LHAnimationsExt.cpp</key>
-		<string>ExtendingCategories</string>
-		<key>LHJointsExt.h</key>
-		<string>ExtendingCategories</string>
-		<key>LHJointsExt.cpp</key>
-		<string>ExtendingCategories</string>
-		<key>LHPathExt.h</key>
-		<string>ExtendingCategories</string>
-		<key>LHPathExt.cpp</key>
-		<string>ExtendingCategories</string>
-		<key>LHSpritesExt.h</key>
-		<string>ExtendingCategories</string>
-		<key>LHSpritesExt.cpp</key>
-		<string>ExtendingCategories</string>
+		<key>TemporaryDummyClass.h</key>
+		<string>CustomClasses</string>
+		<key>TemporaryDummyClass.cpp</key>
+		<string>CustomClasses</string>
+			
 		<key>LHAnimationNode.h</key>
 		<string>Nodes</string>
 		<key>LHAnimationNode.cpp</key>
@@ -81,14 +77,46 @@
 		<string>Nodes</string>
 		<key>LHBatch.cpp</key>
 		<string>Nodes</string>
-		<key>LHBezierNode.h</key>
+		<key>LHBezier.h</key>
 		<string>Nodes</string>
-		<key>LHBezierNode.cpp</key>
+		<key>LHBezier.cpp</key>
+		<string>Nodes</string>
+		<key>LHContactInfo.h</key>
+		<string>Nodes</string>
+		<key>LHContactInfo.cpp</key>
+		<string>Nodes</string>
+		<key>LHContactListener.h</key>
+		<string>Nodes</string>
+		<key>LHContactListener.cpp</key>
+		<string>Nodes</string>
+		<key>LHContactNode.h</key>
+		<string>Nodes</string>
+		<key>LHContactNode.cpp</key>	
+		<string>Nodes</string>
+		<key>LHCustomSpriteMgr.h</key>
+		<string>Nodes</string>
+		<key>LHCustomSpriteMgr.cpp</key>
+		<string>Nodes</string>
+		<key>LHCuttingEngineMgr.h</key>
+		<string>Nodes</string>
+		<key>LHCuttingEngineMgr.cpp</key>
+		<string>Nodes</string>
+		<key>LHFixture.h</key>
+		<string>Nodes</string>
+		<key>LHFixture.cpp</key>
 		<string>Nodes</string>
 		<key>LHJoint.h</key>
 		<string>Nodes</string>
 		<key>LHJoint.cpp</key>
 		<string>Nodes</string>
+		<key>LHLayer.h</key>
+		<string>Nodes</string>
+		<key>LHLayer.cpp</key>
+		<string>Nodes</string>
+		<key>LHNode.h</key>
+		<string>Nodes</string>
+		<key>LHNode.cpp</key>
+		<string>Nodes</string>		
 		<key>LHParallaxNode.h</key>
 		<string>Nodes</string>
 		<key>LHParallaxNode.cpp</key>
@@ -105,26 +133,15 @@
 		<string>Nodes</string>
 		<key>LHSprite.cpp</key>
 		<string>Nodes</string>
-		<key>LHContactNode.h</key>
-		<string>Nodes</string>
-		<key>LHContactNode.cpp</key>	
-		<string>Nodes</string>
-		<key>LHContactListener.h</key>
-		<string>Nodes</string>
-		<key>LHContactListener.cpp</key>
-		<string>Nodes</string>
-		<key>LHContactInfo.h</key>
-		<string>Nodes</string>
-		<key>LHContactInfo.cpp</key>
-		<string>Nodes</string>
-		<key>LHCustomSpriteMgr.h</key>
-		<string>Nodes</string>
-		<key>LHCustomSpriteMgr.cpp</key>
-		<string>Nodes</string>
 		<key>LHTouchMgr.h</key>
 		<string>Nodes</string>
 		<key>LHTouchMgr.cpp</key>
 		<string>Nodes</string>
+		<key>SHDocumentLoader.h</key>
+		<string>Nodes</string>
+		<key>SHDocumentLoader.cpp</key>
+		<string>Nodes</string>
+		
 		<key>LHObject.h</key>
 		<string>Utilities</string>
 		<key>LHObject.cpp</key>

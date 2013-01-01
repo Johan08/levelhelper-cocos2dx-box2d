@@ -28,6 +28,11 @@
 #include <iostream>
 #include <fstream>
 
+#include "LHBatch.h"
+#include "../Utilities/LHDictionary.h"
+#include "LHSprite.h"
+
+
 LHCustomSpriteMgr *LHCustomSpriteMgr::m_sharedInstance = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,11 +48,21 @@ LHCustomSpriteMgr::~LHCustomSpriteMgr()
     
 }
 ////////////////////////////////////////////////////////////////////////////////
-LHCustomSpriteMgr::LHCustomSpriteMgr()
-{
+LHCustomSpriteMgr::LHCustomSpriteMgr(){
+    baseSpriteClass= lh_spriteCreationMethods(&LHSprite::spriteWithDictionary,
+                                              &LHSprite::batchSpriteWithDictionary);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void LHCustomSpriteMgr::registerCustomSpriteClassForTag(pt2FileSprite fSprite, 
+void LHCustomSpriteMgr::registerBaseSpriteClass(pt2FileSprite fSprite,
+                             pt2BatchSprite bSprite){
+    baseSpriteClass = std::make_pair(fSprite, bSprite);
+}
+
+lh_spriteCreationMethods LHCustomSpriteMgr::baseClass(){
+    return baseSpriteClass;
+}
+////////////////////////////////////////////////////////////////////////////////
+void LHCustomSpriteMgr::registerCustomSpriteClassForTag(pt2FileSprite fSprite,
                                                         pt2BatchSprite bSprite, 
                                                         int tag){
     
@@ -60,9 +75,8 @@ lh_spriteCreationMethods LHCustomSpriteMgr::customSpriteClassForTag(int tag){
         
     it=classesDictionary.find(tag);
     
-    if(it == classesDictionary.end())
-    {
-        return lh_spriteCreationMethods(&LHSprite::spriteWithFile, &LHSprite::spriteWithBatchNode);
+    if(it == classesDictionary.end()){
+        return baseSpriteClass;
     }
     return it->second;
 }

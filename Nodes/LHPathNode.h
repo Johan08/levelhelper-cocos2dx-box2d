@@ -29,45 +29,80 @@
 #define __LH_PATH_NODE__
 
 #include "cocos2d.h"
-#include "Box2d/Box2D.h"
-
+#include "Box2D/Box2D.h"
 #include "time.h"
+
+//notifications
+#define LHPathMovementHasEndedNotification "LHPathMovementHasEndedNotification"
+#define LHPathMovementHasChangedPointNotification "LHPathMovementHasChangedPointNotification"
 
 using namespace cocos2d;
 
-class LHSprite;
-class LHPathNode : public CCNode
+struct LH_PATH_DEFAULTS
 {
-private:
-	LHSprite* ccsprite; //week ptr
-	b2Body* body; //week ptr
-    std::string uniqueName;
-    std::vector<CCPoint> pathPoints;
-    
-	float speed;
-	float interval;
-	bool startAtEndPoint;
-	bool isCyclic;
-	bool restartOtherEnd;
-	int axisOrientation; //0 NO ORIENTATION 1 X 2 Y
     bool flipX;
     bool flipY;
-    
-	int currentPoint;
-	double elapsed;
+    bool isCyclic;
+    bool relativeMovement;
+    std::string name;
+    int orientation;
+    bool restartOtherEnd;
+    float speed;
+    bool startAtLaunch;
+    int startPoint;
+};
 
-	bool paused;
-	float initialAngle;
+
+enum LH_PATH_MOVEMENT_START_POINT
+{ 
+	LH_PATH_FIRST_POINT,
+    LH_PATH_LAST_POINT,
+    LH_PATH_INVALID_POINT
+};
+
+enum LH_PATH_MOVEMENT_ORIENTATION
+{
+    LH_NO_ORIENTATION,
+    LH_X_AXIT_ORIENTATION,
+    LH_Y_AXIS_ORIENTATION,
+    LH_INVALID_ORIENTATION
+};
+
+
+class LHSprite;
+class LHPathNode : public CCObject
+{
+private:
+	LHSprite* sprite; //week ptr
+    std::vector<CCPoint> pathPoints;
+    
+	float   speed;
+	float   interval;
+	bool    startAtEndPoint;
+	bool    isCyclic;
+	bool    restartOtherEnd;
+	int     axisOrientation; //0 NO ORIENTATION 1 X 2 Y
+    bool    flipX;
+    bool    flipY;
+    
+	int     currentPoint;
+	double  elapsed;
+
+	bool    paused;
+	float   initialAngle;
     CCPoint prevPathPosition;
-	double m_time;
-	bool isLine;
-	
+	double  m_time;
+	bool    isLine;
+	bool    relativeMovement;
+    
     CCObject* pathNotifierId;
     SEL_CallFuncN pathNotifierSel;
-    
-  //  static int numberOfPathNodes;
-    
+        
 public:
+    
+    LHPathNode(std::vector<CCPoint> points, LHSprite* sprite);
+    virtual ~LHPathNode(void);    
+
     
     bool getIsCyclic(void){return isCyclic;}
     void setIsCyclic(const bool& b){isCyclic = b;}
@@ -91,29 +126,20 @@ public:
     bool getFlipY(void){return flipY;}
     void setFlipY(const bool& y){flipY = y;}
 
-    LHPathNode(void);
-    virtual ~LHPathNode(void);
+    bool getRelativeMovement(void){return relativeMovement;}
+    void setRelativeMovement(const bool& r){relativeMovement = r;}
     
-    bool initPathWithPoints(std::vector<CCPoint> points);
-    static LHPathNode* nodePathWithPoints(std::vector<CCPoint> points);
+    void restart();
     
-    void setUniqueName(const char* name){uniqueName = std::string(name);}
-    std::string& getUniqueName(void) { return uniqueName;}
-    
-    void setSprite(LHSprite* spr);
-    LHSprite* getSprite(void){return ccsprite;}
-    void setBody(b2Body* bd){body = bd;}
-
     float getSpeed(void){return speed;}
     void setSpeed(float value);
 
     void setStartAtEndPoint(bool val);
     bool getStartAtEndPoint(void){return startAtEndPoint;}
     
-    void setPathNotifierObject(CCObject* notifierId){pathNotifierId = notifierId;}
-    void setPathNotifierSelector(SEL_CallFuncN notifierSel){pathNotifierSel = notifierSel;}
-    
-    virtual void visit(void);
+    int currentPathPoint(){return currentPoint;}
+
+    void update(float dt);
     
 private:
     static float rotationDegreeFromPoint(CCPoint endPoint, CCPoint startPoint);

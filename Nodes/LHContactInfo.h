@@ -28,12 +28,13 @@
 #define __LH_CONTACT_INFO__
 
 #include "cocos2d.h"
-#include "Box2d/Box2D.h"
+#include "Box2D/Box2D.h"
 
 
 class LHSprite;
-class LHBezierNode;
-
+class LHBezier;
+class LHFixture;
+class LHNode;
 enum LH_CONTACT_TYPE
 {
     LH_BEGIN_CONTACT = 1,
@@ -49,23 +50,39 @@ class LHContactInfo : public CCObject
 public:
     b2Body* bodyA; //week ptr;
     b2Body* bodyB; //week ptr;
+    b2Fixture* fixtureA; //week ptr;
+    b2Fixture* fixtureB; //week ptr;
+    
     enum LH_CONTACT_TYPE contactType; //the type of contact that was triggerd
     b2Contact* contact; //available at both pre and post solve
     const b2Manifold* oldManifold;//available at pre solve - else is nil
     const b2ContactImpulse* impulse; //available at post solve - else is nil
     
+    LHNode* nodeA();//may return nil - this should be used when you have collision with the physics boundaries
+    LHNode* nodeB();//may return nil - this should be used when you have collision with the physics boundaries
 
     LHSprite* spriteA();//may return nil;
     LHSprite* spriteB();//may return nil;
 
-    LHBezierNode* bezierA(void); //may return nil
-    LHBezierNode* bezierB(void); //may return nil
+    LHBezier* bezierA(void); //may return nil
+    LHBezier* bezierB(void); //may return nil
+    
+    
+    std::string fixtureNameA();
+    std::string fixtureNameB();
+    
+    int fixtureIdA();
+    int fixtureIdB();
+    
+
     
     LHContactInfo(void);
     virtual ~LHContactInfo(void);
     
     bool initWithInfo(b2Body* bodyA, 
                       b2Body* bodyB,
+                      b2Fixture* fixtureA,
+                      b2Fixture* fixtureB,
                       b2Contact* _contact,
                       int contactType,
                       const b2Manifold* _manifold,
@@ -73,10 +90,16 @@ public:
     
     static LHContactInfo* contactInfo(b2Body* bodyA,
                                       b2Body* bodyB,
+                                      b2Fixture* fixtureA,
+                                      b2Fixture* fixtureB,
                                       b2Contact* _contact,
                                       int contactType,
                                       const b2Manifold* _manifold,
                                       const b2ContactImpulse* _impulse);
+    
+private:
+    LHFixture* contactFixtureA();
+    LHFixture* contactFixtureB();
 };
 
 #endif

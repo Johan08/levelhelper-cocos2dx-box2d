@@ -29,7 +29,7 @@
 #define __LH_CONTACT_NODE__
 
 #include "cocos2d.h"
-#include "Box2d/Box2D.h"
+#include "Box2D/Box2D.h"
 #include "../Nodes/LHContactListener.h"
 #include "../Nodes/LHContactInfo.h"
 
@@ -41,16 +41,18 @@ class LHContactNode : public CCNode
 {
 private:
 
-//    CCDictionary preCollisionMap;
-//    CCDictionary postCollisionMap;
-//    CCDictionary beginEndCollisionMap;
     
+#if COCOS2D_VERSION >= 0x00020000
+    CCDictionary preCollisionMap;
+    CCDictionary postCollisionMap;
+    CCDictionary beginEndCollisionMap;    
+#else
+    CCMutableDictionary<int> preCollisionMap;
+    CCMutableDictionary<int> postCollisionMap;
+    CCMutableDictionary<int> beginEndCollisionMap;
+#endif
     
-        CCMutableDictionary<int> preCollisionMap;
-        CCMutableDictionary<int> postCollisionMap;
-        CCMutableDictionary<int> beginEndCollisionMap;
-    
-        LHContactListener *lhContactListener;
+    LHContactListener *lhContactListener;
     
 public:
     

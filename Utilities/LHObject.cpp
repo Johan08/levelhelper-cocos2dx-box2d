@@ -7,8 +7,8 @@
 //
 
 #include "LHObject.h"
-#include "LHDictionary.h"
-#include "LHArray.h"
+#include "../Utilities/LHDictionary.h"
+#include "../Utilities/LHArray.h"
 #include "../Nodes/LHBatch.h"
 
 #include <iostream>
@@ -142,7 +142,7 @@ void* LHObject::voidValue()
 //------------------------------------------------------------------------------    
 LHObject::~LHObject(void)
 {
-    //printf("OBJECT DEALLOC %d \n", --numberOfObjects);
+//    printf("OBJECT DEALLOC %d type %d\n", --numberOfObjects, m_type);
     
     switch (m_type) {
         case INT_TYPE:
