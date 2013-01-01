@@ -58,28 +58,28 @@ bool LHFixture::initWithDictionary(LHDictionary* dictionary,b2Body* body, LHSpri
     int flipx = sprite->isFlipX() ? -1 : 1;
     int flipy = sprite->isFlipY() ? -1 : 1;
 
-    if(fixturePoints && fixturePoints->count() > 0)
-    {
-        if(fixturePoints->objectAtIndex(0)->type() != LHObject::LH_ARRAY_TYPE)
-        {
-            CCLog("ERROR: Please update to SpriteHelper 1.8.x and resave all your scenes. Body will be created without a shape.");
-            return false;
-        }
-    }
-        
+//    if(fixturePoints && fixturePoints->count() > 0)
+//    {
+//        if(fixturePoints->objectAtIndex(0)->type() != LHObject::LH_ARRAY_TYPE)
+//        {
+//            CCLog("ERROR: Please update to SpriteHelper 1.8.x and resave all your scenes. Body will be created without a shape.");
+//            return false;
+//        }
+//    }
+    
     if(fixturePoints && fixturePoints->count() > 0 && fixturePoints->arrayAtIndex(0)->count() > 0)
     {
         for(int f = 0; f < fixturePoints->count(); ++f)
         {
-            LHObject* fixInf = fixturePoints->objectAtIndex(f);
-
-            if(fixInf->type() != LHObject::LH_ARRAY_TYPE)
-            {
-                CCLog("ERROR: Please update to SpriteHelper 1.8.1 and resave all your scenes. Body will be created without a shape.");
-                break;
-            }
+            LHArray* fixInfo = fixturePoints->arrayAtIndex(f);
+//
+//            if(fixInf->type() != LHObject::LH_ARRAY_TYPE)
+//            {
+//                CCLog("ERROR: Please update to SpriteHelper 1.8.1 and resave all your scenes. Body will be created without a shape.");
+//                break;
+//            }
             
-            LHArray* fixInfo = fixInf->arrayValue();
+//            LHArray* fixInfo = fixInf->arrayValue();
             
             int count = fixInfo->count();
             b2Vec2 *verts = new b2Vec2[count];

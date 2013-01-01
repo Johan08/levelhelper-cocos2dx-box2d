@@ -274,12 +274,11 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
     
 	CCPoint convert = LHSettings::sharedInstance()->convertRatio();
     
-    CCLog("CONVERT %f %f", convert.x, convert.y);
     if(NULL != fixtures)
     {
         for(int i = 0; i < fixtures->count(); ++i)
         {
-            LHArray* fix = fixtures->objectAtIndex(i)->arrayValue();
+            LHArray* fix = fixtures->arrayAtIndex(i);
         
             std::vector<CCPoint> triagle;
         

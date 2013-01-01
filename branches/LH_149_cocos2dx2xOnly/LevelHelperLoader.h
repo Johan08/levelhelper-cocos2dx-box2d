@@ -371,7 +371,8 @@ private:
 
     void loadLevelHelperSceneFromDictionary(const LHDictionary& levelDictionary,
                                             const std::string& imgFolder);
-        
+
+
     void processLevelFileFromDictionary(LHDictionary* dictionary);
 
     LHDictionary* dictionaryInfoForSpriteNodeNamed(const std::string& name, LHDictionary* dict);
@@ -390,6 +391,7 @@ private:
 };
 
 #endif
+
 
 
 

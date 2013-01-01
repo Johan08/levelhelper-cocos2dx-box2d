@@ -50,7 +50,8 @@ LHSprite::~LHSprite(void){
 //    CCLog("LH SPRITE %s dealloc", uniqueName.c_str());
     
     if(fixturesInfo){
-        delete fixturesInfo;
+        fixturesInfo->release();
+//        delete fixturesInfo;
         fixturesInfo = NULL;
     }
     
@@ -222,12 +223,19 @@ void LHSprite::loadPhysicalInformationFromDictionary(LHDictionary* dictionary){
 	
     
     LHArray* fixInfo = dictionary->arrayForKey("SH_ComplexShapes");
-    fixturesInfo = new LHArray(fixInfo);
     
 #if COCOS2D_VERSION >= 0x00020000
-    fixturesObj = CCArray::create();
+    fixturesInfo = (LHArray*)CCArray::createWithArray(fixInfo);
 #else
-    fixturesObj = CCArray::array();
+    fixturesInfo = (LHArray*)CCArray::arrayWithArray(fixInfo);
+#endif
+    fixturesInfo->retain();
+    
+    
+#if COCOS2D_VERSION >= 0x00020000
+    fixturesObj = (LHArray*)CCArray::create();
+#else
+    fixturesObj = (LHArray*)CCArray::array();
 #endif
     fixturesObj->retain();
     
@@ -872,6 +880,17 @@ void LHSprite::setAnimationDelayPerUnit(float d){
     if(animation){ if(d < 0.0f) d = 0.0f; animation->setDelayPerUnit(d);}
 }
 //------------------------------------------------------------------------------
+#if COCOS2D_VERSION >= 0x00020000
+CCArray* LHSprite::getCurrentFrameDataKeys(){
+    if(animation){
+        LHDictionary* dict = animation->getUserDataForCurrentFrame();
+        if(dict){
+            return dict->allKeys();
+        }
+    }
+    return NULL;//std::vector<std::string>();
+}
+#else
 std::vector<std::string> LHSprite::getCurrentFrameDataKeys(){
     if(animation){
         LHDictionary* dict = animation->getUserDataForCurrentFrame();
@@ -881,6 +900,7 @@ std::vector<std::string> LHSprite::getCurrentFrameDataKeys(){
     }
     return std::vector<std::string>();
 }
+#endif
 //------------------------------------------------------------------------------
 float LHSprite::getCurrentFrameFloatDataForKey(const std::string& key){
     if(animation){
@@ -916,10 +936,11 @@ bool LHSprite::isCurrentFrameValueForKeyFloat(const std::string& key){
     if(animation){
         LHDictionary* dict = animation->getUserDataForCurrentFrame();
         if(dict){
-            LHObject* obj = dict->objectForKey(key);
-            if(obj){
-                return obj->type() == LHObject::FLOAT_TYPE;
-            }
+//XXX
+//            CCObject* obj = dict->objectForKey(key);
+//            if(obj){
+//                return obj->type() == LHObject::FLOAT_TYPE;
+//            }
         }
     }
     return false;    
@@ -929,10 +950,11 @@ bool LHSprite::isCurrentFrameValueForKeyString(const std::string& key){
     if(animation){
         LHDictionary* dict = animation->getUserDataForCurrentFrame();
         if(dict){
-            LHObject* obj = dict->objectForKey(key);
-            if(obj){
-                return obj->type() == LHObject::STRING_TYPE;
-            }
+//XXX
+//            LHObject* obj = dict->objectForKey(key);
+//            if(obj){
+//                return obj->type() == LHObject::STRING_TYPE;
+//            }
         }
     }
     return false;        
@@ -942,10 +964,11 @@ bool LHSprite::isCurrentFrameValueForKeyBool(const std::string& key){
     if(animation){
         LHDictionary* dict = animation->getUserDataForCurrentFrame();
         if(dict){
-            LHObject* obj = dict->objectForKey(key);
-            if(obj){
-                return obj->type() == LHObject::BOOL_TYPE;
-            }
+//XXX
+//            LHObject* obj = dict->objectForKey(key);
+//            if(obj){
+//                return obj->type() == LHObject::BOOL_TYPE;
+//            }
         }
     }
     return false;    

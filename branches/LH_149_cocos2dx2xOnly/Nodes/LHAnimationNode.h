@@ -44,6 +44,7 @@ class LHSprite;
 class LHBatch;
 class LHDictionary;
 
+using namespace cocos2d;
 
 class LHAnimationFrameInfo : public CCObject
 {
@@ -89,8 +90,6 @@ public:
     virtual ~LHAnimationNode();
     LHAnimationNode(LHDictionary* dic, LHSprite* sprite, std::string shScene);
     
-//    static LHAnimationNode* animationWithDictionary(LHDictionary* dic, LHSprite* sprite);
-
     
     const std::string& getSHSceneName(){return shSceneName;}
     const std::string& getUniqueName(){return uniqueName;}
