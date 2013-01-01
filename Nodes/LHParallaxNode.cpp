@@ -35,7 +35,7 @@ LHParallaxNode::LHParallaxNode(void){
 }
 ////////////////////////////////////////////////////////////////////////////////
 LHParallaxNode::~LHParallaxNode(void){
-    CCLog("LHParallaxNode dealloc");
+//    CCLog("LHParallaxNode dealloc");
     
     unscheduleAllSelectors();
     
@@ -83,9 +83,9 @@ bool LHParallaxNode::initWithDictionary(LHDictionary* parallaxDict, LevelHelperL
     
     
     followedSprite = NULL;
-    isContinuous = parallaxDict->objectForKey("ContinuousScrolling")->boolValue();
-    direction = parallaxDict->objectForKey("Direction")->intValue();
-    speed = parallaxDict->objectForKey("Speed")->floatValue();
+    isContinuous = parallaxDict->boolForKey("ContinuousScrolling");
+    direction = parallaxDict->intForKey("Direction");
+    speed = parallaxDict->floatForKey("Speed");
     lastPosition = CCPointMake(0,0);
     paused = false;
     winSize = CCDirector::sharedDirector()->getWinSize();
@@ -99,7 +99,7 @@ bool LHParallaxNode::initWithDictionary(LHDictionary* parallaxDict, LevelHelperL
     movedEndListenerObj = NULL;
     movedEndListenerSEL = NULL;
     
-    uniqueName  = parallaxDict->objectForKey("UniqueName")->stringValue();
+    uniqueName  = parallaxDict->stringForKey("UniqueName");
     if(!isContinuous)
         speed = 1.0f;
     

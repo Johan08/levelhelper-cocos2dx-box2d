@@ -1,6 +1,6 @@
 //
-//  LHInfoObjects.h
-//  plistReaderProject
+//  LHObject.h
+//  LevelHelper API for Cocos2d-X
 //
 //  Created by Bogdan Vladu on 15.12.2011.
 //  Copyright (c) 2011 Bogdan Vladu. All rights reserved.
@@ -9,22 +9,21 @@
 #ifndef __LH_OBJECT_TYPE__
 #define __LH_OBJECT_TYPE__
 
-#include <iostream>
-#include "assert.h"
-#include "sstream"
-#include "fstream"
-#include <string>
-#include <map>
-
+#include "cocos2d.h"
 using namespace std;
+using namespace cocos2d;
 
 class LHDictionary;
 class LHArray;
 class LHBatch;
 
-class LHObject
+class LHObject : public CCObject
 {
 public:
+    
+    LHArray* arrayValue(){
+        return (LHArray*)this;
+    }
     
     enum OBJECT_TYPE
     {
@@ -34,38 +33,62 @@ public:
         STRING_TYPE = 3,
         LH_DICT_TYPE = 4,
         LH_ARRAY_TYPE = 5,
-        LH_VOID_TYPE = 6 //week pointer - needs to be release by you
+        LH_VOID_TYPE = 6
     };
-//------------------------------------------------------------------------------
-    LHObject(const int& obj);
-    LHObject(const float& obj);
-    LHObject(const bool& obj);
-    LHObject(const std::string& obj);
-    LHObject(LHDictionary* obj);
-    LHObject(LHArray* obj);
-    LHObject(void* obj);
-    LHObject(LHObject* obj);
-//------------------------------------------------------------------------------
-    LHDictionary* dictValue();
-    LHArray* arrayValue();
-    std::string stringValue();
-    float floatValue();
-    int intValue();
-    bool boolValue();
-    void* voidValue();
-    virtual ~LHObject(void);
     
-    void print(void);
+    OBJECT_TYPE type(void)
+    {
+        if( 0 != dynamic_cast<CCString*>(this))
+            return STRING_TYPE;
+        
+        if( 0 != dynamic_cast<CCArray*>(this))
+            return LH_ARRAY_TYPE;
     
-    OBJECT_TYPE type(void){return m_type;}
+#if COCOS2D_VERSION >= 0x00020000
+        if( 0 != dynamic_cast<CCDictionary*>(this))
+            return LH_DICT_TYPE;
+#else
+        if( 0 != dynamic_cast< CCDictionary<std::string, CCObject*>* >(this))
+            return LH_DICT_TYPE;
+#endif
+
+        return LH_VOID_TYPE;
+    }
+
+#if COCOS2D_VERSION >= 0x00020000
+
+    std::string stringValue(){
+        return std::string(((CCString*)this)->getCString());
+    }
     
-private:
-//------------------------------------------------------------------------------
-    LHObject(){}
-    void* m_object;
-    OBJECT_TYPE m_type;
+    float floatValue(){
+        return ((CCString*)this)->floatValue();
+    }
+    int intValue(){
+        return ((CCString*)this)->intValue();
+    }
+    bool boolValue(){
+        return ((CCString*)this)->boolValue();
+    }
+#else
     
-    static int numberOfObjects;
+    std::string stringValue(){
+        return ((CCString*)this)->toStdString();
+    }
+    
+    float floatValue(){
+        return ((CCString*)this)->toFloat();
+    }
+    int intValue(){
+        return ((CCString*)this)->toInt();
+    }
+    bool boolValue(){
+        return (bool)((CCString*)this)->toInt();
+    }
+    
+#endif
+    
+    
 };
 
 #endif

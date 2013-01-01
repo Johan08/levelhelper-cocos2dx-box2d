@@ -28,7 +28,7 @@
 #include "Nodes/LHSettings.h"
 #include "Nodes/LHTouchMgr.h"
 #include "Nodes/SHDocumentLoader.h"
-
+#include "sstream"
 std::string stringFromInt(const int& i){
     std::stringstream st;
     st << i;
@@ -58,91 +58,6 @@ LevelHelperLoader::LevelHelperLoader(const char* levelFile){
     initObjects();
     loadLevelHelperSceneFile(levelFile, "", "");
 }
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-//void LevelHelperLoader::addSpritesToLayer(CCLayer* _cocosLayer)
-//{	
-//    
-//    CCLog("Method addSpritesToLayer is not yet implemented. Please use addObjectsToWorld with all sprites set to NO PHYSICS");
-//    /*
-//	CCAssert(addObjectsToWordWasUsed!=true, "You can't use method addSpritesToLayer because you already used addObjectToWorld. Only one of the two can be used."); 
-//	CCAssert(addSpritesToLayerWasUsed!=true, "You can't use method addSpritesToLayer again. You can only use it once. Create a new LevelHelperLoader object if you want to load the level again."); 
-//	
-//	addSpritesToLayerWasUsed = true;
-//	
-//	cocosLayer = _cocosLayer;
-//	
-//    addBatchNodesToLayer(cocosLayer);
-//	
-//    createAllAnimationsInfo();
-//    
-//    //we need to first create the path so we can assign the path to sprite on creation
-//    //    for(NSDictionary* bezierDict in lhBeziers)
-//    //    {
-//    //        //NSString* uniqueName = [bezierDict objectForKey:@"UniqueName"];
-//    //        if([[bezierDict objectForKey:@"IsPath"] boolValue])
-//    //        {
-//    //            [self createBezierPath:bezierDict];
-//    //        }
-//    //    }
-//    
-//    
-//	for(NSDictionary* dictionary in lhSprites)
-//	{
-//		NSDictionary* spriteProp = [dictionary objectForKey:@"GeneralProperties"];
-//		
-//		//find the coresponding batch node for this sprite
-//        //LHBatch* bNode = [batchNodesInLevel objectForKey:[spriteProp objectForKey:@"Image"]];
-//		//CCSpriteBatchNode *batch = [bNode spriteBatchNode];
-//		
-//        LHBatch* bNode = [self batchNodeForFile:[spriteProp objectForKey:@"Image"]];
-//        
-//        if(bNode)
-//        {
-//            CCSpriteBatchNode *batch = [bNode spriteBatchNode];
-//            if(nil != batch)
-//            {
-//                LHSprite* ccsprite = [self spriteWithBatchFromDictionary:spriteProp batchNode:bNode];
-//                if(nil != ccsprite)
-//                {
-//                    [batch addChild:ccsprite];
-//                    [spritesInLevel setObject:ccsprite forKey:[spriteProp objectForKey:@"UniqueName"]];
-//                    
-//                    [self setCustomAttributesForNonPhysics:spriteProp
-//                                                    sprite:ccsprite];
-//                }
-//                
-//                if(![[spriteProp objectForKey:@"PathName"] isEqualToString:@"None"])
-//                {
-//                    //we have a path we need to follow
-//                    [self createPathOnSprite:ccsprite
-//                              withProperties:spriteProp];
-//                }
-//                
-//                [self createAnimationFromDictionary:spriteProp onCCSprite:ccsprite];
-//            }
-//        }
-//	}
-//    
-//    for(NSDictionary* parallaxDict in lhParallax)
-//    {
-//        //NSMutableDictionary* nodeInfo = [[[NSMutableDictionary alloc] init] autorelease];
-//        //       CCNode* node = [self parallaxNodeFromDictionary:parallaxDict layer:cocosLayer];
-//        
-//        //   if(nil != node)
-//        // {
-//        //[nodeInfo setObject:[parallaxDict objectForKey:@"ContinuousScrolling"] forKey:@"ContinuousScrolling"];
-//        //[//nodeInfo setObject:[parallaxDict objectForKey:@"Speed"] forKey:@"Speed"];
-//        //[nodeInfo setObject:[parallaxDict objectForKey:@"Direction"] forKey:@"Direction"];
-//        //[nodeInfo setObject:node forKey:@"Node"];
-//        //         [ccParallaxInScene setObject:node forKey:[parallaxDict objectForKey:@"UniqueName"]];
-//        //}
-//    }
-//     */
-//}
 ////////////////////////////////////////////////////////////////////////////////
 void LevelHelperLoader::addObjectsToWorld(b2World* world, CCLayer* _cocosLayer)
 {
@@ -372,8 +287,7 @@ void LevelHelperLoader::callLoadingProgressObserverWithValue(float val){
 		(loadingProgressId->*loadingProgressSel)(val);
     }
 }
-////------------------------------------------------------------------------------
-////------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 bool LevelHelperLoader::isPaused(void){
     return LHSettings::sharedInstance()->levelPaused();
 }
@@ -502,7 +416,6 @@ void LevelHelperLoader::cancelPostCollisionCallbackBetweenTagA(enum LevelHelper_
     }
     contactNode->cancelPostCollisionCallbackBetweenTagA((int)tagA,(int)tagB);
 }
-//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 LHDictionary* LevelHelperLoader::dictionaryInfoForSpriteNodeNamed(const std::string& name, LHDictionary* dict)
 {
@@ -778,11 +691,15 @@ void LevelHelperLoader::removeAllPhysics()
 }
 
 LevelHelperLoader::~LevelHelperLoader()
-{    
-    delete lhNodes;
-    delete lhJoints;
-    delete lhParallax;
-    delete wb;
+{
+    lhNodes->release();
+    lhJoints->release();
+    lhParallax->release();
+    wb->release();
+    lhNodes = NULL;
+    lhJoints = NULL;
+    lhParallax = NULL;
+    wb = NULL;
 
     physicBoundariesInLevel.removeAllObjects();
     
@@ -915,7 +832,7 @@ void LevelHelperLoader::createPhysicBoundaries(b2World* _world)
                                  wbConv,
                                  CCPointMake(0.0f, 0.0f));
 }
-////------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void LevelHelperLoader::setFixtureDefPropertiesFromDictionary(LHDictionary* spritePhysic, b2FixtureDef* shapeDef)
 {
 	shapeDef->density       = spritePhysic->floatForKey("Density");
@@ -949,6 +866,7 @@ void LevelHelperLoader::createPhysicBoundariesHelper(b2World* _world,
 	
 	{
         LHDictionary dict;
+        
         dict.setObjectForKey("LHPhysicBoundarieLeft", "UniqueName");
     
         LHNode* spr = LHNode::nodeWithDictionary(&dict);
@@ -1134,10 +1052,10 @@ void LevelHelperLoader::createPhysicBoundariesHelper(b2World* _world,
         wbBodyB->CreateFixture(&fixture);
     }    
 }
-////------------------------------------------------------------------------------
-//////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////
 ////PHYSICS
-//////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 void LevelHelperLoader::setMeterRatio(float ratio){
 	LHSettings::sharedInstance()->setLhPtmRatio(ratio);
@@ -1354,47 +1272,30 @@ void LevelHelperLoader::loadLevelHelperSceneFile(const char* levelFile,
                                                  const char* subfolder, 
                                                  const char* imgFolder)
 {
-    unsigned char* levelFileBuffer = NULL;
-    unsigned long bufferSize = 0;
-    
 #if COCOS2D_VERSION >= 0x00020000
     std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(levelFile);
-    levelFileBuffer = CCFileUtils::sharedFileUtils()->getFileData(fullPath.c_str(), "r", &bufferSize);
+    LHDictionary* dictionary = (LHDictionary*)CCDictionary::createWithContentsOfFile(fullPath.c_str());
 #else    
     std::string fullPath = CCFileUtils::fullPathFromRelativePath(levelFile);
-    levelFileBuffer = CCFileUtils::getFileData(fullPath.c_str(), "r", &bufferSize);
+    LHDictionary* dictionary = (LHDictionary*)CCFileUtils::dictionaryWithContentsOfFile(fullPath.c_str());
 #endif
     
-	CCAssert(bufferSize > 0, "Invalid level file. Please add the LevelHelper scene file to Resource folder.");
-    
-    std::string filecontents((const char*) levelFileBuffer, bufferSize);
-    std::stringstream infile(filecontents, stringstream::in);
-    
-    LHDictionary* dictionary = new LHDictionary(infile);
-    
     processLevelFileFromDictionary(dictionary);
-    
-    delete dictionary;  
-    
-    delete [] levelFileBuffer;
 }
+
 
 void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
 {
 	if(0 == dictionary)
 		return;
     
-//    dictionary->print();
-//    
-    
-    
-	bool fileInCorrectFormat =	dictionary->stringForKey("Author") == "Bogdan Vladu" && 
+    bool fileInCorrectFormat =  dictionary->stringForKey("Author") == "Bogdan Vladu" &&
                                 dictionary->stringForKey("CreatedWith") == "LevelHelper";
-	    
+        
 	if(fileInCorrectFormat == false)
 		CCLog("This file was not created with LevelHelper or file is damaged.");
-        
-    LHDictionary* scenePref = dictionary->dictForKey("ScenePreference");
+    
+    LHDictionary* scenePref = (LHDictionary*)dictionary->dictForKey("ScenePreference");
     safeFrame       = scenePref->pointForKey("SafeFrame");
     gameWorldRect   = scenePref->rectForKey("GameWorld");
     
@@ -1407,7 +1308,7 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
     LHSettings::sharedInstance()->setHD2xSuffix(scenePref->stringForKey("2HDSuffix"));
     LHSettings::sharedInstance()->setDevice(scenePref->intForKey("Device"));
     
-        
+     
     CCRect color = scenePref->rectForKey("BackgroundColor");
     glClearColor(color.origin.x, color.origin.y, color.size.width, 1);
             
@@ -1437,17 +1338,38 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
     
 	////////////////////////LOAD WORLD BOUNDARIES///////////////////////////////
 	if(NULL != dictionary->objectForKey("WBInfo")){
-		wb = new LHDictionary(dictionary->dictForKey("WBInfo"));
+#if COCOS2D_VERSION >= 0x00020000
+        wb = (LHDictionary*)CCDictionary::createWithDictionary(dictionary->dictForKey("WBInfo"));
+#else
+        wb = (LHDictionary*)CCDictionary<std::string, CCObject*>::dictionaryWithDictionary(dictionary->dictForKey("WBInfo"));
+#endif
+        wb->retain();
 	}
-	   
-    ////////////////////////LOAD SPRITES////////////////////////////////////////////////////
-    lhNodes = new LHArray(dictionary->arrayForKey("NODES_INFO"));
-    
-	///////////////////////LOAD JOINTS//////////////////////////////////////////////////////////
-	lhJoints = new LHArray(dictionary->arrayForKey("JOINTS_INFO"));	
 	
+    
+    ////////////////////////LOAD SPRITES////////////////////////////////////////
+#if COCOS2D_VERSION >= 0x00020000
+    lhNodes = (LHArray*)CCArray::createWithArray(dictionary->arrayForKey("NODES_INFO"));
+#else
+    lhNodes = (LHArray*)CCArray::arrayWithArray(dictionary->arrayForKey("NODES_INFO"));
+#endif
+    lhNodes->retain();
+    
+	///////////////////////LOAD JOINTS//////////////////////////////////////////
+#if COCOS2D_VERSION >= 0x00020000
+    lhJoints = (LHArray*)CCArray::createWithArray(dictionary->arrayForKey("JOINTS_INFO"));
+#else
+    lhJoints = (LHArray*)CCArray::arrayWithArray(dictionary->arrayForKey("JOINTS_INFO"));
+#endif
+    lhJoints->retain();
+    
     //////////////////////LOAD PARALLAX/////////////////////////////////////////
-    lhParallax = new LHArray(dictionary->arrayForKey("PARALLAX_INFO"));
+#if COCOS2D_VERSION >= 0x00020000
+    lhParallax = (LHArray*)CCArray::createWithArray(dictionary->arrayForKey("PARALLAX_INFO"));
+#else
+    lhParallax = (LHArray*)CCArray::arrayWithArray(dictionary->arrayForKey("PARALLAX_INFO"));
+#endif
+    lhParallax->retain();
 
     gravity = dictionary->pointForKey("Gravity");
 }

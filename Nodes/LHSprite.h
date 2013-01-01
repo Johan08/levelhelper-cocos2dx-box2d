@@ -92,7 +92,7 @@ protected:
     float bDefaultLinearDamping;
     float bDefaultAngularDamping;
     
-    CCArray* fixturesObj;
+    LHArray* fixturesObj;
     LHArray* fixturesInfo;
     
     std::string uniqueName;
@@ -217,7 +217,17 @@ public:
     float animationDelayPerUnit();
     void setAnimationDelayPerUnit(float d);
     
-    std::vector<std::string>    getCurrentFrameDataKeys(); //if no data info -returns empty vector
+    
+#if COCOS2D_VERSION >= 0x00020000
+    CCArray*    getCurrentFrameDataKeys(); //if no data info -returns null
+#else
+    std::vector<std::string> getCurrentFrameDataKeys(); //if no data info -returns empty vector
+#endif
+    
+    
+    
+    
+    
     float                       getCurrentFrameFloatDataForKey(const std::string& key); //if no data or wrong key - returns -1.0f
     std::string                 getCurrentFrameStringDataForKey(const std::string& key); //if no data or wrong key - returns empty string
     bool                        getCurrentFrameBoolDataForKey(const std::string& key); //if no data or wrong key returns false

@@ -36,30 +36,19 @@
 
 bool SHSceneNode::initSceneNodeWithContentOfFile(const std::string& sceneFile){
     
-    unsigned char* levelFileBuffer = NULL;
-    unsigned long bufferSize = 0;
-    
 #if COCOS2D_VERSION >= 0x00020000
     std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(sceneFile.c_str());
-    levelFileBuffer = CCFileUtils::sharedFileUtils()->getFileData(fullPath.c_str(), "r", &bufferSize);
+    LHDictionary* dictionary = (LHDictionary*)LHDictionary::createWithContentsOfFile(fullPath.c_str());
 #else
     std::string fullPath = CCFileUtils::fullPathFromRelativePath(sceneFile.c_str());
-    levelFileBuffer = CCFileUtils::getFileData(fullPath.c_str(), "r", &bufferSize);    
+    LHDictionary* dictionary = (LHDictionary*)CCFileUtils::dictionaryWithContentsOfFile(fullPath.c_str());
 #endif    
     
-	CCAssert(bufferSize > 0, "Invalid SpriteHelper file. Please add the SpriteHelper file " + sceneFile + " to Resource folder.");
-    
-    std::string filecontents((const char*) levelFileBuffer, bufferSize);
-    std::stringstream infile(filecontents, stringstream::in);
-    
-    LHDictionary* dictionary = new LHDictionary(infile);
-    
-
     LHArray* sheetsList = dictionary->arrayForKey("SHEETS_INFO");
     
     for(int i = 0; i < sheetsList->count(); ++i){
         LHDictionary* dic = sheetsList->dictAtIndex(i);
-        sheets->setDictForKey(dic, dic->stringForKey("SheetName"));
+        sheets->setObject(dic, dic->stringForKey("SheetName"));
     }
     
     
@@ -68,21 +57,37 @@ bool SHSceneNode::initSceneNodeWithContentOfFile(const std::string& sceneFile){
     for(int i = 0; i< animList->count(); ++i){
         
         LHDictionary* dic = animList->dictAtIndex(i);
-        animations->setDictForKey(dic, dic->stringForKey("UniqueName"));
+        animations->setObject(dic, dic->stringForKey("UniqueName"));
     }
     
-    delete dictionary;  
-    delete[] levelFileBuffer;
-
 	return true;
 }
 SHSceneNode::~SHSceneNode(){
+    
+#if COCOS2D_VERSION >= 0x00020000
+    sheets->release();
+    sheets = NULL;
+    animations->release();
+    animations = NULL;
+#else
     delete sheets;
     delete animations;
+#endif
+
 }
+
 SHSceneNode::SHSceneNode(){
-    sheets = new LHDictionary();
-    animations = new LHDictionary();
+    
+#if COCOS2D_VERSION >= 0x00020000
+    sheets = (LHDictionary*)CCDictionary::create();
+    sheets->retain();
+    animations = (LHDictionary*)CCDictionary::create();
+    animations->retain();
+#else
+    sheets = (LHDictionary*)(new CCDictionary<std::string, CCObject*>());
+    animations = (LHDictionary*)(new CCDictionary<std::string, CCObject*>());
+#endif
+    
 }
 SHSceneNode* SHSceneNode::SHSceneNodeWithContentOfFile(const std::string& sceneFile){
     SHSceneNode *pobNode = new SHSceneNode();

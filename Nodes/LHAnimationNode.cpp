@@ -40,7 +40,15 @@ bool LHAnimationFrameInfo::initWithDictionary(LHDictionary* dictionary, LHSprite
     notifications = NULL;
     
     if(dictionary->objectForKey("notifications"))
-        notifications= new LHDictionary(dictionary->dictForKey("notifications"));
+    {
+#if COCOS2D_VERSION >= 0x00020000
+        notifications = (LHDictionary*)CCDictionary::createWithDictionary(dictionary->dictForKey("notifications"));
+#else
+        notifications = (LHDictionary*)CCDictionary<std::string, CCObject*>::dictionaryWithDictionary(dictionary->dictForKey("notifications"));
+#endif
+        
+        notifications->retain();
+    }
     
     spriteframeName = std::string(dictionary->stringForKey("spriteframe"));
     
@@ -81,8 +89,10 @@ bool LHAnimationFrameInfo::initWithDictionary(LHDictionary* dictionary, LHSprite
 }
 //------------------------------------------------------------------------------
 LHAnimationFrameInfo::~LHAnimationFrameInfo(){
-    //CCLog("LHSpriteFrame Dealloc %s\n", spriteframeName.c_str());
-    delete notifications;
+//    CCLog("LHSpriteFrame Dealloc %s\n", spriteframeName.c_str());
+    if(notifications)
+        notifications->release();
+    notifications = NULL;
 }
 //------------------------------------------------------------------------------
 LHAnimationFrameInfo::LHAnimationFrameInfo(){
@@ -252,7 +262,6 @@ void LHAnimationNode::update(float dt)
 #if COCOS2D_VERSION >= 0x00020000
         
         CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
-//        cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
 #else
         CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationHasEndedNotification, sprite);
 #endif
@@ -260,8 +269,6 @@ void LHAnimationNode::update(float dt)
 #if COCOS2D_VERSION >= 0x00020000
             
             CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
-            
-//            cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
 #else
             
             CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationHasEndedAllRepetitionsNotification, sprite);
@@ -276,16 +283,24 @@ void LHAnimationNode::update(float dt)
         //check if this frame has any info and trigger a notification if it has
         //we dont trigger frame changed notifications for every frame because 
         //it may impact performance - we trigger only where user is looking for info
-        if(activeFrame->getNotifications() && activeFrame->getNotifications()->allKeys().size() > 0)
+#if COCOS2D_VERSION >= 0x00020000
+        if(activeFrame->getNotifications() &&
+            activeFrame->getNotifications()->allKeys() &&
+            activeFrame->getNotifications()->allKeys()->count() > 0)
         {
             
-#if COCOS2D_VERSION >= 0x00020000
-            
-            CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationFrameNotification, sprite);
-//        cocos2d::extension::CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationFrameNotification, sprite);
+        CCNotificationCenter::sharedNotificationCenter()->postNotification(LHAnimationFrameNotification, sprite);
 #else
-        CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationFrameNotification, sprite);
-#endif       
+            
+        if(activeFrame->getNotifications() != NULL)
+        {
+            std::vector<std::string> keys = activeFrame->getNotifications()->allKeys();
+            if(keys.size() > 0)
+            {
+                CCNotificationCenter::sharedNotifCenter()->postNotification(LHAnimationFrameNotification,
+                                                                            sprite);
+            }
+#endif
         }
     }
 }

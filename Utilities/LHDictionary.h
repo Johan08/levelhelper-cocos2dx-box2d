@@ -1,6 +1,6 @@
 //
-//  LHInfoObjects.h
-//  plistReaderProject
+//  LHDictionary.h
+//  LevelHelper API for Cocos2d-X
 //
 //  Created by Bogdan Vladu on 15.12.2011.
 //  Copyright (c) 2011 Bogdan Vladu. All rights reserved.
@@ -11,89 +11,121 @@
 
 
 #include "cocos2d.h"
-
-#include <iostream>
-#include "assert.h"
-#include "sstream"
-#include "fstream"
-#include <string>
-#include <map>
-#include <vector>
-
-using namespace std;
+using namespace cocos2d;
 
 class LHObject;
 class LHArray;
 
-typedef std::map<std::string, LHObject*> LHDictionaryMap;
-typedef std::map<std::string, LHObject*>::iterator LHDictionaryIterator;
-typedef std::map<std::string, LHObject*>::const_iterator LHDictionaryConstIterator;
 
-class LHDictionary
+#if COCOS2D_VERSION >= 0x00020000
+class LHDictionary : public CCDictionary
+#else
+#include "cocoa/CCNS.h"
+class LHDictionary : public CCDictionary<std::string, CCObject*>
+#endif
 {
   
 public:
-//------------------------------------------------------------------------------
-    LHDictionary(std::stringstream& fileIN);
-    LHDictionary();
-    LHDictionary(LHDictionary* other);
+    
+    LHDictionary* dictForKey(const std::string& key){
+        return (LHDictionary*)this->objectForKey(key);
+    }
+    
+    LHArray* arrayForKey(const std::string& key){
+        return (LHArray*)this->objectForKey(key);
+    }
+    
+    LHObject* objectForKey(const std::string& key){
+        return (LHObject*)((CCDictionary*)this)->objectForKey(key);
+    }
+    
+    
+#if COCOS2D_VERSION >= 0x00020000
+    
+    void setObjectForKey(const std::string& obj, const std::string& key){
+        this->setObject(new CCString(obj), key);
+    }
+    
+    std::string stringForKey(const std::string& key){
+        return std::string(this->valueForKey(key)->getCString());
+    }
+    
+    float floatForKey(const std::string& key){
+        return this->valueForKey(key)->floatValue();        
+    }
+    
+    CCPoint pointForKey(const std::string& key){
+        CCString* obj = (CCString*)this->objectForKey(key);
+        return CCPointFromString(obj->getCString());
+    }
+    
+    cocos2d::ccColor3B  colorForKey(const std::string& key){
+        CCRect rect = CCRectFromString(this->valueForKey(key)->getCString());
+        return ccc3(rect.origin.x*255.0f, rect.origin.y*255.0f, rect.size.width*255.0f);
+    }
+    
+    CCSize sizeForKey(const std::string& key){
+        return CCSizeFromString(this->valueForKey(key)->getCString());
+    }
+    
+    CCRect rectForKey(const std::string& key){
+        return CCRectFromString(this->valueForKey(key)->getCString());
+    }
+    
+    bool boolForKey(const std::string& key){
+        return this->valueForKey(key)->boolValue();
+    }
+    
+    int intForKey(const std::string& key){
+        return this->valueForKey(key)->intValue();
+    }
+    
+#else
 
-    virtual ~LHDictionary();
-//------------------------------------------------------------------------------
-    std::vector<std::string> allKeys(void);
     
-    void printAllKeys(void);
+    void setObjectForKey(const std::string& obj, const std::string& key){
+        this->setObject(new CCString(obj.c_str()), key);
+    }
     
-    void print(void);
+    std::string stringForKey(const std::string& key){
+        return ((CCString*)this->objectForKey(key))->toStdString();
+    }
     
-    LHObject* objectForKey(const std::string& key);
-    LHObject* objectForKey(const char* key);
+    float floatForKey(const std::string& key){
+        return ((CCString*)this->objectForKey(key))->toFloat();
+    }
     
-    LHDictionary* dictForKey(const char* str);
-    LHArray* arrayForKey(const char* str);
+    CCPoint pointForKey(const std::string& key){
+        CCString* obj = (CCString*)this->objectForKey(key);
+        return CCPointFromString(obj->toStdString().c_str());
+    }
     
-    void* pointerForKey(const char* str);
-        
-    void removeObjectForKey(const std::string& key);
-    void removeAllObjects(void);
+    cocos2d::ccColor3B  colorForKey(const std::string& key){
+        CCString* obj = (CCString*)this->objectForKey(key);
+        CCRect rect = CCRectFromString(obj->toStdString().c_str());
+        return ccc3(rect.origin.x*255.0f, rect.origin.y*255.0f, rect.size.width*255.0f);
+    }
     
-    void setObjectForKey(const std::string& object, const std::string& key);
-    void setObjectForKey(LHObject* obj, const std::string& key);
+    CCSize sizeForKey(const std::string& key){
+        CCString* obj = (CCString*)this->objectForKey(key);
+        return CCSizeFromString(obj->toStdString().c_str());
+    }
     
-    void setDictForKey(LHDictionary* dic, const std::string& key);
-    void setArrayForKey(LHArray* array, const std::string& key);
+    CCRect rectForKey(const std::string& key){
+        CCString* obj = (CCString*)this->objectForKey(key);
+        return CCRectFromString(obj->toStdString().c_str());
+    }
     
-    cocos2d::CCRect     rectForKey(const std::string& key);
-    float               floatForKey(const std::string& key);
-    int                 intForKey(const std::string& key);
-    bool                boolForKey(const std::string& key);
-    cocos2d::CCPoint    pointForKey(const std::string& key);
-    cocos2d::CCSize     sizeForKey(const std::string& key);
-    cocos2d::ccColor3B  colorForKey(const std::string& key);
-    std::string         stringForKey(const std::string& key);
+    bool boolForKey(const std::string& key){
+        return (bool)((CCString*)this->objectForKey(key))->toInt();
+    }
     
-    LHDictionary*       dictForKey(const std::string& key);
-    LHArray*            arrayForKey(const std::string& key);
+    int intForKey(const std::string& key){
+        return ((CCString*)this->objectForKey(key))->toInt();
+    }
     
-private:
-//------------------------------------------------------------------------------
-    LHDictionaryMap objects;
-    LHDictionaryIterator m_it;
+#endif
     
-    static int numberOfDicts;
-    
-    int intFromString(const std::string& str);
-    float floatFromString(const std::string& str);
-    std::string valueForField(const std::string& field);
-    
-public:
-//------------------------------------------------------------------------------    
-    LHDictionaryIterator begin() { return objects.begin(); }
-    LHDictionaryConstIterator begin() const { return objects.begin(); }
-    LHDictionaryIterator end() { return objects.end(); }
-    LHDictionaryConstIterator end() const { return objects.end(); }
+   
 };
-
-typedef LHDictionary LHMutableDictionary;
-
 #endif
