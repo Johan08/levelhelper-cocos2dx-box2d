@@ -695,7 +695,10 @@ LevelHelperLoader::~LevelHelperLoader()
     lhNodes->release();
     lhJoints->release();
     lhParallax->release();
-    wb->release();
+    
+    if(wb)
+        wb->release();
+    
     lhNodes = NULL;
     lhJoints = NULL;
     lhParallax = NULL;
@@ -1336,6 +1339,7 @@ void LevelHelperLoader::processLevelFileFromDictionary(LHDictionary* dictionary)
         }
     }
     
+    wb = NULL;
 	////////////////////////LOAD WORLD BOUNDARIES///////////////////////////////
 	if(NULL != dictionary->objectForKey("WBInfo")){
 #if COCOS2D_VERSION >= 0x00020000
