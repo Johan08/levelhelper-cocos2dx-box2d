@@ -118,6 +118,17 @@ void LHSprite::onExit(){
 //------------------------------------------------------------------------------
 LHSprite::LHSprite(){
 
+    pathDefaults.flipX              = false;
+    pathDefaults.flipY              = false;
+    pathDefaults.isCyclic           = false;
+    pathDefaults.relativeMovement   = false;
+    pathDefaults.name               = "";
+    pathDefaults.orientation        = 0;
+    pathDefaults.restartOtherEnd    = 0;
+    pathDefaults.speed              = 0;
+    pathDefaults.startAtLaunch      = 0;
+    pathDefaults.startPoint         = 0;
+    
     //CCLog("LHSprite init");
     fixturesInfo = NULL;
     fixturesObj = NULL;
