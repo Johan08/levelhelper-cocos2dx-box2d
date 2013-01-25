@@ -181,9 +181,8 @@ bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     uniqueName  = std::string(textureDict->stringForKey("UniqueName"));
     
     setTag(textureDict->intForKey("Tag"));
-    setVertexZ(textureDict->intForKey("ZOrder"));
-    
-//    setZOrder(textureDict->intForKey("ZOrder"));
+//    setVertexZ(textureDict->intForKey("ZOrder"));
+    setZOrder(textureDict->intForKey("ZOrder"));
 
     std::string img = textureDict->stringForKey("ImageFile");
     imageSize = CCSizeZero;
