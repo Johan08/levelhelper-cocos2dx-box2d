@@ -1513,6 +1513,31 @@ void LHSprite::removeTouchObserver()
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+CCPoint LHSprite::convertedPoint(CCPoint touchPoint){
+    
+    touchPoint=  CCDirector::sharedDirector()->convertToGL(touchPoint);
+    
+    CCNode* prevParent = NULL;
+    CCNode* layerParent = this->getParent();
+    
+    while(layerParent){
+        if(layerParent->getParent()){
+            prevParent = layerParent;
+            layerParent = layerParent->getParent();
+        }
+        else{
+            layerParent = prevParent;
+            break;
+        }
+    }
+
+    if(layerParent){
+        return CCPointApplyAffineTransform(touchPoint,layerParent->worldToNodeTransform());
+        
+    }
+    return touchPoint;
+}
+
 bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent) 
 {
 //    CCLog("CCTOUCH BEGIN %s", uniqueName.c_str());
@@ -1537,8 +1562,7 @@ bool LHSprite::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
     
 #endif
 
-    touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
-    
+    touchPoint = this->convertedPoint(touchPoint);    
     if(isTouchedAtPoint(touchPoint))
     {
         LHTouchInfo* info = LHTouchInfo::touchInfo();
@@ -1592,7 +1616,7 @@ void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
 
 #endif
 
-    touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
+    touchPoint = this->convertedPoint(touchPoint);
     
     
 #if COCOS2D_VERSION >= 0x00020000
@@ -1610,7 +1634,7 @@ void LHSprite::ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent){
     
 #endif
 
-    prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
+    prevLocation = this->convertedPoint(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
     info->relativePoint = CCPointMake(touchPoint.x - getPosition().x,
@@ -1657,7 +1681,8 @@ void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
 
 #endif
     
-    touchPoint = CCDirector::sharedDirector()->convertToGL(touchPoint);
+    touchPoint = this->convertedPoint(touchPoint);
+    
     
 #if COCOS2D_VERSION >= 0x00020000
     CCPoint prevLocation = pTouch->getPreviousLocationInView();
@@ -1673,7 +1698,7 @@ void LHSprite::ccTouchEnded(CCTouch *pTouch, CCEvent *pEvent){
     
 #endif
 
-    prevLocation =  CCDirector::sharedDirector()->convertToGL(prevLocation);
+    prevLocation = this->convertedPoint(prevLocation);
     
     LHTouchInfo* info = LHTouchInfo::touchInfo();
     info->relativePoint = CCPointMake(touchPoint.x - getPosition().x,
