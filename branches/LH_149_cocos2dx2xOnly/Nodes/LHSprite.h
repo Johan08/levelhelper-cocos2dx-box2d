@@ -424,6 +424,8 @@ private:
     void setTagTouchBeginObserver(LHObserverPair* pair);
     void setTagTouchMovedObserver(LHObserverPair* pair);
     void setTagTouchEndedObserver(LHObserverPair* pair);
+    
+    CCPoint convertedPoint(CCPoint touchPoint);
 };
 ////////////////////////////////////////////////////////////////////////////////
 
