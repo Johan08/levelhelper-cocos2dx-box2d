@@ -200,7 +200,7 @@ public:
     virtual void touchDelegateRelease() {}//compatibility with old cocos2d-x version
     virtual void onExit();
     
-//    virtual void visit();
+    void setZOrder(int z); //force this method to public (not available in all cocos2d-x versions)
 private:
     
     

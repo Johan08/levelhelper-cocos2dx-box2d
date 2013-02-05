@@ -265,6 +265,16 @@ CCPoint LHBezier::pointOnCurve(CCPoint p1, CCPoint p2, CCPoint p3, CCPoint p4, f
     vPoint.y = var2*p1.y + 3*t*var1*var1*p2.y + 3*t*t*var1*p3.y + var3*p4.y;
     return(vPoint);				
 }
+
+void LHBezier::setZOrder(int z)
+{
+    _setZOrder(z);
+    if (m_pParent)
+    {
+        m_pParent->reorderChild(this, z);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
                                               LHArray* fixtures)
