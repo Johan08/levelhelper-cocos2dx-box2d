@@ -85,7 +85,36 @@ bool LHAnimationFrameInfo::initWithDictionary(LHDictionary* dictionary, LHSprite
         spriteFrameSize.height*= 2.0f;
     }
 
+    sprFrame = NULL;
+    createSpriteFrameWithSprite(sprite);
+    
     return true;
+}
+
+void LHAnimationFrameInfo::createSpriteFrameWithSprite(CCSprite* sprite)
+{
+    if(sprFrame){sprFrame->release(); sprFrame = NULL;}
+    
+#if COCOS2D_VERSION >= 0x00020000
+    sprFrame = CCSpriteFrame::createWithTexture(sprite->getTexture(),
+                                                this->getRect(),
+                                                this->getRectIsRotated(),
+                                                this->getOffset(),
+                                                this->getSpriteFrameSize());
+#else
+    
+    CCSize contentSize = sprite->getContentSize();
+    contentSize.width *= CC_CONTENT_SCALE_FACTOR();
+    contentSize.height*= CC_CONTENT_SCALE_FACTOR();
+    
+    sprFrame = CCSpriteFrame::frameWithTexture(sprite->getTexture(),
+                                               this->getRect(),
+                                               this->getRectIsRotated(),
+                                               this->getOffset(),
+                                               contentSize);
+#endif
+    sprFrame->retain();
+
 }
 //------------------------------------------------------------------------------
 LHAnimationFrameInfo::~LHAnimationFrameInfo(){
@@ -93,6 +122,11 @@ LHAnimationFrameInfo::~LHAnimationFrameInfo(){
     if(notifications)
         notifications->release();
     notifications = NULL;
+    
+    if(sprFrame){
+        sprFrame->release();
+    }
+    sprFrame = NULL;
 }
 //------------------------------------------------------------------------------
 LHAnimationFrameInfo::LHAnimationFrameInfo(){
@@ -110,6 +144,21 @@ LHAnimationFrameInfo* LHAnimationFrameInfo::frameWithDictionary(LHDictionary* di
     CC_SAFE_DELETE(pobNode);
 	return NULL;
     
+}
+CCSpriteFrame* LHAnimationFrameInfo::spriteFrame(CCSprite* sprite)
+{
+    if(sprFrame){
+        
+        if(sprFrame->getTexture() == sprite->getTexture()){
+            return sprFrame;
+        }
+        else{
+            createSpriteFrameWithSprite(sprite);
+            return sprFrame;
+        }
+    }
+    
+    return NULL;
 }
 //------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
@@ -176,25 +225,16 @@ void LHAnimationNode::setActiveFrameTexture()
 {
     if(NULL == activeFrame) return;
     
-#if COCOS2D_VERSION >= 0x00020000
-    CCSpriteFrame* sprFrame = CCSpriteFrame::createWithTexture(sprite->getTexture(),
-                                                   activeFrame->getRect(),
-                                                   activeFrame->getRectIsRotated(),
-                                                   activeFrame->getOffset(),
-                                                   activeFrame->getSpriteFrameSize());
-#else
+    CCSpriteFrame* sprFrame = activeFrame->spriteFrame(sprite);
     
-    CCSize contentSize = sprite->getContentSize();
-    contentSize.width *= CC_CONTENT_SCALE_FACTOR();
-    contentSize.height*= CC_CONTENT_SCALE_FACTOR();
-    
-    CCSpriteFrame* sprFrame = CCSpriteFrame::frameWithTexture(sprite->getTexture(), 
-                                                              activeFrame->getRect(),
-                                                              activeFrame->getRectIsRotated(),
-                                                              activeFrame->getOffset(),
-                                                              contentSize);
-#endif
-    sprite->setDisplayFrame(sprFrame);    
+//    CCSpriteFrame* sprFrame = CCSpriteFrame::createWithTexture(sprite->getTexture(),
+//                                                               activeFrame->getRect(),
+//                                                               activeFrame->getRectIsRotated(),
+//                                                               activeFrame->getOffset(),
+//                                                               activeFrame->getSpriteFrameSize());
+//    
+    if(sprFrame)
+        sprite->setDisplayFrame(sprFrame);
 }
 
 void LHAnimationNode::update(float dt)

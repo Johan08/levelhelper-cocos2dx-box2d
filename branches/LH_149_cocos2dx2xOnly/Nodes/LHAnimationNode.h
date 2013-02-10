@@ -69,7 +69,12 @@ public:
     CCPoint getSpriteFrameOffset(){return spriteFrameOffset;}
     CCSize  getSpriteFrameSize(){return spriteFrameSize;}
     
+    CCSpriteFrame* spriteFrame(CCSprite* sprite);
+    
 private:
+    CCSpriteFrame*  sprFrame;
+    void createSpriteFrameWithSprite(CCSprite* sprite);
+    
     float           delayPerUnit;
     CCPoint         offset;
     LHDictionary*   notifications;
