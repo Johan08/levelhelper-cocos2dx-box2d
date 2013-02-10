@@ -264,7 +264,7 @@ void LHBatch::addChildFromDictionary(LHDictionary* childDict)
         
         LHSprite* sprite =  (*methods.second)(childDict, this); //spriteWithDictionary
                 
-        addChild(sprite);
+       // addChild(sprite);
         sprite->postInit();
     }
     else if(childDict->stringForKey("NodeType") == "LHLayer"){

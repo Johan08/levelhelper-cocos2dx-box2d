@@ -514,8 +514,9 @@ bool LHSprite::initBatchSpriteWithDictionary(LHDictionary* dictionary, LHBatch* 
     rect = LHSettings::sharedInstance()->transformedTextureRect(rect, batch->getImagePath());
     
     if(initWithTexture(batch->getTexture(), rect))
-    {    
-        setImageFile(batch->getImagePath());        
+    {
+        this->setBatchNode(batch);
+        setImageFile(batch->getImagePath());
         loadInformationFromDictionary(dictionary);
         return true;
     }
