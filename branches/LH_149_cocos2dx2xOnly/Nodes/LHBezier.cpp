@@ -197,7 +197,9 @@ bool LHBezier::initWithDictionary(LHDictionary* bezierDict){
     if(img!= "" && img != "No Image")
     {
         
-#if COCOS2D_VERSION >= 0x00020000
+#if COCOS2D_VERSION >= 0x00020100
+        std::string path = CCFileUtils::sharedFileUtils()->fullPathForFilename(img.c_str());
+#elif COCOS2D_VERSION >= 0x00020000
         std::string path = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(img.c_str());
 #else
         std::string path = CCFileUtils::fullPathFromRelativePath(img.c_str());
@@ -281,7 +283,7 @@ void LHBezier::initTileVerticesFromDictionary(LHDictionary* dictionary,
 {
 //    float scale = CCDirector::sharedDirector()->getContentScaleFactor();
     
-	CCPoint convert = LHSettings::sharedInstance()->convertRatio();
+//	CCPoint convert = LHSettings::sharedInstance()->convertRatio();
     
     if(NULL != fixtures)
     {
@@ -361,7 +363,7 @@ void LHBezier::initPathPointsFromDictionary(LHDictionary* bezierDict)
 {	
     LHArray* curvesInShape = bezierDict->arrayForKey("Curves");    
     int MAX_STEPS = 25;    
-	CCPoint conv = LHSettings::sharedInstance()->convertRatio();
+//	CCPoint conv = LHSettings::sharedInstance()->convertRatio();
 	
 	int i = 0;
     for(int j = 0; j < curvesInShape->count(); ++j)
@@ -373,7 +375,7 @@ void LHBezier::initPathPointsFromDictionary(LHDictionary* bezierDict)
         CCPoint endPt       = curvDict->pointForKey("EndPoint");
         CCPoint startPt     = curvDict->pointForKey("StartPoint");
 		
-		CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
+//		CCPoint pos_offset = LHSettings::sharedInstance()->possitionOffset();
         
 		if(!isLine)
         {
@@ -647,7 +649,13 @@ void LHBezier::draw(void)
     //    int linesNo = (int)linesHolder.size();
             
         mShaderProgram->use();
+        
+    
+#if COCOS2D_VERSION >= 0x00020100
+        mShaderProgram->setUniformsForBuiltins();
+#else
         mShaderProgram->setUniformForModelViewProjectionMatrix();
+#endif
         mShaderProgram->setUniformLocationWith4f(mColorLocation,
                                                  lineColor.origin.x,
                                                  lineColor.origin.y,

@@ -1275,7 +1275,12 @@ void LevelHelperLoader::loadLevelHelperSceneFile(const char* levelFile,
                                                  const char* subfolder, 
                                                  const char* imgFolder)
 {
-#if COCOS2D_VERSION >= 0x00020000
+    
+#if COCOS2D_VERSION >= 0x00020100
+    std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathForFilename(levelFile);
+    LHDictionary* dictionary = (LHDictionary*)CCDictionary::createWithContentsOfFile(fullPath.c_str());
+    
+#elif COCOS2D_VERSION >= 0x00020000
     std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(levelFile);
     LHDictionary* dictionary = (LHDictionary*)CCDictionary::createWithContentsOfFile(fullPath.c_str());
 #else    
