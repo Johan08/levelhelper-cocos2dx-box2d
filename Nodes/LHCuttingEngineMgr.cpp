@@ -419,10 +419,13 @@ LHSprite * LHCuttingEngineMgr::spriteWithVertices(CCPoint* vertices,
 
 #if COCOS2D_VERSION >= 0x00020000
 
-
-//    ccGLEnable( glServerState_ );
     mShaderProgram->use();
+    
+#if COCOS2D_VERSION >= 0x00020100
+    mShaderProgram->setUniformsForBuiltins();
+#else
     mShaderProgram->setUniformForModelViewProjectionMatrix();
+#endif
     
 	ccVertex2F* verts = new ccVertex2F[count];
 	for( int i=0;i<count;i++) {

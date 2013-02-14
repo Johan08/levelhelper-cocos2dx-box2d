@@ -36,7 +36,10 @@
 
 bool SHSceneNode::initSceneNodeWithContentOfFile(const std::string& sceneFile){
     
-#if COCOS2D_VERSION >= 0x00020000
+#if COCOS2D_VERSION >= 0x00020100
+    std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathForFilename(sceneFile.c_str());
+    LHDictionary* dictionary = (LHDictionary*)LHDictionary::createWithContentsOfFile(fullPath.c_str());
+#elif COCOS2D_VERSION >= 0x00020000
     std::string fullPath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(sceneFile.c_str());
     LHDictionary* dictionary = (LHDictionary*)LHDictionary::createWithContentsOfFile(fullPath.c_str());
 #else
