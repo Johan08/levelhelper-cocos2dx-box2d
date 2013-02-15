@@ -1487,19 +1487,6 @@ void LHSprite::removeTouchObserver()
 {
 //    CCLog("REMOVE TOUCH OBSERVER forSprite %s", uniqueName.c_str());
     
-    if(touchBeginObserver)
-        delete touchBeginObserver;
-
-    if(touchMovedObserver)
-        delete touchMovedObserver;
-
-    if(touchEndedObserver)
-        delete touchEndedObserver;
-    
-    touchBeginObserver = NULL;
-    touchMovedObserver = NULL;
-    touchEndedObserver = NULL;
-    
     CCTouchDispatcher* touchDispatcher = NULL;
 #if COCOS2D_VERSION >= 0x00020000
     touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
@@ -1507,10 +1494,24 @@ void LHSprite::removeTouchObserver()
     touchDispatcher = CCTouchDispatcher::sharedDispatcher();
 #endif
     
-//    if(touchBeginObserver)
+    if(touchBeginObserver)
     if(touchDispatcher){
         touchDispatcher->removeDelegate(this);
     }
+    
+    if(touchBeginObserver)
+        delete touchBeginObserver;
+    
+    if(touchMovedObserver)
+        delete touchMovedObserver;
+    
+    if(touchEndedObserver)
+        delete touchEndedObserver;
+
+    
+    touchBeginObserver = NULL;
+    touchMovedObserver = NULL;
+    touchEndedObserver = NULL;
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------

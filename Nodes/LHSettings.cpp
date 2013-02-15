@@ -323,7 +323,10 @@ const std::string LHSettings::imagePath(const std::string& image){
                 #endif
             }
         }
-#if COCOS2D_VERSION >= 0x00020000
+        
+#if COCOS2D_VERSION >= 0x00020100
+        const char* fullpath = CCFileUtils::sharedFileUtils()->fullPathForFilename(computedFile.c_str()).c_str();        
+#elif COCOS2D_VERSION >= 0x00020000
         const char* fullpath = CCFileUtils::sharedFileUtils()->fullPathFromRelativePath(computedFile.c_str());
 #else
         const char* fullpath = CCFileUtils::fullPathFromRelativePath(computedFile.c_str());
