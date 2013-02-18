@@ -57,7 +57,7 @@ LHPathNode::LHPathNode(std::vector<CCPoint> points, LHSprite* spr){
         prevPathPosition = pathPoints[0];
 }
 LHPathNode::~LHPathNode(void){
-    CCLog("PATH NODE DEALLOC");    
+    //CCLog("PATH NODE DEALLOC");
 }
 
 
