@@ -306,19 +306,30 @@ void LevelHelperLoader::setIsPaused(bool value){
 
     CCArray* allSprites = this->allSprites();
     CCArray* allParallaxes = this->allParallaxes();
-
-    for(int i = 0; i < allSprites->count(); ++i){
+    
+    for(int i = 0; i < allSprites->count(); ++i)
+    {
         LHSprite* spr = (LHSprite*)allSprites->objectAtIndex(i);
-        
-        if(value){
+        if(m_isPaused)
+        {
+            spr->setAnimPauseStateOnLevelPause();
+            spr->setPathPauseStateOnLevelPause();
+
+         
             spr->pauseAnimation();
             spr->pausePathMovement();
         }
         else{
-            spr->playAnimation();
-            spr->startPathMovement();
+
+            if(spr->animPauseStateOnLevelPause())
+                spr->playAnimation();
+            
+            if(spr->pathPauseStateOnLevelPause())
+                spr->startPathMovement();
+
         }
     }
+    
     
     for(int i = 0; i < allParallaxes->count(); ++i){
         LHParallaxNode* node = (LHParallaxNode*)allParallaxes->objectAtIndex(i);
@@ -515,7 +526,8 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithUniqueName(const std::string& 
                     lh_spriteCreationMethods methods = LHCustomSpriteMgr::sharedInstance()->customSpriteClassForTag(tag);
                     LHSprite* sprite = (*methods.second)(spriteInfo, batch);
                     if(sprite){
-                        batch->addChild(sprite, sprite->getZOrder());
+                        //no longer necesasry - handled in LHSprite class
+                        //batch->addChild(sprite, sprite->getZOrder());
                         LevelHelperLoader::setTouchDispatcherForSpriteWithTag(sprite, sprite->getTag());
                         sprite->postInit();
                     }
@@ -608,7 +620,9 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
         if(batch){
             LHSprite* sprite = LHSprite::batchSpriteWithDictionary(dictionary, batch);
             if(sprite){
-                batch->addChild(sprite, sprite->getZOrder());
+                //this is no longer necessary as now this is handled in the LHSprite
+                //something to do with animations
+                //batch->addChild(sprite, sprite->getZOrder());
                 sprite->postInit();
             }
             return sprite;
