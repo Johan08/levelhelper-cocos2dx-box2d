@@ -993,7 +993,7 @@ void LHBezier::registerTouchEndedObserver(CCObject* observer,
 }
 void LHBezier::removeTouchObserver()
 {
-    if(touchBeginObserver)
+    if(tagTouchBeginObserver || touchBeginObserver)
         LevelHelperLoader::removeTouchDispatcherFromBezier(this);
     
     if(touchBeginObserver)
@@ -1008,6 +1008,10 @@ void LHBezier::removeTouchObserver()
     touchBeginObserver = NULL;
     touchMovedObserver = NULL;
     touchEndedObserver = NULL;
+    
+    tagTouchBeginObserver = NULL;
+    tagTouchEndedObserver = NULL;
+    tagTouchMovedObserver = NULL;
 }
 
 //------------------------------------------------------------------------------
