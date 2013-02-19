@@ -417,6 +417,23 @@ private:
     void setSheetName(const std::string& name){shSheetName = name;}
     void setSpriteName(const std::string& name){shSpriteName = name;}
 
+    bool animAtStart;
+    bool m_animPauseStateOnLevelPause;
+    void setAnimPauseStateOnLevelPause(){
+        m_animPauseStateOnLevelPause = animAtStart;
+    }
+    bool animPauseStateOnLevelPause(){
+        return m_animPauseStateOnLevelPause;
+    }
+    
+    bool m_pathPauseStateOnLevelPause;
+    bool pathStartAtLaunch;
+    void setPathPauseStateOnLevelPause(){
+        m_pathPauseStateOnLevelPause = pathStartAtLaunch;
+    }
+    bool pathPauseStateOnLevelPause(){
+        return m_pathPauseStateOnLevelPause;
+    }
     
         
     void setParallaxNode(LHParallaxNode*node){spriteIsInParallax = node;}

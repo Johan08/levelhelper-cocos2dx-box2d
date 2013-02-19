@@ -126,8 +126,13 @@ LHSprite::LHSprite(){
     pathDefaults.orientation        = 0;
     pathDefaults.restartOtherEnd    = 0;
     pathDefaults.speed              = 0;
-    pathDefaults.startAtLaunch      = 0;
+    pathStartAtLaunch               = 0;
     pathDefaults.startPoint         = 0;
+    
+    animAtStart = false;
+    m_animPauseStateOnLevelPause = false;
+    m_pathPauseStateOnLevelPause = false;
+    
     
     //CCLog("LHSprite init");
     fixturesInfo = NULL;
@@ -304,7 +309,8 @@ void LHSprite::loadAnimationsInformationFromDictionary(LHDictionary* dictionary)
     
     if(!animation) return;//something has gone wrong with animation loading
     
-    if(dictionary->boolForKey("AnimAtStart"))//we should pause the animation
+    animAtStart = dictionary->boolForKey("AnimAtStart");
+    if(animAtStart)//we should pause the animation
         animation->play();
     
     //dictionary->print();
@@ -332,7 +338,7 @@ void LHSprite::loadPathMovementFromDictionary(LHDictionary* dictionary){
     pathDefaults.orientation        = dictionary->intForKey("PathOrientation");
     pathDefaults.restartOtherEnd    = dictionary->boolForKey("PathOtherEnd");
     pathDefaults.speed              = dictionary->floatForKey("PathSpeed");    
-    pathDefaults.startAtLaunch      = dictionary->boolForKey("PathStartAtLaunch");
+    pathStartAtLaunch               = dictionary->boolForKey("PathStartAtLaunch");
     pathDefaults.startPoint         = dictionary->intForKey("PathStartPoint");
 }
 //------------------------------------------------------------------------------
@@ -852,7 +858,13 @@ void LHSprite::removeGlobalAnimationHasEndedAllRepetitionsObserver(CCObject *tar
 #endif
 }
 //------------------------------------------------------------------------------
-void LHSprite::playAnimation(){ if(animation)animation->play();}
+void LHSprite::playAnimation()
+{
+    if(animation){
+        animation->play();
+        animAtStart = true; //we use animAtStart to track the anim state when we pause and unpause a level
+    }
+}
 //------------------------------------------------------------------------------
 void LHSprite::pauseAnimation(){ if(animation)animation->setPaused(true);}
 //------------------------------------------------------------------------------
@@ -1237,7 +1249,11 @@ void LHSprite::removeGlobalPathMovementHasChangedPointObserver(CCObject *target)
 
 //------------------------------------------------------------------------------
 void LHSprite::startPathMovement(){
-    if(pathNode)pathNode->setPaused(false);
+    if(pathNode){
+        pathNode->setPaused(false);
+        pathStartAtLaunch = true; //we are doing this true now because we use this
+        //variable to track if we should start this path movement when a level gets unpaused.
+    }
 }
 //------------------------------------------------------------------------------
 void LHSprite::pausePathMovement(){
