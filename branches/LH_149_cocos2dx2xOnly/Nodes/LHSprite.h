@@ -435,6 +435,10 @@ private:
         return m_pathPauseStateOnLevelPause;
     }
     
+    bool pathDefaultStartAtLaunch(){
+        return pathStartAtLaunch;
+    }
+    
         
     void setParallaxNode(LHParallaxNode*node){spriteIsInParallax = node;}
     
@@ -443,6 +447,9 @@ private:
     void setTagTouchEndedObserver(LHObserverPair* pair);
     
     CCPoint convertedPoint(CCPoint touchPoint);
+    
+    friend class LH_b2DestructionListener;
+    void nullifyBody(){body = NULL;} //called when LH_b2DestructionListener destroyes a fixture
 };
 ////////////////////////////////////////////////////////////////////////////////
 

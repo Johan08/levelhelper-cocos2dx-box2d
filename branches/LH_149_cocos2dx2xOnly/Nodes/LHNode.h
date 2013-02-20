@@ -38,8 +38,16 @@ public:
     std::string uniqueName;
     b2Body* body;
 
+    static LHNode*  nodeForBody(b2Body* body);
+    
     CCArray* jointList(void);
     bool removeBodyFromWorld(void);
+    
+private:
+
+    friend class LH_b2DestructionListener;
+
+    void nullifyBody(){body = NULL;} //called when LH_b2DestructionListener destroyes a fixture
 };
 
 #endif
