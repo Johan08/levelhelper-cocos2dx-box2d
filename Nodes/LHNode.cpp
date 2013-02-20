@@ -14,7 +14,7 @@
 static int untitledNodesCount = 0;
 //------------------------------------------------------------------------------
 LHNode::~LHNode(){
-    //printf("LHNode dealloc %s\n", uniqueName.c_str());
+//    printf("LHNode dealloc %s\n", uniqueName.c_str());
     removeBodyFromWorld();
 }
 //------------------------------------------------------------------------------
@@ -120,14 +120,30 @@ bool LHNode::removeBodyFromWorld(){
                 jt->setShouldDestroyJointOnDealloc(false);
                 jt->removeSelf();
             }
-            list->removeAllObjects();            
-			_world->DestroyBody(body);
+            list->removeAllObjects();
+            if(body)
+                _world->DestroyBody(body);
 			body = NULL;
             
             return true;
 		}
 	}
     return false;
+}
+//------------------------------------------------------------------------------
+LHNode* LHNode::nodeForBody(b2Body* body){
+    
+    if(0 == body)
+        return 0;
+    
+    CCNode* spr = (CCNode*)body->GetUserData();
+    
+    if(LHNode::isLHNode(spr))
+    {
+        return (LHNode*)spr;
+    }
+    
+    return 0;
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------

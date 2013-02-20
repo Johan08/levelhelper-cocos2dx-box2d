@@ -35,12 +35,52 @@ std::string stringFromInt(const int& i){
     return st.str();    
 }
 
+
+/// Joints and fixtures are destroyed when their associated
+/// body is destroyed. Implement this listener so that you
+/// may nullify references to these joints and shapes.
+class LH_b2DestructionListener: public b2DestructionListener
+{
+public:
+    virtual ~LH_b2DestructionListener() {}
+    
+    /// Called when any joint is about to be destroyed due
+    /// to the destruction of one of its attached bodies.
+    virtual void SayGoodbye(b2Joint* joint)
+    {
+        LHJoint* jt = LHJoint::jointFromBox2dJoint(joint);
+        if(jt){
+            jt->removeSelf();
+        }
+    }
+    
+    /// Called when any fixture is about to be destroyed due
+    /// to the destruction of its parent body.
+    virtual void SayGoodbye(b2Fixture* fixture)
+    {
+        LHSprite* spr = LHSprite::spriteForBody(fixture->GetBody());
+        if(spr){
+            spr->nullifyBody();
+        }
+        else{
+            LHNode* node = LHNode::nodeForBody(fixture->GetBody());
+            if(node){
+                node->nullifyBody();
+            }
+        }
+    }
+};
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 void LevelHelperLoader::initObjects(void)
 {
     m_isPaused = false;
     contactNode = NULL;
     wb = NULL;
+    
+    destructionListener = NULL;
     
 	loadingProgressId= NULL;
 	loadingProgressSel= NULL;
@@ -74,6 +114,10 @@ void LevelHelperLoader::addObjectsToWorld(b2World* world, CCLayer* _cocosLayer)
     callLoadingProgressObserverWithValue(0.90f);    
     startAllPaths();
     callLoadingProgressObserverWithValue(1.0f);
+    
+//work in progress
+//    destructionListener = new LH_b2DestructionListener();
+//    world->SetDestructionListener(destructionListener);
 }
 //------------------------------------------------------------------------------
 void LevelHelperLoader::createAllNodes()
@@ -158,7 +202,7 @@ void LevelHelperLoader::startAllPaths(){
 
         spr->prepareMovementOnPathWithUniqueName(spr->pathUniqueName());
         
-        if(spr->pathDefaults.startAtLaunch)
+        if(spr->pathDefaultStartAtLaunch())
             spr->startPathMovement();
     }
 }
@@ -655,7 +699,9 @@ LHSprite* LevelHelperLoader::createBatchSpriteWithName(const std::string& name,
             if(sprite){
                 sprite->setTag(tag);
                 LevelHelperLoader::setTouchDispatcherForSpriteWithTag(sprite, sprite->getTag());
-                batch->addChild(sprite, sprite->getZOrder());
+                //this is no longer necessary as now this is handled in the LHSprite
+                //something to do with animations
+                //batch->addChild(sprite, sprite->getZOrder());
                 sprite->postInit();
             }
             return sprite;
@@ -706,6 +752,11 @@ void LevelHelperLoader::removeAllPhysics()
 
 LevelHelperLoader::~LevelHelperLoader()
 {
+    if(destructionListener)
+        delete destructionListener;
+    
+    destructionListener = NULL;
+    
     lhNodes->release();
     lhJoints->release();
     lhParallax->release();

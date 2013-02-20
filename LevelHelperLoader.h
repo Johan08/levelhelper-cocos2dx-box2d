@@ -70,6 +70,7 @@ std::string stringFromInt(const int& i);
 typedef void (CCObject::*SEL_CallFuncFloat)(float);
 #define callfuncFloat_selector(_SELECTOR) (SEL_CallFuncFloat)(&_SELECTOR)
 
+class LH_b2DestructionListener;
 
 class LevelHelperLoader : public CCObject {
 
@@ -100,7 +101,8 @@ private:
     b2World* box2dWorld; //weak ptr
     
     LHContactNode* contactNode;
-        
+    
+    LH_b2DestructionListener* destructionListener;
         
     CCObject* loadingProgressId;
     SEL_CallFuncFloat loadingProgressSel;
@@ -391,6 +393,7 @@ private:
 };
 
 #endif
+
 
 
 
