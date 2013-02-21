@@ -37,6 +37,9 @@ bool LHAnimationFrameInfo::initWithDictionary(LHDictionary* dictionary, LHSprite
     delayPerUnit = dictionary->floatForKey("delayPerUnit");
     offset = dictionary->pointForKey("offset");
     
+    offset.x *= CC_CONTENT_SCALE_FACTOR();
+    offset.y *= CC_CONTENT_SCALE_FACTOR();
+    
     notifications = NULL;
     
     if(dictionary->objectForKey("notifications"))
