@@ -229,6 +229,21 @@ bool LHFixture::isLHFixture(CCObject* obj){
     return false;
 }
 
+LHFixture* LHFixture::fixtureForb2Fixture(b2Fixture* fix){
+    
+    if(0 == fix)
+        return 0;
+    
+    LHFixture* lhFix = (LHFixture*)fix->GetUserData();
+    
+    if(LHFixture::isLHFixture(lhFix))
+    {
+        return (LHFixture*)lhFix;
+    }
+    
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 LHFixture::~LHFixture()
 {

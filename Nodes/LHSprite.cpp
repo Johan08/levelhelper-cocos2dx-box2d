@@ -2028,3 +2028,309 @@ CCArray* LHSprite::contactBeziers(){
     return array;
 }
 
+LHFixture* LHSprite::lhFixtureOfContactingSpriteWithTag(int otherTag)
+{    
+    if(body == NULL)
+        return NULL;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL == edge){
+        return NULL;
+    }
+    
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHSprite* spr = LHSprite::spriteForBody(contact_body);
+            if(spr->getTag() == otherTag)
+            {
+                b2Contact* contact = edge->contact;
+                
+                b2Fixture* fixA = contact->GetFixtureA();
+                b2Fixture* fixB = contact->GetFixtureB();
+                
+                //find other body
+                
+                if(fixA->GetBody() == contact_body){
+                    
+                    LHFixture* lhFix = LHFixture::fixtureForb2Fixture(fixA);
+                    return lhFix;
+                    
+                }
+                else if(fixB->GetBody() == contact_body){
+                    
+                    LHFixture* lhFix = LHFixture::fixtureForb2Fixture(fixB);
+                    return lhFix;
+                }
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return NULL;
+}
+
+LHFixture* LHSprite::lhFixtureOfContactingSpriteWithName(std::string name)
+{
+    if(body == NULL)
+        return NULL;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL == edge){
+        return NULL;
+    }
+    
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHSprite* spr = LHSprite::spriteForBody(contact_body);
+            if(spr->getUniqueName() == name)
+            {
+                b2Contact* contact = edge->contact;
+                
+                b2Fixture* fixA = contact->GetFixtureA();
+                b2Fixture* fixB = contact->GetFixtureB();
+                
+                //find other body
+                
+                if(fixA->GetBody() == contact_body){
+                    
+                    LHFixture* lhFix = LHFixture::fixtureForb2Fixture(fixA);
+                    return lhFix;
+                    
+                }
+                else if(fixB->GetBody() == contact_body){
+                    
+                    LHFixture* lhFix = LHFixture::fixtureForb2Fixture(fixB);
+                    return lhFix;
+                }
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return NULL;
+}
+
+
+bool LHSprite::isInContactWithOtherSpriteOfTagAtFixtureWithID(int otherTag, int otherFixtureID)
+{
+    if(body == NULL)
+        return false;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL == edge){
+        return false;
+    }
+    
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHSprite* spr = LHSprite::spriteForBody(contact_body);
+            if(spr->getTag() == otherTag)
+            {
+                b2Contact* contact = edge->contact;
+                
+                b2Fixture* fixA = contact->GetFixtureA();
+                b2Fixture* fixB = contact->GetFixtureB();
+                
+                //find other body
+                
+                if(fixA->GetBody() == contact_body){
+                    
+                    LHFixture* lhFix = LHFixture::fixtureForb2Fixture(fixA);
+                    if(lhFix && lhFix->getFixtureID() == otherFixtureID){
+                        return true;
+                    }
+                }
+                else if(fixB->GetBody() == contact_body){
+                    
+                    LHFixture* lhFix = LHFixture::fixtureForb2Fixture(fixB);
+                    if(lhFix && lhFix->getFixtureID() == otherFixtureID){
+                        return true;
+                    }
+                }
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return false;
+}
+
+bool LHSprite::isInContactWithOtherSpriteOfTagAtFixtureWithName(int otherTag, std::string otherFixtureName)
+{
+    if(body == NULL)
+        return false;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL == edge){
+        return false;
+    }
+    
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHSprite* spr = LHSprite::spriteForBody(contact_body);
+            if(spr->getTag() == otherTag)
+            {
+                b2Contact* contact = edge->contact;
+                
+                b2Fixture* fixA = contact->GetFixtureA();
+                b2Fixture* fixB = contact->GetFixtureB();
+                
+                //find other body
+                
+                if(fixA->GetBody() == contact_body){
+                    
+                    LHFixture* lhFix = LHFixture::fixtureForb2Fixture(fixA);
+                    if(lhFix && lhFix->getFixtureName() == otherFixtureName){
+                        return true;
+                    }
+                }
+                else if(fixB->GetBody() == contact_body){
+                    
+                    LHFixture* lhFix = LHFixture::fixtureForb2Fixture(fixB);
+                    if(lhFix && lhFix->getFixtureName() == otherFixtureName){
+                        return true;
+                    }
+                }
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return false;
+}
+
+bool LHSprite::fixtureWithIDIsInContactWithOtherSpriteOfTagAtFixtureWithID(int thisFixId, int otherTag, int otherFixtureID)
+{
+    
+    if(body == NULL)
+        return false;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL == edge){
+        return false;
+    }
+    
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHSprite* spr = LHSprite::spriteForBody(contact_body);
+            if(spr->getTag() == otherTag)
+            {
+                b2Contact* contact = edge->contact;
+                
+                b2Fixture* fixA = contact->GetFixtureA();
+                b2Fixture* fixB = contact->GetFixtureB();
+                
+                //find other body
+                
+                if(fixA->GetBody() == contact_body){
+                    
+                    LHFixture* lhFixA = LHFixture::fixtureForb2Fixture(fixA);
+                    LHFixture* lhFixB = LHFixture::fixtureForb2Fixture(fixB);
+                    
+                    if(lhFixA && lhFixB &&
+                       lhFixA->getFixtureID() == otherFixtureID &&
+                       lhFixB->getFixtureID() == thisFixId)
+                    {
+                        return true;
+                    }
+                }
+                else if(fixB->GetBody() == contact_body){
+                    
+                    LHFixture* lhFixB = LHFixture::fixtureForb2Fixture(fixB);
+                    LHFixture* lhFixA = LHFixture::fixtureForb2Fixture(fixA);
+                    
+                    if(lhFixB && lhFixA &&
+                       lhFixB->getFixtureID() == otherFixtureID &&
+                       lhFixA->getFixtureID() == thisFixId)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return false;
+    
+}
+
+bool LHSprite::fixtureWithNameIsInContactWithOtherSpriteOfTagAtFixtureWithName(std::string thisFixName, int otherTag, std::string otherFixtureName)
+{
+    if(body == NULL)
+        return false;
+    
+    b2ContactEdge* edge = body->GetContactList();
+    if(NULL == edge){
+        return false;
+    }
+    
+    while (edge != NULL) {
+        
+        b2Body* contact_body = edge->other;
+        
+        if(contact_body){
+            
+            LHSprite* spr = LHSprite::spriteForBody(contact_body);
+            if(spr->getTag() == otherTag)
+            {
+                b2Contact* contact = edge->contact;
+                
+                b2Fixture* fixA = contact->GetFixtureA();
+                b2Fixture* fixB = contact->GetFixtureB();
+                
+                //find other body
+                
+                if(fixA->GetBody() == contact_body){
+                    
+                    LHFixture* lhFixA = LHFixture::fixtureForb2Fixture(fixA);
+                    LHFixture* lhFixB = LHFixture::fixtureForb2Fixture(fixB);
+                    
+                    if(lhFixA && lhFixB &&
+                       lhFixA->getFixtureName() == otherFixtureName &&
+                       lhFixB->getFixtureName() == thisFixName)
+                    {
+                        return true;
+                    }
+                }
+                else if(fixB->GetBody() == contact_body){
+                    
+                    LHFixture* lhFixB = LHFixture::fixtureForb2Fixture(fixB);
+                    LHFixture* lhFixA = LHFixture::fixtureForb2Fixture(fixA);
+                    
+                    if(lhFixB && lhFixA &&
+                       lhFixB->getFixtureName() == otherFixtureName &&
+                       lhFixA->getFixtureName() == thisFixName)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        edge = edge->next;
+    }
+    
+    return false;
+    
+}
+
