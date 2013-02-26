@@ -384,6 +384,35 @@ public:
     CCArray* contactSprites();
     CCArray* contactBeziers();
     
+    //this will return the fixture of the other sprite that is in contact with the current sprite that has the specified tag
+    //if no fixture with the specified tag is in contact with current sprite it will return NULL
+    LHFixture* lhFixtureOfContactingSpriteWithTag(int otherTag);
+    
+    //this will return the fixture of the other sprite that is in contact with the current sprite that has the specified name
+    //if no fixture with the specified name is in contact with current sprite it will return NULL
+    LHFixture* lhFixtureOfContactingSpriteWithName(std::string name);
+    
+    //this will return true if another sprite with tag is in contact with the current sprite
+    //and the fixture id of the other sprite is equal with otherFixtureID
+    bool isInContactWithOtherSpriteOfTagAtFixtureWithID(int otherTag, int otherFixtureID);
+    
+    //this will return true if another sprite with tag is in contact with the current sprite
+    //and the fixture name of the other sprite is equal with otherFixtureName
+    bool isInContactWithOtherSpriteOfTagAtFixtureWithName(int otherTag, std::string otherFixtureName);
+    
+    //this will return true if another sprite with tag is in contact with the current sprite
+    //and the fixture with id of the other sprite is in contact with the fixture with id (thisFixId) on the current sprite
+    bool fixtureWithIDIsInContactWithOtherSpriteOfTagAtFixtureWithID(int thisFixId, int otherTag, int otherFixtureID);
+    
+    //this will return true if another sprite with tag is in contact with the current sprite
+    //and the fixture with name of the other sprite is in contact with the fixture with name (thisFixName) on the current sprite
+    bool fixtureWithNameIsInContactWithOtherSpriteOfTagAtFixtureWithName(std::string thisFixName, int otherTag, std::string otherFixtureName);
+
+    
+    
+    
+    
+    
     
     virtual bool ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent);
     virtual void ccTouchMoved(CCTouch *pTouch, CCEvent *pEvent);
