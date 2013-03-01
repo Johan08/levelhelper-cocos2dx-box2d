@@ -1354,6 +1354,9 @@ void LevelHelperLoader::loadLevelHelperSceneFile(const char* levelFile,
 #endif
     
     processLevelFileFromDictionary(dictionary);
+    
+    dictionary->release();//force release this for faster computation
+    dictionary = NULL;
 }
 
 
