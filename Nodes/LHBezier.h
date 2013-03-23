@@ -128,7 +128,12 @@ public:
     static LHBezier* bezierForBody(b2Body* body);
     static int tagForBody(b2Body* body);
     
+#if COCOS2D_VERSION >= 0x00020100
+    virtual bool init(void);
+#else
     virtual void init(void);
+#endif
+    
     virtual ~LHBezier(void);
     LHBezier(void);
     
