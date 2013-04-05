@@ -362,11 +362,20 @@ public:
 
     
     //Box2d COLLISION FILTER
-    //--------------------------------------------------------------------------            
+    //--------------------------------------------------------------------------
+    std::vector<std::string> getFixtureNames();//all fixture names on this body
+    std::vector<LHFixture*> getFixtures();//all LHFixture objects on this body
+    
     void setCollisionFilterCategory(int category);
+    void setCollisionFilterCategoryForFixtureWithName(int category, std::string& fixtureName);
+    
     void setCollisionFilterMask(int mask);
+    void setCollisionFilterMaskForFixtureWithName(int mask, std::string& fixtureName);
+    
     void setCollisionFilterGroup(int group);
-
+    void setCollisionFilterGroupForFixtureWithName(int group, std::string& fixtureName);
+    
+    
     
     //Box2d BODY TYPE TRANSFORMATION
     //--------------------------------------------------------------------------                
@@ -408,6 +417,8 @@ public:
     //and the fixture with name of the other sprite is in contact with the fixture with name (thisFixName) on the current sprite
     bool fixtureWithNameIsInContactWithOtherSpriteOfTagAtFixtureWithName(std::string thisFixName, int otherTag, std::string otherFixtureName);
 
+    
+    
     
     
     
