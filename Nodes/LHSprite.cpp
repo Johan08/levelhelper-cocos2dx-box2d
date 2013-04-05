@@ -1807,6 +1807,43 @@ bool LHSprite::isLHSprite(CCNode* obj){
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+std::vector<std::string> LHSprite::getFixtureNames(){
+    
+    std::vector<std::string> vector;
+    if(body == NULL)
+        return vector;
+    
+    b2Fixture* curFix = body->GetFixtureList();
+    while (curFix) {
+        
+        LHFixture* lhFix = (LHFixture*)(curFix->GetUserData());
+        if(lhFix && LHFixture::isLHFixture(lhFix))
+        {
+            vector.push_back(lhFix->getFixtureName());
+        }
+        curFix = curFix->GetNext();
+    }
+    return vector;
+}
+std::vector<LHFixture*> LHSprite::getFixtures(){
+    
+    std::vector<LHFixture*> vector;
+    if(body == NULL)
+        return vector;
+    
+    b2Fixture* curFix = body->GetFixtureList();
+    while (curFix) {
+        
+        LHFixture* lhFix = (LHFixture*)(curFix->GetUserData());
+        if(lhFix && LHFixture::isLHFixture(lhFix))
+        {
+            vector.push_back(lhFix);
+        }
+        curFix = curFix->GetNext();
+    }
+    return vector;
+}
+
 void LHSprite::setCollisionFilterCategory(int category){
     if(body == NULL)
         return;
@@ -1822,6 +1859,28 @@ void LHSprite::setCollisionFilterCategory(int category){
         filter.groupIndex   = curFilter.groupIndex;
         
         curFix->SetFilterData(filter);        
+        curFix = curFix->GetNext();
+    }
+}
+void LHSprite::setCollisionFilterCategoryForFixtureWithName(int category, std::string& fixtureName){
+    if(body == NULL)
+        return;
+    
+    b2Fixture* curFix = body->GetFixtureList();
+    while (curFix) {
+        
+        LHFixture* lhFix = (LHFixture*)(curFix->GetUserData());
+        if(LHFixture::isLHFixture(lhFix) && lhFix->getFixtureName() == fixtureName)
+        {
+            b2Filter curFilter = curFix->GetFilterData();
+            
+            b2Filter filter;
+            filter.categoryBits = (uint16)category;
+            filter.maskBits     = curFilter.maskBits;
+            filter.groupIndex   = curFilter.groupIndex;
+            
+            curFix->SetFilterData(filter);
+        }
         curFix = curFix->GetNext();
     }
 }
@@ -1843,6 +1902,31 @@ void LHSprite::setCollisionFilterMask(int mask){
         curFix = curFix->GetNext();
     }
 }
+void LHSprite::setCollisionFilterMaskForFixtureWithName(int mask, std::string& name){
+
+    if(body == NULL)
+        return;
+    
+    b2Fixture* curFix = body->GetFixtureList();
+    while (curFix) {
+        
+        LHFixture* lhFix = (LHFixture*)(curFix->GetUserData());
+        if(LHFixture::isLHFixture(lhFix) && lhFix->getFixtureName() == name)
+        {
+            b2Filter curFilter = curFix->GetFilterData();
+            
+            b2Filter filter;
+            filter.categoryBits = curFilter.categoryBits;
+            filter.maskBits     = (uint16)mask;
+            filter.groupIndex   = curFilter.groupIndex;
+            
+            curFix->SetFilterData(filter);
+        }
+        curFix = curFix->GetNext();
+    }
+
+}
+
 void LHSprite::setCollisionFilterGroup(int group){
     if(body == NULL)
         return;
@@ -1857,6 +1941,30 @@ void LHSprite::setCollisionFilterGroup(int group){
         filter.groupIndex   = (int16)group;
         
         curFix->SetFilterData(filter);        
+        curFix = curFix->GetNext();
+    }
+}
+
+void LHSprite::setCollisionFilterGroupForFixtureWithName(int group, std::string& fixtureName){
+    
+    if(body == NULL)
+        return;
+    
+    b2Fixture* curFix = body->GetFixtureList();
+    while (curFix) {
+        
+        LHFixture* lhFix = (LHFixture*)(curFix->GetUserData());
+        if(LHFixture::isLHFixture(lhFix) && lhFix->getFixtureName() == fixtureName)
+        {
+            b2Filter curFilter = curFix->GetFilterData();
+            
+            b2Filter filter;
+            filter.categoryBits = curFilter.categoryBits;
+            filter.maskBits     = curFilter.maskBits;
+            filter.groupIndex   = (int16)group;
+            
+            curFix->SetFilterData(filter);
+        }
         curFix = curFix->GetNext();
     }
 }
