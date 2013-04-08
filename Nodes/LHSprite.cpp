@@ -1862,7 +1862,7 @@ void LHSprite::setCollisionFilterCategory(int category){
         curFix = curFix->GetNext();
     }
 }
-void LHSprite::setCollisionFilterCategoryForFixtureWithName(int category, std::string& fixtureName){
+void LHSprite::setCollisionFilterCategoryForFixtureWithName(int category, const std::string& fixtureName){
     if(body == NULL)
         return;
     
@@ -1902,7 +1902,7 @@ void LHSprite::setCollisionFilterMask(int mask){
         curFix = curFix->GetNext();
     }
 }
-void LHSprite::setCollisionFilterMaskForFixtureWithName(int mask, std::string& name){
+void LHSprite::setCollisionFilterMaskForFixtureWithName(int mask, const std::string& name){
 
     if(body == NULL)
         return;
@@ -1945,7 +1945,7 @@ void LHSprite::setCollisionFilterGroup(int group){
     }
 }
 
-void LHSprite::setCollisionFilterGroupForFixtureWithName(int group, std::string& fixtureName){
+void LHSprite::setCollisionFilterGroupForFixtureWithName(int group, const std::string& fixtureName){
     
     if(body == NULL)
         return;

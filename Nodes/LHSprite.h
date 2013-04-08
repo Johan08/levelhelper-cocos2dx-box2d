@@ -367,13 +367,13 @@ public:
     std::vector<LHFixture*> getFixtures();//all LHFixture objects on this body
     
     void setCollisionFilterCategory(int category);
-    void setCollisionFilterCategoryForFixtureWithName(int category, std::string& fixtureName);
+    void setCollisionFilterCategoryForFixtureWithName(int category, const std::string& fixtureName);
     
     void setCollisionFilterMask(int mask);
-    void setCollisionFilterMaskForFixtureWithName(int mask, std::string& fixtureName);
+    void setCollisionFilterMaskForFixtureWithName(int mask, const std::string& fixtureName);
     
     void setCollisionFilterGroup(int group);
-    void setCollisionFilterGroupForFixtureWithName(int group, std::string& fixtureName);
+    void setCollisionFilterGroupForFixtureWithName(int group, const std::string& fixtureName);
     
     
     
