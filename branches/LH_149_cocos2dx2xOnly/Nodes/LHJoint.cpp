@@ -413,17 +413,18 @@ bool LHJoint::isLHJoint(CCNode* obj){
 }
 //------------------------------------------------------------------------------
 LHJoint* LHJoint::jointFromBox2dJoint(b2Joint* jt)
-{    
+{
     if(jt == NULL) return NULL;
     
     void* lhJt = jt->GetUserData();
-
-    if(LHJoint::isLHJoint((CCNode*)lhJt)){
+    
+    if(LHJoint::isLHJoint((CCObject*)lhJt)){
         return (LHJoint*)lhJt;
     }
     
-    return NULL;    
+    return NULL;
 }
+
 //------------------------------------------------------------------------------
 int LHJoint::tagFromBox2dJoint(b2Joint* joint)
 {
