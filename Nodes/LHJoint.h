@@ -78,7 +78,7 @@ public:;
     LHSprite* getSpriteB();
 
     
-    static bool isLHJoint(CCNode* object);
+    static bool isLHJoint(CCObject* object);
     static LHJoint* jointFromBox2dJoint(b2Joint* jt);
     static int tagFromBox2dJoint(b2Joint* joint);
     static std::string uniqueNameFromBox2dJoint(b2Joint* joint);
