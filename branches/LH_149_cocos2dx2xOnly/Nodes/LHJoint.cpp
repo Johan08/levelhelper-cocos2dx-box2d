@@ -404,7 +404,7 @@ void LHJoint::createBox2dJointFromDictionary(LHDictionary* dictionary)
     joint->SetUserData(this);
 }
 //------------------------------------------------------------------------------
-bool LHJoint::isLHJoint(CCNode* obj){
+bool LHJoint::isLHJoint(CCObject* obj){
     
     if( 0 != dynamic_cast<LHJoint*>(obj))
         return true;
