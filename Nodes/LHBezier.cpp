@@ -27,7 +27,7 @@
 #include "LHPathNode.h"
 #include "LHSettings.h"
 #include "LHSprite.h"
-#include "lhConfig.h"
+#include "../lhConfig.h"
 #include "../CustomClasses/LHAbstractClass.h"
 #include "../CustomClasses/LHCustomClasses.h"
 

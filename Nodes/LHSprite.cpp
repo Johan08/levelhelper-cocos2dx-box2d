@@ -24,7 +24,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include "LHSprite.h"
-#include "lhConfig.h"
+#include "../lhConfig.h"
 #include "LHAnimationNode.h"
 
 #include "../LevelHelperLoader.h"
