@@ -350,7 +350,7 @@ public:
     void setSwallowTouches(bool val){swallowTouches = val;}
     bool getSwallowTouches(){return swallowTouches;}
     
-    void setTouchPriority(int val){touchPriority = val;}
+    void setTouchPriority(int val);
     int getTouchPriority(){return touchPriority;}
     
     //Box2d helpful methods
