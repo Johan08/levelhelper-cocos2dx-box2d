@@ -628,6 +628,27 @@ void LHSprite::update(float dt){
         pathNode->update(dt);
 }
 //------------------------------------------------------------------------------
+void LHSprite::setTouchPriority(int val) {
+    touchPriority = val;
+    
+    CCTouchDispatcher* touchDispatcher = NULL;
+#if COCOS2D_VERSION >= 0x00020000
+    touchDispatcher = CCDirector::sharedDirector()->getTouchDispatcher();
+#else
+    touchDispatcher = CCTouchDispatcher::sharedDispatcher();
+#endif
+    
+    if(touchDispatcher){
+        
+        CCTouchHandler* handler = touchDispatcher->findHandler(this);
+        
+        // if we have handler and delegate we should update delegate priority to CCDispatcher
+        if (handler && handler->getDelegate() != NULL) {
+            touchDispatcher->setPriority(touchPriority, handler->getDelegate());
+        }
+    }
+}
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void LHSprite::prepareAnimationNamed(const std::string& animName, const std::string& shScene){
     
